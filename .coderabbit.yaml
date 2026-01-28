@@ -1,5 +1,5 @@
 reviews:
-  review_status: true
+  review_status: false
   auto_review:
     enabled: true
     base_branches:

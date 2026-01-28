@@ -14,5 +14,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sanity check
-        run: echo "CI is running successfully"
+      # ---------- Frontend (Expo / React Native) ----------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: petpulse-mobile/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: petpulse-mobile
+        run: npm install
+
+      - name: Frontend sanity check
+        working-directory: petpulse-mobile
+        run: |
+          node -v
+          npm -v
+          npx expo --version
+
+      # ---------- General ----------
+      - name: CI completed
+        run: echo "CI passed successfully"
