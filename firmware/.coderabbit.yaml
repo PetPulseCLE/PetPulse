@@ -1,0 +1,10 @@
+reviews:
+  review_status: false
+  auto_review:
+    enabled: true
+    base_branches:
+      - main
+      - development
+      - firmware 
+      - database 
+      - backend
