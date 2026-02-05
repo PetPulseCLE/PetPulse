@@ -1,0 +1,4 @@
+dependencies:
+  esp32_BNO08x:
+    git: https://github.com/notwillhynds/esp32_BNO08x.git
+    version: "v0.2.0"
