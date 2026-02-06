@@ -43,6 +43,9 @@ export default {
             backgroundColor: "#ffffff",
             dark: {backgroundColor: "#000000"}
           }
+        ],
+        [ "react-native-ble-manager",
+          {bluetoothAlwaysPermission: "Allow PetPulse to connect to bluetooth devices"}
         ]
       ],
       experiments: {

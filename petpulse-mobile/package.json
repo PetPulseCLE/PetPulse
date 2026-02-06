@@ -10,7 +10,9 @@
     "ios:clean": "rm -rf ios && expo prebuild && expo run:ios --device",
     "web": "expo start --web",
     "reset-project": "node ./scripts/reset-project.js",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
