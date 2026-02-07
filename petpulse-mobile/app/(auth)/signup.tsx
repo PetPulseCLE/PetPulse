@@ -10,6 +10,8 @@ import { Link, router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useThemeColor } from "@/hooks/use-theme-color";
+
 
 function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email.trim());
@@ -33,6 +35,28 @@ export default function SignupScreen() {
       password === confirmPassword
     );
   }, [email, password, confirmPassword]);
+
+  const inputText = useThemeColor({}, "text");
+  const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+
+  const cardBg = useThemeColor(
+    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
+    "background"
+  );
+  const cardBorder = useThemeColor(
+    { light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" },
+    "text"
+  );
+
+  const inputBg = useThemeColor(
+    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
+    "background"
+  );
+  const inputBorder = useThemeColor(
+    { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" },
+    "text"
+  );
+
 
   async function onSubmit() {
     setError(null);
@@ -90,7 +114,7 @@ export default function SignupScreen() {
         </ThemedText>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
         <ThemedText type="defaultSemiBold" style={styles.label}>
           Email
         </ThemedText>
@@ -98,12 +122,16 @@ export default function SignupScreen() {
           value={email}
           onChangeText={setEmail}
           placeholder="you@example.com"
+          placeholderTextColor={placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="username"
           editable={!submitting}
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+          ]}
         />
 
         <ThemedText type="defaultSemiBold" style={styles.label}>
@@ -113,10 +141,15 @@ export default function SignupScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Create a password (min 6 chars)"
+          placeholderTextColor={placeholder}
           secureTextEntry
           textContentType="newPassword"
           editable={!submitting}
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+          ]}
+          
         />
 
         <ThemedText type="defaultSemiBold" style={styles.label}>
@@ -126,10 +159,14 @@ export default function SignupScreen() {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           placeholder="Re-enter your password"
+          placeholderTextColor={placeholder}
           secureTextEntry
-          textContentType="password"
+          textContentType="newPassword"
           editable={!submitting}
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+          ]}
         />
 
         {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
@@ -195,8 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.12)",
-    backgroundColor: "rgba(0,0,0,0.02)",
+
   },
   label: {
     marginBottom: 6,
@@ -206,8 +242,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.15)",
-    backgroundColor: "rgba(0,0,0,0.03)",
+   
     marginBottom: 14,
   },
   errorText: {
@@ -228,10 +263,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
   },
-  forgotContainer: {
-    alignSelf: "center",
-    marginTop: 14,
-  },
+
   footer: {
     marginTop: 24,
     alignItems: "center",

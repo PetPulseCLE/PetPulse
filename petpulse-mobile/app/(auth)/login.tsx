@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  Alert,
   ActivityIndicator,
   StyleSheet,
   TextInput,
@@ -10,6 +11,8 @@ import { Link, router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useThemeColor } from "@/hooks/use-theme-color";
+
 
 function isValidEmail(email: string) {
   // Basic email format check (simple on purpose)
@@ -26,6 +29,16 @@ export default function LoginScreen() {
   const canSubmit = useMemo(() => {
     return email.trim().length > 0 && password.length > 0 && isValidEmail(email);
   }, [email, password]);
+
+  const inputText = useThemeColor({}, "text");
+  const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+
+  const cardBg = useThemeColor({ light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" }, "background");
+  const cardBorder = useThemeColor({ light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" }, "text");
+
+  const inputBg = useThemeColor({ light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" }, "background");
+  const inputBorder = useThemeColor({ light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" }, "text");
+
 
   async function onSubmit() {
     setError(null);
@@ -75,7 +88,8 @@ export default function LoginScreen() {
         </ThemedText>
       </View>
 
-      <View style={styles.card}>
+      
+      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
         <ThemedText type="defaultSemiBold" style={styles.label}>
           Email
         </ThemedText>
@@ -83,12 +97,17 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
           placeholder="you@example.com"
+          placeholderTextColor={placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
           textContentType="username"
           editable={!submitting}
-          style={styles.input}
+            style={[
+            styles.input,
+            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+            ]}
+          
         />
 
         <ThemedText type="defaultSemiBold" style={styles.label}>
@@ -98,10 +117,14 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           placeholder="Enter your password"
+          placeholderTextColor={placeholder}
           secureTextEntry
           textContentType="password"
           editable={!submitting}
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+          ]}
         />
 
         {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
@@ -122,9 +145,12 @@ export default function LoginScreen() {
 
         {/* Placeholder: route to signup for now (until you implement forgot-password) */}
         <View style={styles.forgotContainer}>
-          <Link href="/signup">
-            <ThemedText type="link">Forgot password?</ThemedText>
-          </Link>
+        <ThemedText
+            type="link"
+              onPress={() => Alert.alert("Coming soon", "Forgot password flow coming soon")}
+                >
+                Forgot password?
+        </ThemedText>
         </View>
       </View>
 
@@ -174,8 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.12)",
-    backgroundColor: "rgba(0,0,0,0.02)",
+    
   },
   label: {
     marginBottom: 6,
@@ -185,8 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.15)",
-    backgroundColor: "rgba(0,0,0,0.03)",
+
     marginBottom: 14,
   },
   errorText: {
