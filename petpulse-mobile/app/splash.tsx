@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function SplashScreen({ fadeOut }: { fadeOut: boolean }) {
+export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   const [showDog, setShowDog] = useState(true);
 
   useEffect(() => {
@@ -197,4 +197,8 @@ export function SplashScreen({ fadeOut }: { fadeOut: boolean }) {
       </div>
     </div>
   );
+}
+
+export default function SplashScreenRoute() {
+  return <SplashScreen />;
 }
