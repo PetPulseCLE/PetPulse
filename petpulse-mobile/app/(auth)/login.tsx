@@ -3,8 +3,10 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Keyboard,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Link, router } from "expo-router";
@@ -12,6 +14,9 @@ import { Link, router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { Ionicons } from "@expo/vector-icons";
+
+
 
 
 function isValidEmail(email: string) {
@@ -34,11 +39,15 @@ export default function LoginScreen() {
   const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
 
   const cardBg = useThemeColor({ light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" }, "background");
-  const cardBorder = useThemeColor({ light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" }, "text");
+  const cardBorder = useThemeColor({ light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" }, "text");
 
   const inputBg = useThemeColor({ light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" }, "background");
-  const inputBorder = useThemeColor({ light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" }, "text");
+  const inputBorder = useThemeColor({ light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" }, "text");
 
+  const brandBlack = useThemeColor(
+    { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
+    "text"
+  );
 
   async function onSubmit() {
     setError(null);
@@ -75,16 +84,17 @@ export default function LoginScreen() {
   }
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <ThemedView style={styles.screen}>
       <View style={styles.header}>
-        <View style={styles.logoCircle}>
-          <ThemedText style={styles.logoIcon}>♥</ThemedText>
+         <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+         <Ionicons name="heart" size={30} color="white" />
         </View>
         <ThemedText type="title" style={styles.appName}>
-          PetHealth
+          PetPulse
         </ThemedText>
         <ThemedText style={styles.subtitle}>
-          Monitor your pet&apos;s health with smart harness technology
+        Care Beyond the Collar
         </ThemedText>
       </View>
 
@@ -135,7 +145,7 @@ export default function LoginScreen() {
           style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
         >
           {submitting ? (
-            <ActivityIndicator />
+            <ActivityIndicator color = "#FFFFFF" />
           ) : (
             <ThemedText type="defaultSemiBold" style={styles.buttonText}>
               Log In
@@ -157,12 +167,13 @@ export default function LoginScreen() {
       <View style={styles.footer}>
         <ThemedText style={styles.footerText}>
           Don&apos;t have an account?{" "}
-          <Link href="/signup">
+          <Link href="/signup" replace>
             <ThemedText type="link">Sign up</ThemedText>
           </Link>
         </ThemedText>
       </View>
     </ThemedView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -170,7 +181,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 60,
   },
   header: {
     alignItems: "center",
@@ -183,11 +194,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    backgroundColor: "#0B0B1A",
   },
   logoIcon: {
     color: "white",
+    lineHeight: 28,
     fontSize: 28,
+    textAlign: "center",
   },
   appName: {
     marginBottom: 6,
@@ -200,7 +212,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    
   },
   label: {
     marginBottom: 6,

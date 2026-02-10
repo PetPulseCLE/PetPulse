@@ -2,8 +2,10 @@ import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
+  Keyboard,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { Link, router } from "expo-router";
@@ -11,6 +13,8 @@ import { Link, router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { Ionicons } from "@expo/vector-icons";
+
 
 
 function isValidEmail(email: string) {
@@ -44,7 +48,7 @@ export default function SignupScreen() {
     "background"
   );
   const cardBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" },
+    { light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" },
     "text"
   );
 
@@ -53,10 +57,16 @@ export default function SignupScreen() {
     "background"
   );
   const inputBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" },
+    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
     "text"
   );
-
+  const brandBlack = useThemeColor(
+    { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
+    "text"
+  );
+  
+  const spinnerColor = "#FFFFFF";
+  
 
   async function onSubmit() {
     setError(null);
@@ -101,10 +111,11 @@ export default function SignupScreen() {
   }
 
   return (
+  <TouchableWithoutFeedback onPress = {Keyboard.dismiss} accessible= {false}>
     <ThemedView style={styles.screen}>
       <View style={styles.header}>
-        <View style={styles.logoCircle}>
-          <ThemedText style={styles.logoIcon}>♥</ThemedText>
+        <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+        <Ionicons name="heart" size={30} color="white" />
         </View>
         <ThemedText type="title" style={styles.appName}>
           Create Account
@@ -177,7 +188,7 @@ export default function SignupScreen() {
           style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
         >
           {submitting ? (
-            <ActivityIndicator />
+            <ActivityIndicator color ={spinnerColor}/>
           ) : (
             <ThemedText type="defaultSemiBold" style={styles.buttonText}>
               Sign Up
@@ -189,12 +200,13 @@ export default function SignupScreen() {
       <View style={styles.footer}>
         <ThemedText style={styles.footerText}>
           Already have an account?{" "}
-          <Link href="/login">
+          <Link href="/login" replace>
             <ThemedText type="link">Log in</ThemedText>
           </Link>
         </ThemedText>
       </View>
       </ThemedView>
+      </TouchableWithoutFeedback>
   );
 }
 
@@ -202,7 +214,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 60,
   },
   header: {
     alignItems: "center",
@@ -215,11 +227,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    backgroundColor: "#0B0B1A",
+    
+    
   },
   logoIcon: {
     color: "white",
     fontSize: 28,
+    lineHeight: 28,
+    textAlign: "center",
   },
   appName: {
     marginBottom: 6,
