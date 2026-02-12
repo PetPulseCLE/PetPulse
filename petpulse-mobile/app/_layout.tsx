@@ -1,5 +1,4 @@
 import "../global.css";
-
 import {
   DarkTheme,
   DefaultTheme,
@@ -9,13 +8,9 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator } from "react-native";
 import "react-native-reanimated";
+import { PortalHost } from "@rn-primitives/portal";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
-
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
-// export const unstable_settings = {
-//   anchor: "(tabs)",
-// };
 
 function StackWithStatusBar() {
   const { loading } = useAuth();
@@ -45,10 +40,17 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <StackWithStatusBar />
-      </AuthProvider>
+
+
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style="auto" />
+      <PortalHost />
     </ThemeProvider>
+
+
   );
 }
