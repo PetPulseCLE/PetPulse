@@ -9,7 +9,7 @@
  * IMU Driver - Thin wrapper around BNO08x library
  */
 
-extern volatile bool motion_flag;
+// TODO: Replace with FreeRTOS event group bits for cross-core synchronization
 
 /**
  * @brief Configuration for an IMU report, used to enable/disablemultiple reports
@@ -25,7 +25,6 @@ typedef struct imu_report_cfg_t {
 
 
 bool imu_init();
-bool imu_destructor();
 
 
 /** 
@@ -43,7 +42,7 @@ bool imu_destructor();
 * @param config: the configuration for the report
 * @return true if the report was enabled successfully, false otherwise
 */
-bool imu_enable_rpt(uint8_t report_id, uint32_t period_us = 100000UL, 
+bool imu_enable_rpt(sh2_SensorId_t report_id, uint32_t period_us = 100000UL,
                        sh2_SensorConfig_t config = BNO08xPrivateTypes::default_sensor_cfg);
 
 bool imu_enable_multi_rpts(imu_report_cfg_t *rpts, size_t count);
@@ -53,9 +52,11 @@ bool imu_enable_multi_rpts(imu_report_cfg_t *rpts, size_t count);
 * @param report_id: the ID of the report to disable
 * @return true if the report was enabled successfully, false otherwise
 */
-bool imu_disable_rpt(uint8_t report_id);
+bool imu_disable_rpt(sh2_SensorId_t report_id);
 
-/** 
+bool imu_disable_rpts(imu_report_cfg_t *rpts, size_t count);
+
+/**
 * @brief Disable all reports
 * @return true if the reports were disabled successfully, false otherwise
 */
@@ -66,7 +67,7 @@ bool imu_disable_all_rpts();
 * @param report_id: the ID of the report to check
 * @return true if new data is available, false otherwise
 */
-bool imu_has_new_data(uint8_t report_id);
+bool imu_has_new_data(sh2_SensorId_t report_id);
 
 /** 
 * @brief Rearm the significant motion report
@@ -119,7 +120,7 @@ bno08x_accel_t imu_get_gravity();
 bno08x_raw_gyro_t imu_get_raw_gyro();
 
 /** 
-* @brief Get the CALIBRATEDgyro data in (rad/s) 
+* @brief Get the CALIBRATED gyro data in (rad/s) 
 * @return the calibrated gyro data struct 
 */
 bno08x_gyro_t imu_get_cal_gyro();
@@ -241,7 +242,7 @@ bool imu_dynamic_calibration();
 * @param meta_data: the meta data struct to fill
 * @return true if the meta data was retrieved successfully, false otherwise
 */
-bool imu_get_meta_data(uint8_t report_id, bno08x_meta_data_t &meta_data);
+bool imu_get_meta_data(sh2_SensorId_t report_id, bno08x_meta_data_t &meta_data);
 
 /**
 * @brief Read an FRS (Flash Record System) record from the IM, esp32_bno08x library handles handshake 

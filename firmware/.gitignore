@@ -3,5 +3,5 @@ sdkconfig
 sdkconfig.old
 managed_components/
 .claude/
-.components/imu_driver/notes/
+components/imu_driver/docs/imu_impl_notes.md
 
