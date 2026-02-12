@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, Animated } from "react-native";
 import Svg, { Circle, Ellipse, Path, Line } from "react-native-svg";
 
-export function SplashScreen({ fadeOut }: { fadeOut: boolean }) {
+export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   const [showDog, setShowDog] = useState(true);
   const fadeAnim = useState(new Animated.Value(1))[0];
 
@@ -228,4 +228,8 @@ export function SplashScreen({ fadeOut }: { fadeOut: boolean }) {
       </View>
     </Animated.View>
   );
+}
+
+export default function SplashScreenRoute() {
+  return <SplashScreen />;
 }
