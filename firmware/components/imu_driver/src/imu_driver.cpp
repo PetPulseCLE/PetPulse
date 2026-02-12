@@ -21,11 +21,6 @@ bool imu_init() {
     return true;
 }
 
-bool imu_destructor() {
-    imu.~BNO08x();
-    ESP_LOGI(TAG, "IMU - DEINITIALIZED");
-    return true;
-}
 
 bool imu_hard_reset() {
     imu.hard_reset();
@@ -312,7 +307,7 @@ bool imu_enable_rpt(sh2_SensorId_t report_id, uint32_t period_us, sh2_SensorConf
 bool imu_enable_multi_rpts(imu_report_cfg_t *rpts, size_t count) {
     bool all_enabled = true;
     for(size_t i = 0; i < count; i++) {
-        if(!imu_enable_rpt(rpts[i].report_id, rpts[i].period_us)) {
+        if(!imu_enable_rpt(rpts[i].report_id, rpts[i].period_us, rpts[i].config)) {
             all_enabled = false;
         }
     }
@@ -405,10 +400,17 @@ bool imu_disable_rpts(imu_report_cfg_t *rpts, size_t count) {
 }
 
 bool imu_rearm_sig_motion(uint32_t period_us, sh2_SensorConfig_t config) {
-    imu.rpt.significant_motion.disable();
+    if(!imu.rpt.significant_motion.disable()) {
+        ESP_LOGE(TAG, "IMU - FAILED TO DISABLE SIGNIFICANT MOTION REPORT");
+        return false;
+    }
 
-    imu.rpt.significant_motion.enable(period_us, config);
-    ESP_LOGI(TAG, "IMU - SIGNIFICANT MOTION REPORT ENABLED");
+    if(!imu.rpt.significant_motion.enable(period_us, config)) {
+        ESP_LOGE(TAG, "IMU - FAILED TO ENABLE SIGNIFICANT MOTION REPORT");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "IMU - SIGNIFICANT MOTION REPORT REARMED");
     return true;
 }
 
@@ -497,9 +499,9 @@ bno08x_magf_t imu_get_cal_magf() { return imu.rpt.cal_magnetometer.get(); }
 bno08x_magf_t imu_get_uncal_magf() { return imu.rpt.uncal_magnetometer.get_magf(); }
 bno08x_magf_bias_t imu_get_magf_bias() { return imu.rpt.uncal_magnetometer.get_bias(); }
 bno08x_quat_t imu_get_rv() { return imu.rpt.rv.get_quat(); }
-bno08x_euler_angle_t imu_get_rv_euler() { return imu.rpt.rv.get_euler();}
+bno08x_euler_angle_t imu_get_rv_euler(bool degrees) { return imu.rpt.rv.get_euler(degrees);}
 bno08x_quat_t imu_get_rv_geomagnetic() { return imu.rpt.rv_geomagnetic.get_quat(); }
-bno08x_euler_angle_t imu_get_rv_geomagnetic_euler() { return imu.rpt.rv_geomagnetic.get_euler(); }
+bno08x_euler_angle_t imu_get_rv_geomagnetic_euler(bool degrees) { return imu.rpt.rv_geomagnetic.get_euler(degrees); }
 bno08x_activity_classifier_t imu_get_activity_classifier() { return imu.rpt.activity_classifier.get(); }
 bno08x_stability_classifier_t imu_get_stability_classifier() { return imu.rpt.stability_classifier.get(); }
 bno08x_shake_detector_t imu_get_shake_detector() { return imu.rpt.shake_detector.get(); }
