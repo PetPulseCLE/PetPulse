@@ -1,4 +1,24 @@
 dependencies:
+  NimBLE:
+    component_hash: ba77c1ae1023680c098e4cba083e58ae9adefc1eb0b12005b3014e371e62f956
+    dependencies:
+    - name: espressif/esp_hosted
+      rules:
+      - if: target in [esp32p4]
+      version: '*'
+    - name: espressif/esp_wifi_remote
+      rules:
+      - if: target in [esp32p4]
+      version: '>=0.5.3'
+    - name: idf
+      rules:
+      - if: target in [esp32p4]
+      version: '>=5.3.0'
+    source:
+      git: https://github.com/h2zero/esp-nimble-cpp.git
+      path: .
+      type: git
+    version: 095150e0b72e19e9d97016c3e6e73bb3e205e5da
   esp32_BNO08x:
     component_hash: 28c78cd14b148f17ff8bb59877fdfff2e006116ddb45f8e86370baa8cc51b692
     dependencies: []
@@ -12,7 +32,8 @@ dependencies:
       type: idf
     version: 5.5.2
 direct_dependencies:
+- NimBLE
 - esp32_BNO08x
-manifest_hash: df72bf13ed8a2f1584b4a787eea45f95923972371ef6a6a31dff8053f7a578e7
+manifest_hash: 4fce51958df0aa8f0d5c6503221ecfcd8d31872a8d5c411cda25572311bdaf10
 target: esp32s3
 version: 2.0.0
