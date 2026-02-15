@@ -104,7 +104,8 @@ export default function SignupScreen() {
       }
 
       // Success (stub): route user to the main app flow
-      router.replace("/(tabs)");
+     // router.replace("/(tabs)");
+     router.replace("/(onboarding)/features");
     } finally {
       setSubmitting(false);
     }
