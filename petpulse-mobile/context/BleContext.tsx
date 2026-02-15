@@ -1,0 +1,292 @@
+
+/* 
+    !! Using chaining op (BleManager?.) to prevent expo go errors !!
+     - for production remove dynamic import and chaining ops for BleManager
+*/
+let BleManager: typeof import("react-native-ble-manager").default | null = null;
+
+if(Platform.OS === "ios" || Platform.OS === "android") {
+    BleManager = require("react-native-ble-manager").default;
+}
+
+import { Alert, Platform } from "react-native";
+import { createContext, useEffect, useState, useContext, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AppState } from "react-native";
+import type { Peripheral } from "react-native-ble-manager";
+
+
+type BleContextType = {
+    initialized: boolean,
+    connected: Peripheral | null,
+    discovered: Peripheral[],
+    startScan: () => Promise<void>,
+    stopScan: () => Promise<void>,
+    connectToPeripheral: (peripheral: Peripheral) => Promise<void>,
+    disconnect: () => Promise<void>,
+    forgetDevice: () => Promise<void>
+};
+
+const BleContext = createContext<BleContextType>({} as BleContextType);
+
+const SERVICE_UUIDS: string[] = ["180D"];
+const SCAN_TIMEOUT = 10;
+
+export const BleProvider = ({ children }: {children: React.ReactNode}) => {
+
+/* ========================================================================
+
+             ~ BLE CONNECTION MANAGER CONTEXT PROVIDER ~
+                - TO-DO: BLE DATA TRANSFER MANAGER
+
+======================================================================= */
+
+    const [connected, setConnected] = useState<Peripheral | null>(null);
+    const [discovered, setDiscovered] = useState<Peripheral[]>([]);
+    const [reconnectFailed, setReconnectFailed] = useState(false);
+    const [initialized, setInitialized] = useState(false)
+    const reconnecting = useRef(false);
+
+    /* Reject promise every 8 seconds for connect to race against */
+    const delay = (ms: number): Promise<void> => {
+        return new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms));
+    }
+
+    /* ~ Connect with timeout
+        - 8 seconds to connect to peripheral
+        - If connect fails, await disconnect and continue reconnect for loop (10 attempts)
+    */
+    const connectWithTimeout = (peripheral_id: string): Promise<void> => {
+        return Promise.race([ BleManager?.connect(peripheral_id), delay(8000) ]) as Promise<void>;
+    }
+
+    /* Start Ble Manager */
+    const initBleManager = async() => {
+        try {
+         
+            await BleManager?.start({showAlert: true})
+            setInitialized(true);
+        }catch(error) {
+            setInitialized(false);
+            console.log("initBleManager: ", error);
+        }  
+    }
+
+    /* Save a peripherals ID */
+    const setSavedPrphId = async(peripheral_id: string) => {
+
+        try {
+            await AsyncStorage.setItem("BondedDeviceID", peripheral_id);
+        } catch(error) {
+            console.log("setSavePrphId: ", error)
+        }
+    }
+
+    /* Get saved peripheral ID */
+    const getSavedPrphId = async() => {
+        try {
+            return await AsyncStorage.getItem("BondedDeviceID");
+        }catch(error) {
+            console.log("getSavePrphId: ", error)
+        }
+    }
+
+    /* Remove saved peripheral ID (User wants to "forget device") */
+    const removeSavedPrphId = async() => {
+        try {
+            await AsyncStorage.removeItem("BondedDeviceID");
+        }catch(error) {
+            console.log("removeSavePrphId: ", error)
+        }
+    }
+
+    /* Start scan given array of UUIDS to scan for */
+    const startScan = async() => {
+        if(initialized) {
+            setDiscovered([])
+            await BleManager?.scan({serviceUUIDs: SERVICE_UUIDS, seconds: SCAN_TIMEOUT});
+        }
+    }
+
+    /* Stop scan for peripherals */
+    const stopScan = async() => {
+        try {
+            const isScanning = await BleManager?.isScanning();
+            if(isScanning) {
+                await BleManager?.stopScan();
+            }
+        } catch(error) {
+            console.log("stopScan: ", error)
+        }
+    }
+
+    /* Connect to peripheral, save its ID for reconnection, set connected state */
+    const connectToPeripheral = async (peripheral: Peripheral) => {
+        try{
+            await BleManager?.connect(peripheral.id);
+
+            const peripheral_info = await BleManager?.retrieveServices(peripheral.id);
+
+            setConnected(peripheral_info ?? null);
+            await setSavedPrphId(peripheral.id);
+
+            setReconnectFailed(false);
+            console.log("Connected", peripheral.id)
+        }catch(error) {
+            setConnected(null)
+            console.log("connectToPeripheral: ", error)
+        }
+    }
+
+    /* 
+    ~ Reconnect to previously connected device
+        - 10 attempts to reconnect
+        - If reconnect fails, alert user
+    
+    */
+    const reconnect = async() => {
+        if(!connected && !reconnecting.current){
+            reconnecting.current = true;
+            for (let i = 1; i <= 10; i++) {
+
+                 /* Check for previously connected device */
+                 const bonded_prph_id = await getSavedPrphId()
+
+                 if(!bonded_prph_id) {
+                     console.log("No Saved Peripheral")
+                     reconnecting.current = false;
+                     return;
+                 }
+
+                try {
+                    /* Get Saved Peripheral Info for Display */
+                    await connectWithTimeout(bonded_prph_id);
+                    const peripheral_info = await BleManager?.retrieveServices(bonded_prph_id);
+                    
+                    if(peripheral_info) {
+                        setConnected(peripheral_info);
+                        reconnecting.current = false;
+                        setReconnectFailed(false);
+                        return;
+                        
+                    } else {
+                        setConnected(null);
+                        setReconnectFailed(true);
+                        try {
+                            await BleManager?.disconnect(bonded_prph_id);
+                        } catch(error) {
+                            console.log("Error Disconnecting: ", error)
+                        }
+                        console.log("Error Fetching Peripheral Info")
+                        }
+
+                } catch(error) {
+                    setReconnectFailed(true)
+                    try {
+                        await BleManager?.disconnect(bonded_prph_id);
+                    } catch(error) {
+                        console.log("Error Disconnecting: ", error)
+                    }
+                    console.log("reconnect", error);
+                }
+                await new Promise(resolve => setTimeout(resolve, 3000 * i))
+            }
+            reconnecting.current = false;
+            Alert.alert("Failed to reconnect to device", "Please try again");
+        }
+    }
+
+    /* Disconnect from peripheral, set connected state to null */
+    const disconnect = async () => {
+        if(connected?.id) {
+            try {
+                await BleManager?.disconnect(connected.id);
+                setConnected(null);
+            } catch(error) {
+                console.log("Disconnect: ", error)
+            }
+
+        }
+
+    }
+
+    /* Forget device, disconnect from peripheral, remove saved peripheral ID */
+    const forgetDevice = async () => {
+        try {
+            await disconnect();
+            await removeSavedPrphId()
+        } catch(error) {
+            console.log("forgetDevcie: ", error)
+        }
+
+    }
+
+    /* Initialize Ble Manager, reconnect to previously connected device */
+    /* Listen for peripherals discovered, set discovered state */
+    /* Listen for disconnect, set connected state to null */
+    /* Listen for app state change, reconnect to previously connected device */
+    /* Remove listeners on unmount */
+    useEffect(() => {
+        const init = async () => {
+            await initBleManager();
+            if(await getSavedPrphId()) {
+                await reconnect()
+            }
+        }
+        init();
+
+
+        const onDiscover = BleManager?.onDiscoverPeripheral((peripheral) => {
+            setDiscovered((prevPeripheral) =>{
+                if(prevPeripheral.find((p) => p.id === peripheral.id)) {
+                    return prevPeripheral;
+                }
+                return [...prevPeripheral, peripheral];
+            });
+        });
+        
+        const disconnectListener = BleManager?.onDisconnectPeripheral(async() => {
+            console.log("Disconnected");
+            setConnected(null);
+            await reconnect();
+        })
+
+        const AppStateListener = AppState.addEventListener("change", async(state) => {
+           if(state === "active") {
+            const savedId = await getSavedPrphId()
+            if(!savedId)return;
+            const isConnected = await BleManager?.isPeripheralConnected(savedId);
+            if(!isConnected) {
+                await reconnect();
+            }
+           }
+        });
+
+    
+        return () =>  {
+            if(!onDiscover || !disconnectListener) return;
+            disconnectListener.remove();
+            onDiscover.remove();
+            AppStateListener.remove();
+        }
+
+    },[])
+
+
+    return (
+        <BleContext.Provider value={{
+            initialized,
+            connected,
+            discovered,
+            startScan,
+            stopScan,
+            connectToPeripheral,
+            disconnect,
+            forgetDevice
+        }}>
+            {children}
+        </BleContext.Provider>
+    );
+
+};
+export const useBle = () => useContext(BleContext);
