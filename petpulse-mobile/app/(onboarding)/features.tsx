@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { HeartPulse, Activity, MapPin, Bell } from "lucide-react-native";
 
@@ -7,6 +7,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
+/* ----------------------------- Feature Card ----------------------------- */
 type FeatureCardProps = {
   icon: React.ComponentType<any>;
   title: string;
@@ -25,24 +26,28 @@ function FeatureCard({
   cardBorder,
 }: FeatureCardProps) {
   return (
-    <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-      <View style={styles.cardHeader}>
+    <View
+      className="rounded-3xl border-2 p-4"
+      style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+    >
+      <View className="flex-row items-center gap-3 mb-2">
         <IconComp size={20} color={iconColor} />
-        <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+        <ThemedText type="defaultSemiBold" className="text-base">
           {title}
         </ThemedText>
       </View>
 
-      <ThemedText style={styles.cardDesc}>{description}</ThemedText>
+      <ThemedText className="opacity-80">{description}</ThemedText>
     </View>
   );
 }
 
 export default function FeaturesScreen() {
-  // Force white-ish look in light mode, still good in dark mode
+  /* ------------------------------- Theme ------------------------------- */
   const screenBg = useThemeColor({ light: "#FFFFFF", dark: "#151718" }, "background");
   const tint = useThemeColor({}, "tint");
 
+  // Card styling (light + dark)
   const cardBg = useThemeColor(
     { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
     "background"
@@ -52,18 +57,23 @@ export default function FeaturesScreen() {
     "text"
   );
 
+  // Button styling
+  const buttonBg = useThemeColor({ light: "#000000", dark: "#0B0B1A" }, "background");
+
   return (
-    <ThemedView style={[styles.screen, { backgroundColor: screenBg }]}>
-      <View style={styles.header}>
-        <ThemedText type="title" style={styles.title}>
+    <ThemedView className="flex-1 px-8 pt-28 pb-14" style={{ backgroundColor: screenBg }}>
+      {/* ------------------------------- Header ------------------------------- */}
+      <View className="items-center mb-2">
+        <ThemedText type="title" className="mb-4">
           Welcome to PetPulse
         </ThemedText>
-        <ThemedText style={styles.subtitle}>
-        The future of pet health is here
+        <ThemedText className="text-center opacity-90">
+          The future of pet health is here
         </ThemedText>
       </View>
 
-      <View style={styles.cards}>
+      {/* ---------------------------- Feature Cards ---------------------------- */}
+      <View className="flex-1 justify-center mt-2" style={{ gap: 15 }}>
         <FeatureCard
           icon={HeartPulse}
           title="Health Monitoring"
@@ -101,68 +111,17 @@ export default function FeaturesScreen() {
         />
       </View>
 
+      {/* --------------------------- Get Started Button -------------------------- */}
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: "black" }]}
+        className="h-14 rounded-3xl items-center justify-center mt-4 w-full"
+        style={{ backgroundColor: buttonBg }}
         onPress={() => router.replace("/(tabs)")}
         activeOpacity={0.85}
       >
-        <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+        <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
           Get Started
         </ThemedText>
       </TouchableOpacity>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 110,
-    paddingBottom: 60,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  title: {
-    marginBottom: 15,
-  },
-  subtitle: {
-    textAlign: "center",
-    opacity: 0.9,
-  },
-  cards: {
-    gap: 15,
-    marginTop: 6,
-    flex: 1,
-    justifyContent: "center",
-  },
-  card: {
-    borderRadius: 30,
-    borderWidth: 3,
-    padding: 15,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 16,
-  },
-  cardDesc: {
-    opacity: 0.75,
-  },
-  button: {
-    height: 54,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 14,
-  },
-  buttonText: {
-    color: "white",
-  },
-});
