@@ -66,8 +66,8 @@ export default function Settings() {
     setShowDeviceModal(true);
   };
 
-  const closeDeviceModal = () => {
-    stopScan();
+  const closeDeviceModal = async () => {
+    await stopScan();
     setShowDeviceModal(false);
   };
 
@@ -75,14 +75,11 @@ export default function Settings() {
     setIsConnecting(true);
     try {
       await connectToPeripheral(peripheral);
-      await stopScan();
-      setIsConnecting(false);
-      closeDeviceModal();
     } catch (error) {
       console.error("onConnect: ", error);
     } finally {
       setIsConnecting(false);
-      closeDeviceModal();
+      await closeDeviceModal();
     }
   };
 
@@ -93,7 +90,7 @@ export default function Settings() {
       console.error("onForget: ", error);
     } finally {
       setShowForgetAlert(true);
-      closeDeviceModal();
+      await closeDeviceModal();
     }
   };
 

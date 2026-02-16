@@ -142,6 +142,11 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Connected", peripheral.id);
     } catch (error) {
       setConnected(null);
+      try {
+        await BleManager?.disconnect(peripheral.id);
+      } catch (error) {
+        console.log("Error Disconnecting: ", error);
+      }
       console.log("connectToPeripheral: ", error);
     }
   };
