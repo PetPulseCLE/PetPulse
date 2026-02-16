@@ -45,7 +45,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const reconnecting = useRef(false);
 
   /* Reject promise every 8 seconds for connect to race against */
-  const delay = (ms: number): Promise<void> => {
+  const timeout = (ms: number): Promise<void> => {
     return new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Timeout")), ms),
     );
@@ -58,7 +58,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const connectWithTimeout = (peripheral_id: string): Promise<void> => {
     return Promise.race([
       BleManager?.connect(peripheral_id),
-      delay(8000),
+      timeout(8000), // 8 seconds to connect to peripheral
     ]) as Promise<void>;
   };
 
@@ -126,9 +126,14 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   /* Connect to peripheral, save its ID for reconnection, set connected state */
   const connectToPeripheral = async (peripheral: Peripheral) => {
     try {
-      await BleManager?.connect(peripheral.id);
+      await connectWithTimeout(peripheral.id);
 
       const peripheral_info = await BleManager?.retrieveServices(peripheral.id);
+
+      /* If peripheral info is not found, clear connections */
+      if (!peripheral_info) {
+        await BleManager?.disconnect(peripheral.id);
+      }
 
       setConnected(peripheral_info ?? null);
       await setSavedPrphId(peripheral.id);
@@ -175,6 +180,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
             setConnected(null);
             setReconnectFailed(true);
             try {
+              // Clear all connections before attempting to reconnect
               await BleManager?.disconnect(bonded_prph_id);
             } catch (error) {
               console.log("Error Disconnecting: ", error);
@@ -184,6 +190,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           setReconnectFailed(true);
           try {
+            // Clear all connections before attempting to reconnect
             await BleManager?.disconnect(bonded_prph_id);
           } catch (error) {
             console.log("Error Disconnecting: ", error);
@@ -227,9 +234,11 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const init = async () => {
       await initBleManager();
-      if (await getSavedPrphId()) {
+      const savedId = await getSavedPrphId();
+      if (savedId) {
         await reconnect();
-      } else if (!(await getSavedPrphId()) && !connected) {
+      } else {
+        /* Alert User to connect device if no saved device (Initial App Load) */
         Alert.alert("No Harness Connected", "Please connect a harness", [
           {
             text: "Scan for Devices",
@@ -251,6 +260,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     };
     init();
 
+    /* Listen for peripherals discovered, set discovered state */
     const onDiscover = BleManager?.onDiscoverPeripheral((peripheral) => {
       setDiscovered((prevPeripheral) => {
         if (prevPeripheral.find((p) => p.id === peripheral.id)) {
@@ -260,12 +270,14 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       });
     });
 
+    /* Listen for disconnect, attempt to reconnect */
     const disconnectListener = BleManager?.onDisconnectPeripheral(async () => {
       console.log("Disconnected");
       setConnected(null);
       await reconnect();
     });
 
+    /* Listen for app state change, attempt reconnect */
     const AppStateListener = AppState.addEventListener(
       "change",
       async (state) => {
@@ -281,9 +293,8 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     return () => {
-      if (!onDiscover || !disconnectListener) return;
-      disconnectListener.remove();
-      onDiscover.remove();
+      disconnectListener?.remove();
+      onDiscover?.remove();
       AppStateListener.remove();
     };
   }, []);

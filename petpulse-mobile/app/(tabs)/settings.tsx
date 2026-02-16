@@ -73,10 +73,17 @@ export default function Settings() {
 
   const onConnect = async (peripheral: Peripheral) => {
     setIsConnecting(true);
-    await connectToPeripheral(peripheral);
-    await stopScan();
-    setIsConnecting(false);
-    closeDeviceModal();
+    try {
+      await connectToPeripheral(peripheral);
+      await stopScan();
+      setIsConnecting(false);
+      closeDeviceModal();
+    } catch (error) {
+      console.log("onConnect: ", error);
+    } finally {
+      setIsConnecting(false);
+      closeDeviceModal();
+    }
   };
 
   const onForget = async () => {
@@ -86,10 +93,10 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    if (modalState === "true") {
+    if (modalStateBool) {
       openDeviceModal();
     }
-  }, [modalState]);
+  }, []);
 
   return (
     <View className="flex flex-col pt-5 bg-background h-full">
@@ -241,7 +248,10 @@ export default function Settings() {
                       </Text>
                       <Text className="text-secondary-foreground">
                         Service UUIDs:{" "}
-                        {"[" + connected?.advertising?.serviceUUIDs + "]"}
+                        {"[" +
+                          (connected?.advertising?.serviceUUIDs?.join(", ") ??
+                            "") +
+                          "]"}
                       </Text>
                       <DialogClose asChild>
                         <Button
@@ -304,7 +314,10 @@ export default function Settings() {
                         </Text>
                         <Text className="text-secondary-foreground">
                           Service UUIDs:{" "}
-                          {"[" + peripheral.advertising.serviceUUIDs + "]"}
+                          {"[" +
+                            (peripheral.advertising.serviceUUIDs?.join(", ") ??
+                              "") +
+                            "]"}
                         </Text>
                         <DialogClose asChild>
                           <Button
