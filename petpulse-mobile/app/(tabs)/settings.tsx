@@ -56,7 +56,7 @@ export default function Settings() {
       try {
         await startScan();
       } catch (error) {
-        console.log("startScan: ", error);
+        console.error("startScan: ", error);
       }
     }
   };
@@ -79,7 +79,7 @@ export default function Settings() {
       setIsConnecting(false);
       closeDeviceModal();
     } catch (error) {
-      console.log("onConnect: ", error);
+      console.error("onConnect: ", error);
     } finally {
       setIsConnecting(false);
       closeDeviceModal();
@@ -87,9 +87,14 @@ export default function Settings() {
   };
 
   const onForget = async () => {
-    await forgetDevice();
-    setShowForgetAlert(true);
-    closeDeviceModal();
+    try {
+      await forgetDevice();
+    } catch (error) {
+      console.error("onForget: ", error);
+    } finally {
+      setShowForgetAlert(true);
+      closeDeviceModal();
+    }
   };
 
   useEffect(() => {

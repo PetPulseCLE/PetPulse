@@ -133,11 +133,11 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       /* If peripheral info is not found, clear connections */
       if (!peripheral_info) {
         await BleManager?.disconnect(peripheral.id);
+        return;
       }
 
-      setConnected(peripheral_info ?? null);
+      setConnected(peripheral_info);
       await setSavedPrphId(peripheral.id);
-
       setReconnectFailed(false);
       console.log("Connected", peripheral.id);
     } catch (error) {
@@ -222,7 +222,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       await disconnect();
       await removeSavedPrphId();
     } catch (error) {
-      console.log("forgetDevcie: ", error);
+      console.log("forgetDevice: ", error);
     }
   };
 
