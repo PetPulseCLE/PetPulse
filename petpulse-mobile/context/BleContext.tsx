@@ -46,6 +46,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [discovered, setDiscovered] = useState<Peripheral[]>([]);
   const [reconnectFailed, setReconnectFailed] = useState(false);
+  const userDisconnectedRef = useRef(false);
   const [initialized, setInitialized] = useState(false);
   const reconnecting = useRef(false);
 
@@ -224,6 +225,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const disconnect = async () => {
     if (connectedRef.current?.id) {
       try {
+        userDisconnectedRef.current = true;
         await BleManager?.disconnect(connectedRef.current.id);
         setConnectedDevice(null);
       } catch (error) {
@@ -290,6 +292,10 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     const disconnectListener = BleManager?.onDisconnectPeripheral(async () => {
       console.log("Disconnected");
       setConnectedDevice(null);
+      if (userDisconnectedRef.current) {
+        userDisconnectedRef.current = false;
+        return;
+      }
       await reconnect();
     });
 
