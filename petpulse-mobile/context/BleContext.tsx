@@ -5,6 +5,7 @@
 let BleManager: typeof import("react-native-ble-manager").default | null = null;
 
 if (Platform.OS === "ios" || Platform.OS === "android") {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require("react-native-ble-manager").default;
 }
 
