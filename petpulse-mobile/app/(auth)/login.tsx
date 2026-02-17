@@ -101,8 +101,7 @@ export default function LoginScreen() {
         const msg = error.message.toLowerCase();
         const isAuthFailure =
           msg.includes("invalid login credentials") ||
-          msg.includes("invalid_credentials") ||
-          msg.includes("email not confirmed");
+          msg.includes("invalid_credentials");
         if (
           msg.includes("invalid login credentials") ||
           msg.includes("invalid_credentials")
