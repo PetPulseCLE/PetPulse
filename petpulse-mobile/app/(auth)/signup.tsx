@@ -8,14 +8,13 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Link, router } from "expo-router";
+import { Link, router, Redirect, useRouter } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { Ionicons } from "@expo/vector-icons";
-
-
 
 function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email.trim());
@@ -25,9 +24,11 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
+  const router = useRouter();
 
   const canSubmit = useMemo(() => {
     const e = email.trim();
@@ -41,36 +42,37 @@ export default function SignupScreen() {
   }, [email, password, confirmPassword]);
 
   const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+  const placeholder = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "text",
+  );
 
   const cardBg = useThemeColor(
     { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
-    "background"
+    "background",
   );
   const cardBorder = useThemeColor(
     { light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" },
-    "text"
+    "text",
   );
 
   const inputBg = useThemeColor(
     { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
-    "background"
+    "background",
   );
   const inputBorder = useThemeColor(
     { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
-    "text"
+    "text",
   );
   const brandBlack = useThemeColor(
     { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
-    "text"
+    "text",
   );
-  
+
   const spinnerColor = "#FFFFFF";
-  
 
   async function onSubmit() {
     setError(null);
-
     const trimmedEmail = email.trim();
 
     // Client-side validation
@@ -90,123 +92,145 @@ export default function SignupScreen() {
       setError("Passwords do not match.");
       return;
     }
-
     setSubmitting(true);
 
     try {
-      // Mocked request delay
-      await new Promise((resolve) => setTimeout(resolve, 900));
-
-      // Mocked failure example
-      if (trimmedEmail.toLowerCase().includes("fail")) {
-        setError("Sign up failed. Please try a different email.");
-        return;
+      const { data, error } = await signUp(trimmedEmail, password);
+      if (error) {
+        if (
+          error.message.includes("already registered") ||
+          error.message.includes("already exists")
+        ) {
+          setError("This email is already registered. Please sign in instead.");
+        } else {
+          setError(error.message);
+        }
+      } else {
+        router.replace("/(tabs)"); // AR 2026-02-17 this will be swapped out for Onboarding process pending completion
       }
-
-      // Success (stub): route user to the main app flow
-      router.replace("/(tabs)");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-  <TouchableWithoutFeedback onPress = {Keyboard.dismiss} accessible= {false}>
-    <ThemedView style={styles.screen}>
-      <View style={styles.header}>
-        <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
-        <Ionicons name="heart" size={30} color="white" />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <ThemedView style={styles.screen}>
+        <View style={styles.header}>
+          <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+            <Ionicons name="heart" size={30} color="white" />
+          </View>
+          <ThemedText type="title" style={styles.appName}>
+            Create Account
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Sign up with email and password to get started.
+          </ThemedText>
         </View>
-        <ThemedText type="title" style={styles.appName}>
-          Create Account
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Sign up with email and password to get started.
-        </ThemedText>
-      </View>
 
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-        <ThemedText type="defaultSemiBold" style={styles.label}>
-          Email
-        </ThemedText>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          placeholderTextColor={placeholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          textContentType="username"
-          editable={!submitting}
+        <View
           style={[
-            styles.input,
-            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+            styles.card,
+            { backgroundColor: cardBg, borderColor: cardBorder },
           ]}
-        />
-
-        <ThemedText type="defaultSemiBold" style={styles.label}>
-          Password
-        </ThemedText>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Create a password (min 6 chars)"
-          placeholderTextColor={placeholder}
-          secureTextEntry
-          textContentType="newPassword"
-          editable={!submitting}
-          style={[
-            styles.input,
-            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
-          ]}
-          
-        />
-
-        <ThemedText type="defaultSemiBold" style={styles.label}>
-          Confirm Password
-        </ThemedText>
-        <TextInput
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder="Re-enter your password"
-          placeholderTextColor={placeholder}
-          secureTextEntry
-          textContentType="newPassword"
-          editable={!submitting}
-          style={[
-            styles.input,
-            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
-          ]}
-        />
-
-        {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
-
-        <TouchableOpacity
-          onPress={onSubmit}
-          disabled={!canSubmit || submitting}
-          style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
         >
-          {submitting ? (
-            <ActivityIndicator color ={spinnerColor}/>
-          ) : (
-            <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-              Sign Up
-            </ThemedText>
-          )}
-        </TouchableOpacity>
-      </View>
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Email
+          </ThemedText>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={placeholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            editable={!submitting}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
 
-      <View style={styles.footer}>
-        <ThemedText style={styles.footerText}>
-          Already have an account?{" "}
-          <Link href="/login" replace>
-            <ThemedText type="link">Log in</ThemedText>
-          </Link>
-        </ThemedText>
-      </View>
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Password
+          </ThemedText>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Create a password (min 6 chars)"
+            placeholderTextColor={placeholder}
+            secureTextEntry
+            textContentType="newPassword"
+            editable={!submitting}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Confirm Password
+          </ThemedText>
+          <TextInput
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Re-enter your password"
+            placeholderTextColor={placeholder}
+            secureTextEntry
+            textContentType="newPassword"
+            editable={!submitting}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          {error ? (
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          ) : null}
+
+          <TouchableOpacity
+            onPress={onSubmit}
+            disabled={!canSubmit || submitting}
+            style={[
+              styles.button,
+              (!canSubmit || submitting) && styles.buttonDisabled,
+            ]}
+          >
+            {submitting ? (
+              <ActivityIndicator color={spinnerColor} />
+            ) : (
+              <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                Sign Up
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <ThemedText style={styles.footerText}>
+            Already have an account?{" "}
+            <Link href="/login" replace>
+              <ThemedText type="link">Log in</ThemedText>
+            </Link>
+          </ThemedText>
+        </View>
       </ThemedView>
-      </TouchableWithoutFeedback>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -227,8 +251,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    
-    
   },
   logoIcon: {
     color: "white",
@@ -247,7 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-
   },
   label: {
     marginBottom: 6,
@@ -257,7 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-   
+
     marginBottom: 14,
   },
   errorText: {
