@@ -115,7 +115,7 @@ export default function FeaturesScreen() {
       <TouchableOpacity
         className="h-14 rounded-3xl items-center justify-center mt-4 w-full"
         style={{ backgroundColor: buttonBg }}
-        onPress={() => router.push("/(onboarding)/add-pet")}
+        onPress={() => router.replace("/(onboarding)/add-pet")}
 
         activeOpacity={0.85}
       >
