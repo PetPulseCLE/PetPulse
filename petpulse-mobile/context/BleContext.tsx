@@ -38,7 +38,12 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
 ======================================================================= */
 
+  /* ref to store connected device in context to prevent re-render */
+  const connectedRef = useRef<Peripheral | null>(null);
+
+  /* state to store connected device in context to trigger sub-page re-render */
   const [connected, setConnected] = useState<Peripheral | null>(null);
+
   const [discovered, setDiscovered] = useState<Peripheral[]>([]);
   const [reconnectFailed, setReconnectFailed] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -58,7 +63,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const connectWithTimeout = (peripheral_id: string): Promise<void> => {
     return Promise.race([
       BleManager?.connect(peripheral_id),
-      timeout(8000), // 8 seconds to connect to peripheral
+      timeout(8000),
     ]) as Promise<void>;
   };
 
@@ -71,6 +76,12 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       setInitialized(false);
       console.log("initBleManager: ", error);
     }
+  };
+
+  /* Update ref for context to prevent re-render and state to trigger sub-page re-render */
+  const setConnectedDevice = (peripheral: Peripheral | null) => {
+    connectedRef.current = peripheral;
+    setConnected(peripheral);
   };
 
   /* Save a peripherals ID */
@@ -136,12 +147,12 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      setConnected(peripheral_info);
+      setConnectedDevice(peripheral_info);
       await setSavedPrphId(peripheral.id);
       setReconnectFailed(false);
       console.log("Connected", peripheral.id);
     } catch (error) {
-      setConnected(null);
+      setConnectedDevice(null);
       try {
         await BleManager?.disconnect(peripheral.id);
       } catch (error) {
@@ -158,7 +169,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     
     */
   const reconnect = async () => {
-    if (!connected && !reconnecting.current) {
+    if (!connectedRef.current && !reconnecting.current) {
       reconnecting.current = true;
       for (let i = 1; i <= 10; i++) {
         /* Check for previously connected device */
@@ -177,12 +188,12 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
             await BleManager?.retrieveServices(bonded_prph_id);
 
           if (peripheral_info) {
-            setConnected(peripheral_info);
+            setConnectedDevice(peripheral_info);
             reconnecting.current = false;
             setReconnectFailed(false);
             return;
           } else {
-            setConnected(null);
+            setConnectedDevice(null);
             setReconnectFailed(true);
             try {
               // Clear all connections before attempting to reconnect
@@ -211,10 +222,10 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
   /* Disconnect from peripheral, set connected state to null */
   const disconnect = async () => {
-    if (connected?.id) {
+    if (connectedRef.current?.id) {
       try {
-        await BleManager?.disconnect(connected.id);
-        setConnected(null);
+        await BleManager?.disconnect(connectedRef.current.id);
+        setConnectedDevice(null);
       } catch (error) {
         console.log("Disconnect: ", error);
       }
@@ -278,7 +289,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     /* Listen for disconnect, attempt to reconnect */
     const disconnectListener = BleManager?.onDisconnectPeripheral(async () => {
       console.log("Disconnected");
-      setConnected(null);
+      setConnectedDevice(null);
       await reconnect();
     });
 
