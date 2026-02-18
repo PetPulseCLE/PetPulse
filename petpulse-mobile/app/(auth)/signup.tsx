@@ -95,16 +95,22 @@ export default function SignupScreen() {
     setSubmitting(true);
 
     try {
-      const { data, error } = await signUp(trimmedEmail, password);
-      if (error) {
+      const { data: signUpData, error: signUpError } = await signUp(
+        trimmedEmail,
+        password,
+      );
+      if (signUpError) {
         if (
-          error.message.includes("already registered") ||
-          error.message.includes("already exists")
+          signUpError.message.includes("already registered") ||
+          signUpError.message.includes("already exists")
         ) {
-          setError("This email is already registered. Please sign in instead.");
+          setError("Unable to create account. Please try again or sign in.");
         } else {
-          setError(error.message);
+          setError(signUpError.message);
         }
+      } else if (!signUpData.session) {
+        // Email confirmation required — inform the user
+        setError("Check your inbox to confirm your email before signing in.");
       } else {
         router.replace("/(tabs)"); // AR 2026-02-17 this will be swapped out for Onboarding process pending completion
       }

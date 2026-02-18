@@ -28,16 +28,28 @@ export default function LoginScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const lockoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { signIn } = useAuth();
 
   React.useEffect(() => {
+    if (failedAttempts < 5) return;
+    setError(
+      "Too many failed attempts. Please try again after 5 minutes.",
+    );
+    if (lockoutTimeoutRef.current) clearTimeout(lockoutTimeoutRef.current);
+    lockoutTimeoutRef.current = setTimeout(() => {
+      lockoutTimeoutRef.current = null;
+      setFailedAttempts(0);
+      setError(null);
+    }, 5 * 60 * 1000);
     return () => {
-      if (lockoutTimeoutRef.current) clearTimeout(lockoutTimeoutRef.current);
+      if (lockoutTimeoutRef.current) {
+        clearTimeout(lockoutTimeoutRef.current);
+        lockoutTimeoutRef.current = null;
+      }
     };
-  }, []);
+  }, [failedAttempts]);
 
   const canSubmit = useMemo(() => {
     return (
@@ -101,12 +113,8 @@ export default function LoginScreen() {
         const msg = error.message.toLowerCase();
         const isAuthFailure =
           msg.includes("invalid login credentials") ||
-          msg.includes("invalid_credentials") ||
-          msg.includes("email not confirmed");
-        if (
-          msg.includes("invalid login credentials") ||
-          msg.includes("invalid_credentials")
-        ) {
+          msg.includes("invalid_credentials");
+        if (isAuthFailure) {
           setError("Invalid email or password. Please try again.");
         } else if (msg.includes("email not confirmed")) {
           setError(
@@ -118,25 +126,7 @@ export default function LoginScreen() {
           setError(error.message);
         }
         if (isAuthFailure) {
-          setFailedAttempts((prev) => {
-            const next = prev + 1;
-            if (next >= 5) {
-              setError(
-                "Too many failed attempts. Please try again after 5 minutes.",
-              );
-              if (lockoutTimeoutRef.current)
-                clearTimeout(lockoutTimeoutRef.current);
-              lockoutTimeoutRef.current = setTimeout(
-                () => {
-                  lockoutTimeoutRef.current = null;
-                  setFailedAttempts(0);
-                  setError(null);
-                },
-                5 * 60 * 1000,
-              );
-            }
-            return next;
-          });
+          setFailedAttempts((prev) => prev + 1);
         }
       } else {
         setFailedAttempts(0);
