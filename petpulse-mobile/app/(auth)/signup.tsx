@@ -112,7 +112,7 @@ export default function SignupScreen() {
         // Email confirmation required — inform the user
         setError("Check your inbox to confirm your email before signing in.");
       } else {
-        router.replace("/(tabs)"); // AR 2026-02-17 this will be swapped out for Onboarding process pending completion
+        router.replace("/(onboarding)/features");
       }
     } finally {
       setSubmitting(false);
