@@ -217,10 +217,10 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             onPress={onSubmit}
-            disabled={!canSubmit || submitting}
+            disabled={!canSubmit || submitting || failedAttempts >= 5}
             style={[
               styles.button,
-              (!canSubmit || submitting) && styles.buttonDisabled,
+              (!canSubmit || submitting || failedAttempts >= 5) && styles.buttonDisabled,
             ]}
           >
             {submitting ? (
