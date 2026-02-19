@@ -192,6 +192,10 @@ export default function LoginScreen() {
             secureTextEntry
             textContentType="password"
             editable={!submitting}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (canSubmit && !submitting && failedAttempts < 5) onSubmit();
+            }}
             style={[
               styles.input,
               {

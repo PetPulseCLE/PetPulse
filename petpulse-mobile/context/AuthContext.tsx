@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
+
+function getEmailRedirectTo(): string {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:3000/auth/callback';
+  }
+  return 'petpulse://auth/callback';
+}
 
 type AuthContextType = {
   user: User | null;
@@ -19,23 +27,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (event === 'INITIAL_SESSION') {
-        setLoading(false);
+    let mounted = true;
+
+    const applySession = (session: Session | null) => {
+      if (!session?.user) {
+        setSession(null);
+        setUser(null);
+        return;
       }
+      // Require email confirmation; otherwise sign out and clear session
+      if (!session.user.email_confirmed_at) {
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        return;
+      }
+      setSession(session);
+      setUser(session.user);
+    };
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+      applySession(initialSession);
+    }).finally(() => {
+      if (mounted) setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      applySession(session);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    return await supabase.auth.signUp({ email, password });
+    return await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: getEmailRedirectTo() },
+    });
   };
 
   const signIn = async (email: string, password: string) => {
-    return await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) return { data, error };
+    // Require email confirmation before allowing login
+    if (data.user && !data.user.email_confirmed_at) {
+      await supabase.auth.signOut();
+      return {
+        data: null,
+        error: { message: "Email not confirmed" },
+      };
+    }
+    return { data, error };
   };
 
   const signOut = async () => {

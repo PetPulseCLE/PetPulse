@@ -20,6 +20,11 @@ function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email.trim());
 }
 
+const MIN_PASSWORD_LENGTH = 6;
+function isPasswordValid(pw: string) {
+  return pw.length >= MIN_PASSWORD_LENGTH;
+}
+
 export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,11 +40,20 @@ export default function SignupScreen() {
     return (
       e.length > 0 &&
       isValidEmail(e) &&
-      password.length >= 6 &&
-      confirmPassword.length >= 6 &&
+      isPasswordValid(password) &&
+      isPasswordValid(confirmPassword) &&
       password === confirmPassword
     );
   }, [email, password, confirmPassword]);
+
+  const passwordValid = useMemo(
+    () => isPasswordValid(password),
+    [password],
+  );
+  const confirmValid = useMemo(
+    () => passwordValid && password === confirmPassword && confirmPassword.length > 0,
+    [password, confirmPassword, passwordValid],
+  );
 
   const inputText = useThemeColor({}, "text");
   const placeholder = useThemeColor(
@@ -64,6 +78,7 @@ export default function SignupScreen() {
     { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
     "text",
   );
+  const passwordValidBorder = "#22c55e";
   const brandBlack = useThemeColor(
     { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
     "text",
@@ -84,7 +99,7 @@ export default function SignupScreen() {
       setError("Please enter a valid email address.");
       return;
     }
-    if (password.length < 6) {
+    if (!isPasswordValid(password)) {
       setError("Password must be at least 6 characters.");
       return;
     }
@@ -179,10 +194,15 @@ export default function SignupScreen() {
               {
                 color: inputText,
                 backgroundColor: inputBg,
-                borderColor: inputBorder,
+                borderColor: passwordValid ? passwordValidBorder : inputBorder,
               },
             ]}
           />
+          {!passwordValid ? (
+            <ThemedText style={styles.passwordHint}>
+              Password must be at least 6 characters.
+            </ThemedText>
+          ) : null}
 
           <ThemedText type="defaultSemiBold" style={styles.label}>
             Confirm Password
@@ -195,12 +215,16 @@ export default function SignupScreen() {
             secureTextEntry
             textContentType="newPassword"
             editable={!submitting}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (canSubmit && !submitting) onSubmit();
+            }}
             style={[
               styles.input,
               {
                 color: inputText,
                 backgroundColor: inputBg,
-                borderColor: inputBorder,
+                borderColor: confirmValid ? passwordValidBorder : inputBorder,
               },
             ]}
           />
@@ -286,6 +310,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
 
     marginBottom: 14,
+  },
+  passwordHint: {
+    fontSize: 13,
+    opacity: 0.8,
+    marginTop: -8,
+    marginBottom: 6,
   },
   errorText: {
     color: "#B00020",
