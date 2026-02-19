@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   ActivityIndicator,
@@ -32,7 +32,7 @@ export default function LoginScreen() {
   const lockoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { signIn } = useAuth();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (failedAttempts < 5) return;
     setError(
       "Too many failed attempts. Please try again after 5 minutes.",

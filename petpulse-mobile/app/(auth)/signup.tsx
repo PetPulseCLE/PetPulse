@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Link, router, Redirect, useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
 import { ThemedText } from "@/components/themed-text";
@@ -31,7 +31,7 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
 
@@ -184,6 +184,7 @@ export default function SignupScreen() {
           <TextInput
             value={password}
             onChangeText={setPassword}
+            onBlur={() => setPasswordTouched(true)}
             placeholder="Create a password (min 6 chars)"
             placeholderTextColor={placeholder}
             secureTextEntry
@@ -198,7 +199,7 @@ export default function SignupScreen() {
               },
             ]}
           />
-          {!passwordValid ? (
+          {(passwordTouched || password.length > 0) && !passwordValid ? (
             <ThemedText style={styles.passwordHint}>
               Password must be at least 6 characters.
             </ThemedText>

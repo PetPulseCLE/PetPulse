@@ -6,7 +6,8 @@ import { Session, User } from '@supabase/supabase-js';
 function getEmailRedirectTo(): string {
   if (Platform.OS === 'web') {
     const origin =
-      typeof window !== 'undefined' ? window.location.origin : '';
+      (typeof window !== 'undefined' && window.location?.origin) ||
+      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
     return `${origin}/auth/callback`;
   }
   return 'petpulse://auth/callback';
@@ -37,9 +38,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         return;
       }
-      // Require email confirmation; otherwise sign out and clear session
+      // Require email confirmation; only set session when confirmed (sign-out is handled in signIn/signUp flows)
       if (!session.user.email_confirmed_at) {
-        supabase.auth.signOut();
         setSession(null);
         setUser(null);
         return;

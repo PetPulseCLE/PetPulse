@@ -68,14 +68,27 @@ export default function AuthCallbackScreen() {
       return;
     }
     let mounted = true;
+    const timeoutMs = 25000;
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        setErrorMessage("Timed out confirming email");
+        setStatus("error");
+      }
+    }, timeoutMs);
+    const handleAndClearTimeout = (url: string | null) => {
+      handleUrl(url).finally(() => {
+        if (mounted) clearTimeout(timeoutId);
+      });
+    };
     Linking.getInitialURL().then((url) => {
-      if (mounted && url) handleUrl(url);
+      if (mounted && url) handleAndClearTimeout(url);
     });
     const sub = Linking.addEventListener("url", (event) => {
-      if (mounted) handleUrl(event.url);
+      if (mounted) handleAndClearTimeout(event.url);
     });
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       sub.remove();
     };
   }, [handleUrl]);
