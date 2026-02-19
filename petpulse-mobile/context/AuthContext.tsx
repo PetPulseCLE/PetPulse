@@ -5,7 +5,9 @@ import { Session, User } from '@supabase/supabase-js';
 
 function getEmailRedirectTo(): string {
   if (Platform.OS === 'web') {
-    return 'http://localhost:3000/auth/callback';
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/auth/callback`;
   }
   return 'petpulse://auth/callback';
 }
