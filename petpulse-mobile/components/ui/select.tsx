@@ -146,7 +146,6 @@ function SelectLabel({
 
 function SelectItem({
   className,
-  children,
   ...props
 }: SelectPrimitive.ItemProps & React.RefAttributes<SelectPrimitive.ItemRef>) {
   return (

@@ -1,7 +1,10 @@
 import React, { useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
+  ScrollView,
   TextInput,
   View,
   Keyboard,
@@ -53,7 +56,7 @@ const CAT_BREEDS = [
   "Scottish Fold",
 ];
 
-function toOption(value: string, label?: string): Option {
+function toOption(value: string, label?: string): Option | undefined {
   if (!value) return undefined;
   return { value, label: label ?? value };
 }
@@ -168,20 +171,31 @@ export default function AddPetScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ThemedView className="flex-1 px-6 pt-20 pb-8">
-        {/* Header */}
-        <View className="items-center mb-6">
-          <ThemedText type="title">Add Your Pet</ThemedText>
-          <ThemedText style={{ opacity: 0.85 }} className="text-center mt-2">
-          A few details for tailored care
-          </ThemedText>
-        </View>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={24}
+      >
+        <ThemedView className="flex-1 px-6 pt-20 pb-8">
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
+            {/* Header */}
+            <View className="items-center mb-6">
+              <ThemedText type="title">Add Your Pet</ThemedText>
+              <ThemedText style={{ opacity: 0.85 }} className="text-center mt-2">
+                A few details for tailored care
+              </ThemedText>
+            </View>
 
-        {/* Form Card */}
-        <View
-          className="rounded-2xl p-4 border"
-          style={{ backgroundColor: cardBg, borderColor: cardBorder }}
-        >
+            {/* Form Card */}
+            <View
+              className="w-full rounded-2xl p-4 border"
+              style={{ backgroundColor: cardBg, borderColor: cardBorder }}
+            >
           {/* Pet Name */}
           <ThemedText type="defaultSemiBold" className="mb-2">
             Pet’s Name
@@ -191,7 +205,7 @@ export default function AddPetScreen() {
             onChangeText={setPetName}
             placeholder="ex: Albina"
             placeholderTextColor={placeholder}
-            style={{ color: inputText, backgroundColor: inputBg, borderColor: inputBorder }}
+            style={{ color: inputText, backgroundColor: inputBg, borderColor: inputBorder, fontSize: 16 }}
             className="h-12 rounded-xl px-4 border mb-4"
             returnKeyType="done"
           />
@@ -218,7 +232,7 @@ export default function AddPetScreen() {
               setIsMixed(false);
             }}
           >
-            <SelectTrigger className="mb-4">
+            <SelectTrigger className="mb-4 w-full">
               <SelectValue placeholder="Choose Dog or Cat" />
             </SelectTrigger>
 
@@ -242,10 +256,16 @@ export default function AddPetScreen() {
 
           <Select
             value={toOption(breed)}
-            onValueChange={(option) => setBreed(option?.value ?? "")}
+            onValueChange={(option) => {
+              const nextBreed = option?.value ?? "";
+              setBreed(nextBreed);
+              if (secondaryBreed === nextBreed) {
+                setSecondaryBreed("");
+              }
+            }}
             disabled={!species}
           >
-            <SelectTrigger className="mb-3">
+            <SelectTrigger className="mb-3 w-full">
               <SelectValue placeholder={species ? "Select a breed" : "Select species first"} />
             </SelectTrigger>
 
@@ -287,21 +307,32 @@ export default function AddPetScreen() {
 
               <Select
                 value={toOption(secondaryBreed)}
-                onValueChange={(option) => setSecondaryBreed(option?.value ?? "")}
-                disabled={!species}
+                onValueChange={(option) => {
+                  const nextSecondaryBreed = option?.value ?? "";
+                  if (nextSecondaryBreed === breed) {
+                    setSecondaryBreed("");
+                    return;
+                  }
+                  setSecondaryBreed(nextSecondaryBreed);
+                }}
+                disabled={!species || !breed}
               >
-                <SelectTrigger className="mb-4">
-                  <SelectValue placeholder="Select secondary breed" />
+                <SelectTrigger className="mb-4 w-full">
+                  <SelectValue
+                    placeholder={breed ? "Select secondary breed" : "Select primary breed first"}
+                  />
                 </SelectTrigger>
 
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Secondary Breed</SelectLabel>
-                    {breedOptions.map((b) => (
+                    {breedOptions
+                      .filter((b) => b !== breed)
+                      .map((b) => (
                       <SelectItem key={`secondary-${b}`} value={b} label={b}>
                         {b}
                       </SelectItem>
-                    ))}
+                      ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -331,13 +362,16 @@ export default function AddPetScreen() {
           <TextInput
             value={weight}
             onChangeText={(t) => {
-              // keep it numeric-ish
-              setWeight(t.replace(/[^\d.]/g, ""));
+              // Keep digits and a single decimal point.
+              const numericAndDot = t.replace(/[^\d.]/g, "");
+              const [whole = "", fraction] = numericAndDot.split(".");
+              const normalized = fraction === undefined ? whole : `${whole}.${fraction}`;
+              setWeight(normalized);
             }}
             placeholder="ex: 42"
             placeholderTextColor={placeholder}
             keyboardType="decimal-pad"
-            style={{ color: inputText, backgroundColor: inputBg, borderColor: inputBorder }}
+            style={{ color: inputText, backgroundColor: inputBg, borderColor: inputBorder, fontSize: 16 }}
             className="h-12 rounded-xl px-4 border"
           />
 
@@ -347,54 +381,58 @@ export default function AddPetScreen() {
               {error}
             </ThemedText>
           ) : null}
-        </View>
+            </View>
 
-        {/* Continue button pinned bottom */}
-        <Pressable
-          onPress={onContinue}
-          className="mt-6 h-14 rounded-2xl items-center justify-center"
-          style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
-        >
-          <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
-            Continue
-          </ThemedText>
-        </Pressable>
+          </ScrollView>
 
-        {/* DOB modal */}
-        <Modal visible={dobOpen} transparent animationType="fade" onRequestClose={() => setDobOpen(false)}>
+          {/* Continue button pinned below scrollable form */}
           <Pressable
-            className="flex-1 items-center justify-center px-6"
-            onPress={() => setDobOpen(false)}
-            style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
+            onPress={onContinue}
+            className="mt-6 h-14 w-full rounded-2xl items-center justify-center"
+            style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
           >
+            <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+              Continue
+            </ThemedText>
+          </Pressable>
+
+          {/* DOB modal */}
+          <Modal visible={dobOpen} transparent animationType="fade" onRequestClose={() => setDobOpen(false)}>
             <Pressable
-              onPress={() => {}}
-              className="w-full rounded-2xl p-4 border"
-              style={{ backgroundColor: modalBg, borderColor: cardBorder }}
+              className="flex-1 items-center justify-center px-6"
+              onPress={() => setDobOpen(false)}
+              style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
             >
-              <ThemedText type="defaultSemiBold" className="mb-3">
-                Select Date of Birth
-              </ThemedText>
-
-              <DateTimePicker
-                mode="single"
-                date={dob ?? new Date()}
-                onChange={(params) => setDob(toSafeDate(params.date))}
-              />
-
               <Pressable
-                className="mt-6 h-12 rounded-xl items-center justify-center"
-                style={{ backgroundColor: brandBlack }}
-                onPress={() => setDobOpen(false)}
+                onPress={() => {}}
+                className="w-full rounded-2xl p-4 border"
+                style={{ backgroundColor: modalBg, borderColor: cardBorder }}
               >
-                <ThemedText type="defaultSemiBold" style={{ color: "white" }}>  
-                  Done
+                <ThemedText type="defaultSemiBold" className="mb-3">
+                  Select Date of Birth
                 </ThemedText>
+
+                <DateTimePicker
+                  mode="single"
+                  date={dob ?? new Date()}
+                  maxDate={new Date()}
+                  onChange={(params) => setDob(toSafeDate(params.date))}
+                />
+
+                <Pressable
+                  className="mt-6 h-12 rounded-xl items-center justify-center"
+                  style={{ backgroundColor: brandBlack }}
+                  onPress={() => setDobOpen(false)}
+                >
+                  <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+                    Done
+                  </ThemedText>
+                </Pressable>
               </Pressable>
             </Pressable>
-          </Pressable>
-        </Modal>
-      </ThemedView>
+          </Modal>
+        </ThemedView>
+      </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );
 }
