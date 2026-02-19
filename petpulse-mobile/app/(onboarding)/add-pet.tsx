@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -196,14 +197,12 @@ export default function AddPetScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={24}
       >
-        <ThemedView className="flex-1 px-6 pt-20 pb-8 ">
+        <ThemedView className="flex-1 px-6 pt-20 pb-8">
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ flexGrow: 1,
-              justifyContent: "center",
-              paddingBottom: 32, }}
+            contentContainerStyle={{ paddingBottom: 32 }}
           >
             {/* Header */}
             <View className="items-center mb-6">
@@ -254,10 +253,7 @@ export default function AddPetScreen() {
               setIsMixed(false);
             }}
           >
-            <SelectTrigger
-              className="mb-4 w-full"
-              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
-            >
+            <SelectTrigger className="mb-4 w-full">
               <SelectValue placeholder="Choose Dog or Cat" />
             </SelectTrigger>
 
@@ -290,10 +286,7 @@ export default function AddPetScreen() {
             }}
             disabled={!species}
           >
-            <SelectTrigger
-              className="mb-3 w-full"
-              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
-            >
+            <SelectTrigger className="mb-3 w-full">
               <SelectValue placeholder={species ? "Select a breed" : "Select species first"} />
             </SelectTrigger>
 
@@ -345,10 +338,7 @@ export default function AddPetScreen() {
                 }}
                 disabled={!species || !breed}
               >
-                <SelectTrigger
-                  className="mb-4 w-full"
-                  style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
-                >
+                <SelectTrigger className="mb-4 w-full">
                   <SelectValue
                     placeholder={breed ? "Select secondary breed" : "Select primary breed first"}
                   />
@@ -416,18 +406,16 @@ export default function AddPetScreen() {
 
           </ScrollView>
 
-          {/* Continue button hidden while keyboard is open */}
-          {!isKeyboardOpen ? (
-            <Pressable
-              onPress={onContinue}
-              className="mt-6 h-14 w-full rounded-2xl items-center justify-center"
-              style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
-            >
-              <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
-                Continue
-              </ThemedText>
-            </Pressable>
-          ) : null}
+          {/* Continue button pinned below scrollable form */}
+          <Pressable
+            onPress={onContinue}
+            className="mt-6 h-14 w-full rounded-2xl items-center justify-center"
+            style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
+          >
+            <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+              Continue
+            </ThemedText>
+          </Pressable>
 
           {/* DOB modal */}
           <Modal visible={dobOpen} transparent animationType="fade" onRequestClose={() => setDobOpen(false)}>
@@ -441,11 +429,7 @@ export default function AddPetScreen() {
                 className="w-full rounded-2xl p-4 border"
                 style={{ backgroundColor: modalBg, borderColor: cardBorder }}
               >
-                <ThemedText
-                  type="defaultSemiBold"
-                  className="mb-3"
-                  style={isDarkMode ? { color: "#111827" } : undefined}
-                >
+                <ThemedText type="defaultSemiBold" className="mb-3">
                   Select Date of Birth
                 </ThemedText>
 
@@ -453,11 +437,6 @@ export default function AddPetScreen() {
                   mode="single"
                   date={dob ?? new Date()}
                   maxDate={new Date()}
-                  headerTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  weekDaysTextStyle={isDarkMode ? { color: "#4B5563" } : undefined}
-                  calendarTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  todayTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  selectedTextStyle={isDarkMode ? { color: "#FFFFFF" } : undefined}
                   onChange={(params) => setDob(toSafeDate(params.date))}
                 />
 
@@ -473,7 +452,8 @@ export default function AddPetScreen() {
               </Pressable>
             </Pressable>
           </Modal>
-      </ThemedView>
+        </ThemedView>
+      </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );
 }
