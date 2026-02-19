@@ -10,7 +10,10 @@ function getRandomKeyBytes(): Uint8Array {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(bytes);
   } else {
-    for (let i = 0; i < 32; i++) bytes[i] = Math.floor(Math.random() * 256);
+    throw new Error(
+      'supabase-storage: crypto.getRandomValues unavailable. ' +
+      'Install react-native-get-random-values and import it before initializing crypto-dependent modules.'
+    );
   }
   return bytes;
 }
