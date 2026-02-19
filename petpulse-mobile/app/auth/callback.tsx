@@ -50,23 +50,20 @@ export default function AuthCallbackScreen() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleUrl = useCallback(async (url: string | null) => {
-    if (!url || !url.includes("auth/callback")) return;
+  const handleUrl = useCallback(async (url: string | null): Promise<boolean> => {
+    if (!url || !url.includes("auth/callback")) return false;
     const { error } = await setSessionFromUrl(url);
     if (error) {
       setErrorMessage(error.message);
       setStatus("error");
-      return;
+      return true;
     }
     setStatus("success");
     router.replace("/(tabs)");
+    return true;
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      handleUrl(window.location.href);
-      return;
-    }
     let mounted = true;
     const timeoutMs = 25000;
     const timeoutId = setTimeout(() => {
@@ -76,10 +73,19 @@ export default function AuthCallbackScreen() {
       }
     }, timeoutMs);
     const handleAndClearTimeout = (url: string | null) => {
-      handleUrl(url).finally(() => {
-        if (mounted) clearTimeout(timeoutId);
+      handleUrl(url).then((handled) => {
+        if (handled && mounted) clearTimeout(timeoutId);
       });
     };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      handleAndClearTimeout(window.location.href);
+      return () => {
+        mounted = false;
+        clearTimeout(timeoutId);
+      };
+    }
+
     Linking.getInitialURL().then((url) => {
       if (mounted && url) handleAndClearTimeout(url);
     });

@@ -48,12 +48,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session.user);
     };
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!mounted) return;
-      applySession(initialSession);
-    }).finally(() => {
-      if (mounted) setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session: initialSession } }) => {
+        if (!mounted) return;
+        applySession(initialSession);
+      })
+      .catch((err) => {
+        if (__DEV__) console.error('[AuthContext] getSession failed:', err);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;

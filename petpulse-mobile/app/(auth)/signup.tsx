@@ -46,12 +46,12 @@ export default function SignupScreen() {
     );
   }, [email, password, confirmPassword]);
 
-  const passwordValid = useMemo(
-    () => isPasswordValid(password),
-    [password],
-  );
+  const passwordValid = useMemo(() => isPasswordValid(password), [password]);
   const confirmValid = useMemo(
-    () => passwordValid && password === confirmPassword && confirmPassword.length > 0,
+    () =>
+      passwordValid &&
+      password === confirmPassword &&
+      confirmPassword.length > 0,
     [password, confirmPassword, passwordValid],
   );
 
@@ -129,6 +129,8 @@ export default function SignupScreen() {
       } else {
         router.replace("/(onboarding)/features");
       }
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

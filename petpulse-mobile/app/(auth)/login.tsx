@@ -34,15 +34,16 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (failedAttempts < 5) return;
-    setError(
-      "Too many failed attempts. Please try again after 5 minutes.",
-    );
+    setError("Too many failed attempts. Please try again after 5 minutes.");
     if (lockoutTimeoutRef.current) clearTimeout(lockoutTimeoutRef.current);
-    lockoutTimeoutRef.current = setTimeout(() => {
-      lockoutTimeoutRef.current = null;
-      setFailedAttempts(0);
-      setError(null);
-    }, 5 * 60 * 1000);
+    lockoutTimeoutRef.current = setTimeout(
+      () => {
+        lockoutTimeoutRef.current = null;
+        setFailedAttempts(0);
+        setError(null);
+      },
+      5 * 60 * 1000,
+    );
     return () => {
       if (lockoutTimeoutRef.current) {
         clearTimeout(lockoutTimeoutRef.current);
@@ -132,6 +133,8 @@ export default function LoginScreen() {
         setFailedAttempts(0);
         router.replace("/(tabs)");
       }
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -215,7 +218,8 @@ export default function LoginScreen() {
             disabled={!canSubmit || submitting || failedAttempts >= 5}
             style={[
               styles.button,
-              (!canSubmit || submitting || failedAttempts >= 5) && styles.buttonDisabled,
+              (!canSubmit || submitting || failedAttempts >= 5) &&
+                styles.buttonDisabled,
             ]}
           >
             {submitting ? (
