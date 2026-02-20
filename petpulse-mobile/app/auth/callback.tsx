@@ -101,9 +101,17 @@ export default function AuthCallbackScreen() {
       };
     }
 
-    Linking.getInitialURL().then((url) => {
-      if (mounted && url) handleAndClearTimeout(url);
-    });
+    Linking.getInitialURL()
+      .then((url) => {
+        if (mounted && url) handleAndClearTimeout(url);
+      })
+      .catch(() => {
+        if (mounted) {
+          setErrorMessage("Could not read launch URL. Please try signing in again.");
+          setStatus("error");
+          clearTimeout(timeoutId);
+        }
+      });
     const sub = Linking.addEventListener("url", (event) => {
       if (mounted) handleAndClearTimeout(event.url);
     });
