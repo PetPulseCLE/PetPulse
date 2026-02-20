@@ -52,15 +52,22 @@ export default function AuthCallbackScreen() {
 
   const handleUrl = useCallback(async (url: string | null): Promise<boolean> => {
     if (!url || !url.includes("auth/callback")) return false;
-    const { error } = await setSessionFromUrl(url);
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const { error } = await setSessionFromUrl(url);
+      if (error) {
+        setErrorMessage(error.message);
+        setStatus("error");
+        return true;
+      }
+      setStatus("success");
+      router.replace("/(tabs)");
+      return true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setErrorMessage(message);
       setStatus("error");
       return true;
     }
-    setStatus("success");
-    router.replace("/(tabs)");
-    return true;
   }, []);
 
   useEffect(() => {
@@ -73,9 +80,17 @@ export default function AuthCallbackScreen() {
       }
     }, timeoutMs);
     const handleAndClearTimeout = (url: string | null) => {
-      handleUrl(url).then((handled) => {
-        if (handled && mounted) clearTimeout(timeoutId);
-      });
+      handleUrl(url)
+        .then((handled) => {
+          if (handled && mounted) clearTimeout(timeoutId);
+        })
+        .catch(() => {
+          if (mounted) {
+            setErrorMessage("Something went wrong. Please try signing in again.");
+            setStatus("error");
+            clearTimeout(timeoutId);
+          }
+        });
     };
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
