@@ -1,6 +1,23 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
+
+// Lazy-load so we don't crash when native module is missing (Expo Go, web)
+type SecureStoreModule = typeof import('expo-secure-store');
+let secureStoreModule: SecureStoreModule | null | undefined = undefined;
+function getSecureStore(): SecureStoreModule | null {
+  if (secureStoreModule !== undefined) return secureStoreModule;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy load to avoid crash when native module missing
+    secureStoreModule = require('expo-secure-store') as SecureStoreModule;
+    return secureStoreModule;
+  } catch {
+    secureStoreModule = null;
+    return null;
+  }
+}
+
+/** When true, use AsyncStorage-only (no encryption). Set on first SecureStore error. */
+let asyncStorageOnly = false;
 
 const SECURE_KEY_PREFIX = '_sk_';
 const ENCRYPTED_VALUE_PREFIX = 'enc:';
@@ -91,23 +108,37 @@ function utf8BytesToString(bytes: Uint8Array): string {
   return s;
 }
 
+function isSecureStorageAvailable(): boolean {
+  if (Platform.OS === 'web') return false;
+  if (asyncStorageOnly) return false;
+  return getSecureStore() !== null;
+}
+
 /**
  * Supabase auth storage adapter.
- * On web: uses AsyncStorage only.
- * On native: uses LargeSecureStore pattern — symmetric key in SecureStore,
- * encrypted value in AsyncStorage (avoids SecureStore ~2048 byte limit).
+ * On web or when ExpoSecureStore is unavailable (e.g. Expo Go): uses AsyncStorage only.
+ * On native dev/production builds: uses LargeSecureStore — key in SecureStore, encrypted value in AsyncStorage.
  */
 export const supabaseAuthStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
+    if (!isSecureStorageAvailable()) {
       return AsyncStorage.getItem(key);
     }
+    const store = getSecureStore()!;
     const secureKeyName = SECURE_KEY_PREFIX + key;
-    const storedKey = await SecureStore.getItemAsync(secureKeyName);
+    let storedKey: string | null;
+    try {
+      storedKey = await store.getItemAsync(secureKeyName);
+    } catch {
+      asyncStorageOnly = true;
+      return AsyncStorage.getItem(key);
+    }
     const ciphertext = await AsyncStorage.getItem(key);
     if (ciphertext === null) return null;
-    // Migration: no key in SecureStore => return plaintext from AsyncStorage
-    if (!storedKey) return ciphertext;
+    if (!storedKey) {
+      if (ciphertext.startsWith(ENCRYPTED_VALUE_PREFIX)) return null;
+      return ciphertext;
+    }
     if (!ciphertext.startsWith(ENCRYPTED_VALUE_PREFIX)) return ciphertext;
     try {
       const keyBytes = base64DecodeToBytes(storedKey);
@@ -120,17 +151,23 @@ export const supabaseAuthStorage = {
   },
 
   setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
+    if (!isSecureStorageAvailable()) {
       return AsyncStorage.setItem(key, value);
     }
+    const store = getSecureStore()!;
     const secureKeyName = SECURE_KEY_PREFIX + key;
     let keyBytes: Uint8Array;
-    const existingKey = await SecureStore.getItemAsync(secureKeyName);
-    if (existingKey) {
-      keyBytes = base64DecodeToBytes(existingKey);
-    } else {
-      keyBytes = getRandomKeyBytes();
-      await SecureStore.setItemAsync(secureKeyName, base64EncodeBytes(keyBytes));
+    try {
+      const existingKey = await store.getItemAsync(secureKeyName);
+      if (existingKey) {
+        keyBytes = base64DecodeToBytes(existingKey);
+      } else {
+        keyBytes = getRandomKeyBytes();
+        await store.setItemAsync(secureKeyName, base64EncodeBytes(keyBytes));
+      }
+    } catch {
+      asyncStorageOnly = true;
+      return AsyncStorage.setItem(key, value);
     }
     const valueBytes = stringToUtf8Bytes(value);
     xorBytes(valueBytes, keyBytes);
@@ -139,10 +176,15 @@ export const supabaseAuthStorage = {
   },
 
   removeItem: async (key: string): Promise<void> => {
-    if (Platform.OS === 'web') {
+    if (!isSecureStorageAvailable()) {
       return AsyncStorage.removeItem(key);
     }
-    await SecureStore.deleteItemAsync(SECURE_KEY_PREFIX + key);
+    const store = getSecureStore()!;
+    try {
+      await store.deleteItemAsync(SECURE_KEY_PREFIX + key);
+    } catch {
+      asyncStorageOnly = true;
+    }
     await AsyncStorage.removeItem(key);
   },
 };

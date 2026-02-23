@@ -36,6 +36,7 @@ export default {
     },
     plugins: [
       "expo-router",
+      // expo-secure-store: optional. Add back after `npm install` in petpulse-mobile if you need its config plugin (Face ID / Android backup). SecureStore works without it.
       [
         "expo-splash-screen",
         {

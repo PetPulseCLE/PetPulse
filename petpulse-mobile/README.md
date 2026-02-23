@@ -25,6 +25,19 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Auth – Email confirmation (mobile)
+
+To avoid timeouts when confirming signup on the device, use a **direct deep link** in the Supabase **Confirm signup** email template instead of `{{ .ConfirmationURL }}`:
+
+1. In [Supabase Dashboard](https://supabase.com/dashboard) → **Authentication** → **Email Templates** → **Confirm signup**.
+2. Set the confirmation button link to:
+   ```html
+   petpulse://auth/callback?token_hash={{ .TokenHash }}&type=signup
+   ```
+3. Ensure `petpulse://auth/callback` (or `petpulse://**`) is in **Authentication** → **URL Configuration** → **Redirect URLs**.
+
+The app will open directly with the token in the query string and complete confirmation without relying on the redirect fragment (which is often stripped on mobile).
+
 ## Get a fresh project
 
 When you're ready, run:
