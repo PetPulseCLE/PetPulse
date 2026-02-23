@@ -159,10 +159,13 @@ export default function AuthCallbackScreen() {
     }
 
     // Initial open via deep link: Expo Router passes query params; Linking.getInitialURL() often doesn't.
-    const tokenHash = (Array.isArray(searchParams.token_hash)
-      ? searchParams.token_hash[0]
-      : searchParams.token_hash) ??
-      (Array.isArray(searchParams.token) ? searchParams.token[0] : searchParams.token);
+    const tokenHash =
+      (Array.isArray(searchParams.token_hash)
+        ? searchParams.token_hash[0]
+        : searchParams.token_hash) ??
+      (Array.isArray(searchParams.token)
+        ? searchParams.token[0]
+        : searchParams.token);
     const typeParam = Array.isArray(searchParams.type)
       ? searchParams.type[0]
       : searchParams.type;
