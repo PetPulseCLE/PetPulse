@@ -10,6 +10,7 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
+    // Matches deep link scheme used in README (petpulse://...)
     scheme: "petpulse",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
@@ -18,6 +19,13 @@ export default {
       bundleIdentifier:
         process.env.BUNDLE_IDENTIFIER ?? "com.anonymous.petpulsemobile",
       appleTeamId: process.env.APPLE_TEAM_ID,
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "PetPulse uses your location to show nearby and live pet safety features.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "PetPulse uses your location in the background to help track and protect your pet.",
+        UIBackgroundModes: ["location"],
+      },
     },
     android: {
       adaptiveIcon: {
@@ -29,6 +37,12 @@ export default {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: process.env.BUNDLE_IDENTIFIER ?? "com.anonymous.petpulsemobile",
+      permissions: [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "POST_NOTIFICATIONS",
+      ],
     },
     web: {
       output: "static",
@@ -52,6 +66,23 @@ export default {
         {
           bluetoothAlwaysPermission:
             "Allow PetPulse to connect to bluetooth devices",
+        },
+      ],
+      [
+        "expo-location",
+        {
+          locationWhenInUsePermission:
+            "PetPulse uses your location while you use the app.",
+          locationAlwaysAndWhenInUsePermission:
+            "PetPulse uses your location in the background to help protect your pet.",
+          isIosBackgroundLocationEnabled: true,
+          isAndroidBackgroundLocationEnabled: true,
+        },
+      ],
+      [
+        "react-native-permissions",
+        {
+          iosPermissions: ["LocationWhenInUse", "LocationAlways", "Notifications"],
         },
       ],
     ],
