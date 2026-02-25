@@ -40,7 +40,7 @@
 #define BATTERY_HEALTH_STAT_UUID "2BEA"                            // Bluetooth assigned numbers battery health status(summary and current temp fields) charcteristic UUID = 0x2BEA
 
 /* Current Time Service Charcteristics */
-#define CUR_TIME_UUID "2BA0"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2BA0
+#define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2BA0
 
 
 
@@ -49,7 +49,6 @@ class BleServer  {
 
         /* BLE Server Pointer */
         NimBLEServer *pServer = nullptr;
-
        /* Vital Signs Service Pointer and Characteristics */
         NimBLEService *pVitalsService = nullptr;
             NimBLECharacteristic *pHeartRate = nullptr;
@@ -130,7 +129,6 @@ class BleServer  {
         BleActivityClass_t _activityClass;
 
 
-
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
             uint8_t flags = 0x06; //Battery Level and Additional Status bits set
@@ -168,11 +166,27 @@ class BleServer  {
 
         BatteryHealth_t _batteryHealth;
 
+        struct CurrentTime_t {
+            uint16_t year = 0x0000;
+            uint8_t month = 0x00;
+            uint8_t day = 0x00;
+            uint8_t hours = 0x00;
+            uint8_t minutes = 0x00;
+            uint8_t seconds = 0x00;
+            uint8_t weekday = 0x00;
+            uint8_t fraction_ms = 0x00;  // 1/256th of a second ~ 3.906ms precision
+            uint8_t adjust_reason = 0x00;
+        }__attribute__((packed));
+
+        CurrentTime_t _currentTime;
+
         public: 
-            bool init();
+            bool init(int8_t tx_power);
             bool deinit();
             bool restart();
             bool startAdvertising();
+            bool isAdvertising();
+            void setTXPower(int8_t tx_power);
 
             /* Vitals Charcteristic Setters */
             void setHR(bool notify = true);
@@ -228,12 +242,14 @@ extern BleServer bleServer;
 class ServerCallbacks : public NimBLEServerCallbacks {
    void onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) override;
    void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override;
-   void onAuthenticationComplete(NimBLEConnInfo& connInfo) override;
 };
+
+extern ServerCallbacks serverCallbacks;
 
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
 };
 
+extern CharacteristicCallbacks chrCallbacks;
 
 #endif // BLE_DRIVER_H

@@ -1,19 +1,65 @@
 #include <stdio.h>
+#include <sys/_timeval.h>
 #include "NimBLEAdvertising.h"
 #include "NimBLEDevice.h"
 #include "NimBLEConnInfo.h"
 #include "esp_rom_sys.h"
 #include "ble_driver.hpp"
+#include <sys/time.h>
 
 
 BleServer bleServer;
+ServerCallbacks serverCallbacks;
+CharacteristicCallbacks chrCallbacks;
 
-bool BleServer::init() {
+/* Server Callbacks */
+void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) {
+    printf("Client address: %s\n", connInfo.getAddress().toString().c_str());
+    /**
+     *  We can use the connection handle here to ask for different connection parameters.
+     *  Args: connection handle, min connection interval, max connection interval
+     *  latency, supervision timeout.
+     *  Units; Min/Max Intervals: 1.25 millisecond increments.
+     *  Latency: number of intervals allowed to skip.
+     *  Timeout: 10 millisecond increments.
+     */
+    pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 180);
+}
+void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
+    printf("Client disconnected - start advertising\n");
+    NimBLEDevice::startAdvertising();
+
+}
+
+/* Characteristic Callbacks */
+void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
+    if(pCharacteristic->getUUID() == NimBLEUUID(CUR_TIME_UUID)) {
+        NimBLEAttValue value = pCharacteristic->getValue();
+        if(value.size() < 10) return; 
+        struct tm timeinfo = {};
+        timeinfo.tm_year = (value[0] | value[1] << 8) - 1900;
+        timeinfo.tm_mon = value[2] - 1;
+        timeinfo.tm_mday = value[3];
+        timeinfo.tm_hour = value[4];
+        timeinfo.tm_min = value[5];
+        timeinfo.tm_sec = value[6];
+
+        time_t t = mktime(&timeinfo);
+        //ignore microseconds
+        struct timeval tv = {.tv_sec = t, .tv_usec = 0};
+        settimeofday(&tv, NULL);
+    }
+
+}
+
+bool BleServer::init(int8_t tx_power) {
 
     NimBLEDevice::init(DEVICE_NAME);
 
     /* Request mtu = 512 */
     NimBLEDevice::setMTU(512);
+
+    NimBLEDevice::setPower(tx_power);
 
     /* bonding: true, mitm: false, secure connection: true */ 
     NimBLEDevice::setSecurityAuth(true, false, true);
@@ -23,6 +69,7 @@ bool BleServer::init() {
 
     /* Create server*/
     pServer = NimBLEDevice::createServer();
+    pServer->setCallbacks(&serverCallbacks); 
 
     /* Define services and respective charcteristics*/
     pVitalsService = pServer->createService(VITALS_UUID);
@@ -62,6 +109,7 @@ bool BleServer::init() {
     
     pCurTimeService = pServer->createService(CUR_TIME_SERVICE_UUID);
         pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_NR);
+        pCurTime->setCallbacks(&chrCallbacks);
 
         /*Start the current time service*/
         pCurTimeService->start();
@@ -91,6 +139,10 @@ bool BleServer::startAdvertising() {
     }
 
     return true;
+}
+
+bool BleServer::isAdvertising() {
+    return NimBLEDevice::getAdvertising()->isAdvertising();
 }
 
 /* Battery Level Struct Setters */
@@ -219,38 +271,6 @@ void BleServer::setBattHealthValue(bool notify, bool indicate) {
     }
 }
 
-
-
-/* Server Callbacks */
-void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) {
-    printf("Client address: %s\n", connInfo.getAddress().toString().c_str());
-
-    /**
-     *  We can use the connection handle here to ask for different connection parameters.
-     *  Args: connection handle, min connection interval, max connection interval
-     *  latency, supervision timeout.
-     *  Units; Min/Max Intervals: 1.25 millisecond increments.
-     *  Latency: number of intervals allowed to skip.
-     *  Timeout: 10 millisecond increments.
-     */
-    pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 180);
-}
-void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
-    printf("Client disconnected - start advertising\n");
-    if(!NimBLEDevice::getAdvertising()->isAdvertising()) {
-        NimBLEDevice::startAdvertising();
-    }
-
-}
-
-void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
-
-
-}
-/* Characteristic Callbacks */
-void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
-
-}
 
 
 
