@@ -2,35 +2,38 @@ import { Alert, Modal, ScrollView, Text, View } from "react-native";
 import type { Peripheral } from "react-native-ble-manager";
 
 import {
-    AlertDialog,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogTrigger,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useBle } from "@/context/BleContext";
 import clsx from "clsx";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-    ChevronRight,
-    CircleEllipsis,
-    Loader,
-    PawPrint,
-    UserPenIcon,
-    X,
+  ChevronRight,
+  CircleEllipsis,
+  Loader,
+  LogOut,
+  PawPrint,
+  UserPenIcon,
+  X,
 } from "lucide-react-native";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -50,6 +53,8 @@ export default function Settings() {
   const [showDeviceModal, setShowDeviceModal] = useState(modalStateBool);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const { signOut } = useAuth();
 
   const handleScan = async () => {
     if (initialized) {
@@ -142,7 +147,7 @@ export default function Settings() {
       </View>
 
       {/* ============================= HARNESS SETTINGS ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden">
+      <View className="rounded-full mx-3 overflow-hidden mb-6">
         <View className="flex flex-row bg-card w-full align-center">
           <Button
             variant="ghost"
@@ -160,6 +165,27 @@ export default function Settings() {
               <View className="flex flex-col">
                 <Text className="text-secondary-foreground font-medium">
                   My Harness: {connected?.name ?? "None"}
+                </Text>
+              </View>
+            </View>
+            <Icon as={ChevronRight} className="text-muted-foreground size-4" />
+          </Button>
+        </View>
+      </View>
+
+      {/* ============================= LOG OUT ============================= */}
+      <View className="rounded-full mx-3 overflow-hidden mb-6">
+        <View className="flex flex-row bg-card w-full align-center">
+          <Button
+            variant="ghost"
+            className="flex flex-row justify-between items-center w-full"
+            onPress={() => setShowLogoutAlert(true)}
+          >
+            <View className="flex flex-row items-center gap-4">
+              <Icon as={LogOut} className="text-red-500 size-6" />
+              <View className="flex flex-col">
+                <Text className="text-secondary-foreground font-medium">
+                  Log Out
                 </Text>
               </View>
             </View>
@@ -362,6 +388,32 @@ export default function Settings() {
             <AlertDialogCancel>
               <Text className="text-muted-foreground">Dismiss</Text>
             </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={showLogoutAlert} onOpenChange={setShowLogoutAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log Out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to log out? You will need to sign in again
+              to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Text className="text-muted-foreground">Cancel</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive"
+              onPress={async () => {
+                await signOut();
+                setShowLogoutAlert(false);
+                router.replace("/(auth)");
+              }}
+            >
+              <Text className="text-destructive-foreground">Log out</Text>
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
