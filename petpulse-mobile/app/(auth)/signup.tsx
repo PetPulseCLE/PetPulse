@@ -1,20 +1,20 @@
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { Ionicons } from "@expo/vector-icons";
+import { Link, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  StyleSheet,
   Keyboard,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Link, useRouter } from "expo-router";
-import { useAuth } from "@/context/AuthContext";
-
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email.trim());
@@ -32,8 +32,12 @@ export default function SignupScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  const { signUp } = useAuth();
+  const [token, setToken] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const { signUp, verifyOtp } = useAuth();
   const router = useRouter();
+
+  const { top } = useSafeAreaInsets();
 
   const canSubmit = useMemo(() => {
     const e = email.trim();
@@ -125,7 +129,8 @@ export default function SignupScreen() {
         }
       } else if (!signUpData.session) {
         // Email confirmation required — inform the user
-        setError("Check your inbox to confirm your email before signing in.");
+        setVerifying(true);
+        setError("Please enter the code sent to your email.");
       } else {
         router.replace("/(onboarding)/features");
       }
@@ -136,9 +141,22 @@ export default function SignupScreen() {
     }
   }
 
+  const onVerify = async () => {
+    try {
+      const { data, error } = await verifyOtp(email, token);
+      if (error) {
+        setError(error.message);
+      } else {
+        router.replace("/(onboarding)/features");
+      }
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ThemedView style={styles.screen}>
+      <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
         <View style={styles.header}>
           <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
             <Ionicons name="heart" size={30} color="white" />
@@ -150,109 +168,153 @@ export default function SignupScreen() {
             Sign up with email and password to get started.
           </ThemedText>
         </View>
-
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: cardBg, borderColor: cardBorder },
-          ]}
-        >
-          <ThemedText type="defaultSemiBold" style={styles.label}>
-            Email
-          </ThemedText>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={placeholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            editable={!submitting}
+        {verifying ? (
+          <View
             style={[
-              styles.input,
-              {
-                color: inputText,
-                backgroundColor: inputBg,
-                borderColor: inputBorder,
-              },
-            ]}
-          />
-
-          <ThemedText type="defaultSemiBold" style={styles.label}>
-            Password
-          </ThemedText>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            onBlur={() => setPasswordTouched(true)}
-            placeholder="Create a password (min 6 chars)"
-            placeholderTextColor={placeholder}
-            secureTextEntry
-            textContentType="newPassword"
-            editable={!submitting}
-            style={[
-              styles.input,
-              {
-                color: inputText,
-                backgroundColor: inputBg,
-                borderColor: passwordValid ? passwordValidBorder : inputBorder,
-              },
-            ]}
-          />
-          {(passwordTouched || password.length > 0) && !passwordValid ? (
-            <ThemedText style={styles.passwordHint}>
-              Password must be at least 6 characters.
-            </ThemedText>
-          ) : null}
-
-          <ThemedText type="defaultSemiBold" style={styles.label}>
-            Confirm Password
-          </ThemedText>
-          <TextInput
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            placeholder="Re-enter your password"
-            placeholderTextColor={placeholder}
-            secureTextEntry
-            textContentType="newPassword"
-            editable={!submitting}
-            returnKeyType="go"
-            onSubmitEditing={() => {
-              if (canSubmit && !submitting) onSubmit();
-            }}
-            style={[
-              styles.input,
-              {
-                color: inputText,
-                backgroundColor: inputBg,
-                borderColor: confirmValid ? passwordValidBorder : inputBorder,
-              },
-            ]}
-          />
-
-          {error ? (
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
-          ) : null}
-
-          <TouchableOpacity
-            onPress={onSubmit}
-            disabled={!canSubmit || submitting}
-            style={[
-              styles.button,
-              (!canSubmit || submitting) && styles.buttonDisabled,
+              styles.card,
+              { backgroundColor: cardBg, borderColor: cardBorder },
             ]}
           >
-            {submitting ? (
-              <ActivityIndicator color={spinnerColor} />
-            ) : (
+            <ThemedText
+              type="defaultSemiBold"
+              style={[styles.label, { alignSelf: "center", marginBottom: 14 }]}
+            >
+              Please enter the code sent to your email
+            </ThemedText>
+            <TextInput
+              value={token}
+              onChangeText={setToken}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor={placeholder}
+              keyboardType="number-pad"
+              maxLength={8}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                },
+              ]}
+            />
+            <TouchableOpacity
+              onPress={onVerify}
+              disabled={token.length !== 8}
+              style={[
+                styles.button,
+                token.length !== 8 && styles.buttonDisabled,
+              ]}
+            >
               <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-                Sign Up
+                Verify
               </ThemedText>
-            )}
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: cardBg, borderColor: cardBorder },
+            ]}
+          >
+            <ThemedText type="defaultSemiBold" style={styles.label}>
+              Email
+            </ThemedText>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={placeholder}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="username"
+              editable={!submitting}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                },
+              ]}
+            />
+
+            <ThemedText type="defaultSemiBold" style={styles.label}>
+              Password
+            </ThemedText>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              onBlur={() => setPasswordTouched(true)}
+              placeholder="Create a password (min 6 chars)"
+              placeholderTextColor={placeholder}
+              secureTextEntry
+              textContentType="newPassword"
+              editable={!submitting}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: passwordValid
+                    ? passwordValidBorder
+                    : inputBorder,
+                },
+              ]}
+            />
+            {(passwordTouched || password.length > 0) && !passwordValid ? (
+              <ThemedText style={styles.passwordHint}>
+                Password must be at least 6 characters.
+              </ThemedText>
+            ) : null}
+
+            <ThemedText type="defaultSemiBold" style={styles.label}>
+              Confirm Password
+            </ThemedText>
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Re-enter your password"
+              placeholderTextColor={placeholder}
+              secureTextEntry
+              textContentType="newPassword"
+              editable={!submitting}
+              returnKeyType="go"
+              onSubmitEditing={() => {
+                if (canSubmit && !submitting) onSubmit();
+              }}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: confirmValid ? passwordValidBorder : inputBorder,
+                },
+              ]}
+            />
+            {error ? (
+              <ThemedText style={styles.errorText}>{error}</ThemedText>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={onSubmit}
+              disabled={!canSubmit || submitting}
+              style={[
+                styles.button,
+                (!canSubmit || submitting) && styles.buttonDisabled,
+              ]}
+            >
+              {submitting ? (
+                <ActivityIndicator color={spinnerColor} />
+              ) : (
+                <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                  Sign Up
+                </ThemedText>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.footer}>
           <ThemedText style={styles.footerText}>
@@ -271,7 +333,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 60,
   },
   header: {
     alignItems: "center",

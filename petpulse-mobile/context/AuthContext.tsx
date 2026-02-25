@@ -20,6 +20,7 @@ type AuthContextType = {
   signUp: (email: string, password: string) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
+  verifyOtp: (email: string, token: string) => Promise<any>;
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -100,8 +101,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const verifyOtp = async (email: string, token: string) => {
+    return await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup',
+    });
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, verifyOtp }}>
       {children}
     </AuthContext.Provider>
   );
