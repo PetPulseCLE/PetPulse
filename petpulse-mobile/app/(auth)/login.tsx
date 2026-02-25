@@ -1,23 +1,22 @@
-import React, { useMemo, useState } from "react";
+import { Link, router } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
-  StyleSheet,
+  Alert,
   Keyboard,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Link, router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { Ionicons } from "@expo/vector-icons";
-
-
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function isValidEmail(email: string) {
   // Basic email format check (simple on purpose)
@@ -30,23 +29,65 @@ export default function LoginScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const lockoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { signIn } = useAuth();
+
+  const { top } = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (failedAttempts < 5) return;
+    setError("Too many failed attempts. Please try again after 5 minutes.");
+    if (lockoutTimeoutRef.current) clearTimeout(lockoutTimeoutRef.current);
+    lockoutTimeoutRef.current = setTimeout(
+      () => {
+        lockoutTimeoutRef.current = null;
+        setFailedAttempts(0);
+        setError(null);
+      },
+      5 * 60 * 1000,
+    );
+    return () => {
+      if (lockoutTimeoutRef.current) {
+        clearTimeout(lockoutTimeoutRef.current);
+        lockoutTimeoutRef.current = null;
+      }
+    };
+  }, [failedAttempts]);
 
   const canSubmit = useMemo(() => {
-    return email.trim().length > 0 && password.length > 0 && isValidEmail(email);
+    return (
+      email.trim().length > 0 && password.length > 0 && isValidEmail(email)
+    );
   }, [email, password]);
 
   const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+  const placeholder = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "text",
+  );
 
-  const cardBg = useThemeColor({ light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" }, "background");
-  const cardBorder = useThemeColor({ light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" }, "text");
+  const cardBg = useThemeColor(
+    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
+    "background",
+  );
+  const cardBorder = useThemeColor(
+    { light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" },
+    "text",
+  );
 
-  const inputBg = useThemeColor({ light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" }, "background");
-  const inputBorder = useThemeColor({ light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" }, "text");
+  const inputBg = useThemeColor(
+    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
+    "background",
+  );
+  const inputBorder = useThemeColor(
+    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
+    "text",
+  );
 
   const brandBlack = useThemeColor(
     { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
-    "text"
+    "text",
   );
 
   async function onSubmit() {
@@ -64,20 +105,39 @@ export default function LoginScreen() {
       return;
     }
 
+    if (failedAttempts >= 5) {
+      setError("Too many failed attempts. Please try again later.");
+      return;
+    }
+
     setSubmitting(true);
-
     try {
-      // Mocked request delay
-      await new Promise((resolve) => setTimeout(resolve, 900));
-
-      // Mocked failure example:
-      if (trimmedEmail.toLowerCase().includes("fail")) {
-        setError("Invalid email or password. Please try again.");
-        return;
+      const { data, error } = await signIn(trimmedEmail, password);
+      if (error) {
+        const msg = error.message.toLowerCase();
+        const isAuthFailure =
+          msg.includes("invalid login credentials") ||
+          msg.includes("invalid_credentials");
+        if (isAuthFailure) {
+          setError("Invalid email or password. Please try again.");
+        } else if (msg.includes("email not confirmed")) {
+          setError(
+            "Please confirm your email before signing in. Check your inbox.",
+          );
+        } else if (msg.includes("too many requests")) {
+          setError("Too many attempts. Please wait a moment and try again.");
+        } else {
+          setError(error.message);
+        }
+        if (isAuthFailure) {
+          setFailedAttempts((prev) => prev + 1);
+        }
+      } else {
+        setFailedAttempts(0);
+        router.replace("/(tabs)");
       }
-
-      // Success (stub): route user to the main app flow
-      router.replace("/(tabs)");
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -85,94 +145,117 @@ export default function LoginScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-    <ThemedView style={styles.screen}>
-      <View style={styles.header}>
-         <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
-         <Ionicons name="heart" size={30} color="white" />
+      <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
+        <View style={styles.header}>
+          <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+            <Ionicons name="heart" size={30} color="white" />
+          </View>
+          <ThemedText type="title" style={styles.appName}>
+            PetPulse
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Care Beyond the Collar
+          </ThemedText>
         </View>
-        <ThemedText type="title" style={styles.appName}>
-          PetPulse
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-        Care Beyond the Collar
-        </ThemedText>
-      </View>
 
-      
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-        <ThemedText type="defaultSemiBold" style={styles.label}>
-          Email
-        </ThemedText>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          placeholderTextColor={placeholder}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          textContentType="username"
-          editable={!submitting}
-            style={[
-            styles.input,
-            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
-            ]}
-          
-        />
-
-        <ThemedText type="defaultSemiBold" style={styles.label}>
-          Password
-        </ThemedText>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Enter your password"
-          placeholderTextColor={placeholder}
-          secureTextEntry
-          textContentType="password"
-          editable={!submitting}
+        <View
           style={[
-            styles.input,
-            { color: inputText, backgroundColor: inputBg, borderColor: inputBorder },
+            styles.card,
+            { backgroundColor: cardBg, borderColor: cardBorder },
           ]}
-        />
-
-        {error ? <ThemedText style={styles.errorText}>{error}</ThemedText> : null}
-
-        <TouchableOpacity
-          onPress={onSubmit}
-          disabled={!canSubmit || submitting}
-          style={[styles.button, (!canSubmit || submitting) && styles.buttonDisabled]}
         >
-          {submitting ? (
-            <ActivityIndicator color = "#FFFFFF" />
-          ) : (
-            <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-              Log In
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Email
+          </ThemedText>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={placeholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            editable={!submitting}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Password
+          </ThemedText>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter your password"
+            placeholderTextColor={placeholder}
+            secureTextEntry
+            textContentType="password"
+            editable={!submitting}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (canSubmit && !submitting && failedAttempts < 5) onSubmit();
+            }}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          {error ? (
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          ) : null}
+
+          <TouchableOpacity
+            onPress={onSubmit}
+            disabled={!canSubmit || submitting || failedAttempts >= 5}
+            style={[
+              styles.button,
+              (!canSubmit || submitting || failedAttempts >= 5) &&
+                styles.buttonDisabled,
+            ]}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                Log In
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+
+          {/* Placeholder: route to signup for now (until you implement forgot-password) */}
+          <View style={styles.forgotContainer}>
+            <ThemedText
+              type="link"
+              onPress={() =>
+                Alert.alert("Coming soon", "Forgot password flow coming soon")
+              }
+            >
+              Forgot password?
             </ThemedText>
-          )}
-        </TouchableOpacity>
-
-        {/* Placeholder: route to signup for now (until you implement forgot-password) */}
-        <View style={styles.forgotContainer}>
-        <ThemedText
-            type="link"
-              onPress={() => Alert.alert("Coming soon", "Forgot password flow coming soon")}
-                >
-                Forgot password?
-        </ThemedText>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        <ThemedText style={styles.footerText}>
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" replace>
-            <ThemedText type="link">Sign up</ThemedText>
-          </Link>
-        </ThemedText>
-      </View>
-    </ThemedView>
+        <View style={styles.footer}>
+          <ThemedText style={styles.footerText}>
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" replace>
+              <ThemedText type="link">Sign up</ThemedText>
+            </Link>
+          </ThemedText>
+        </View>
+      </ThemedView>
     </TouchableWithoutFeedback>
   );
 }
