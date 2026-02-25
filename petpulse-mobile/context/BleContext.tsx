@@ -24,11 +24,13 @@ type BleContextType = {
   connectToPeripheral: (peripheral: Peripheral) => Promise<void>;
   disconnect: () => Promise<void>;
   forgetDevice: () => Promise<void>;
+  mtu: number;
+  getRSSI: (peripheral: Peripheral) => Promise<number>;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
-const SERVICE_UUIDS: string[] = ['180D'];
+const SERVICE_UUIDS: string[] = ['180F', '1805', '181A'];
 const SCAN_TIMEOUT = 10;
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
@@ -50,8 +52,10 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const userDisconnectedRef = useRef(false);
   const [initialized, setInitialized] = useState(false);
   const reconnecting = useRef(false);
+  const [mtu, setMtu] = useState(0);
+  const lastTimeRef = useRef<number>(null);
 
-  const getTimeCurrentTime = (): number[] => {
+  const getCurrentTime = (): { data: number[]; time_ms: number } => {
     /* Buffer for current time */
     const buffer = new ArrayBuffer(10);
     const view = new DataView(buffer);
@@ -74,7 +78,11 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     view.setUint8(9, 0); //Adjust reason
     /* Return numbers array for ble manager */
     const time = Array.from(new Uint8Array(buffer));
-    return time;
+    return { data: time, time_ms: date.getTime() };
+  };
+
+  const shouldSendTime = (): boolean => {
+    return getCurrentTime().time_ms - (lastTimeRef.current || 0) > 1000 * 60 * 60 * 24;
   };
 
   /* Reject promise every 8 seconds for connect to race against */
@@ -134,6 +142,23 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const setLastSentTime = async (time_ms: number) => {
+    try {
+      await AsyncStorage.setItem('LastSentTime', time_ms.toString());
+    } catch (error) {
+      console.log('setLastSentTime: ', error);
+    }
+  };
+
+  const getLastSentTime = async () => {
+    try {
+      const time_ms = await AsyncStorage.getItem('LastSentTime');
+      lastTimeRef.current = time_ms ? parseInt(time_ms) : 0;
+    } catch (error) {
+      console.log('getLastSentTime: ', error);
+    }
+  };
+
   /* Start scan given array of UUIDS to scan for */
   const startScan = async () => {
     if (initialized) {
@@ -159,9 +184,36 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
   const sendCurrentTime = async (peripheral: Peripheral) => {
     try {
-      await BleManager?.writeWithoutResponse(peripheral.id, '1805', '2A2B', getTimeCurrentTime());
+      const services = await BleManager?.retrieveServices(peripheral.id);
+      const { data, time_ms } = getCurrentTime();
+      await BleManager?.writeWithoutResponse(peripheral.id, '1805', '2a2b', data);
+      await setLastSentTime(time_ms);
     } catch (error) {
       console.log('sendCurrentTime: ', error);
+    }
+  };
+
+  /* For device info display -- dev tools */
+  /* Rough MTU estimate */
+  const getMtu = async (peripheral: Peripheral) => {
+    try {
+      const mtu = await BleManager?.getMaximumWriteValueLengthForWithResponse(peripheral.id);
+      console.log('mtu: ', mtu);
+      setMtu(mtu || 0);
+      console.log('mtu set: ', mtu);
+    } catch (error) {
+      console.log('getMtu: ', error);
+    }
+  };
+
+  /* For device info display -- dev tools */
+  const getRSSI = async (peripheral: Peripheral): Promise<number> => {
+    try {
+      const rssi = await BleManager?.readRSSI(peripheral.id);
+      return rssi || 0;
+    } catch (error) {
+      console.log('getRSSI: ', error);
+      return 0;
     }
   };
 
@@ -181,6 +233,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       setConnectedDevice(peripheral_info);
       await setSavedPrphId(peripheral.id);
       await sendCurrentTime(peripheral);
+      await getMtu(peripheral);
       setReconnectFailed(false);
       console.log('Connected', peripheral.id);
     } catch (error) {
@@ -221,6 +274,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
           if (peripheral_info) {
             setConnectedDevice(peripheral_info);
             await sendCurrentTime(peripheral_info);
+            await getMtu(peripheral_info);
             reconnecting.current = false;
             setReconnectFailed(false);
             return;
@@ -284,6 +338,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
     const init = async () => {
       await initBleManager();
       const savedId = await getSavedPrphId();
+      await getLastSentTime();
       if (savedId) {
         await reconnect();
       } else {
@@ -342,6 +397,17 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
+    if (shouldSendTime()) {
+      const sendTime = async () => {
+        const savedId = await getSavedPrphId();
+        if (!savedId) return;
+        const peripheral = await BleManager?.retrieveServices(savedId);
+        if (!peripheral) return;
+        await sendCurrentTime(peripheral);
+      };
+      sendTime();
+    }
+
     return () => {
       disconnectListener?.remove();
       onDiscover?.remove();
@@ -360,6 +426,8 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
         connectToPeripheral,
         disconnect,
         forgetDevice,
+        mtu,
+        getRSSI,
       }}
     >
       {children}

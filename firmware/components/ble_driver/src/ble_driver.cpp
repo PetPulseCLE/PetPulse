@@ -3,18 +3,35 @@
 #include "NimBLEAdvertising.h"
 #include "NimBLEDevice.h"
 #include "NimBLEConnInfo.h"
-#include "esp_rom_sys.h"
+#include "esp_log.h"
 #include "ble_driver.hpp"
 #include <sys/time.h>
+
+static const char *TAG = "BLE";
 
 
 BleServer bleServer;
 ServerCallbacks serverCallbacks;
 CharacteristicCallbacks chrCallbacks;
 
+bool syncSysTime(NimBLEAttValue& value) {
+    if(value.size() < 10) return false;
+    struct tm timeinfo = {};
+    timeinfo.tm_year = (value[0] | value[1] << 8) - 1900;
+    timeinfo.tm_mon = value[2] - 1;
+    timeinfo.tm_mday = value[3];
+    timeinfo.tm_hour = value[4];
+    timeinfo.tm_min = value[5];
+
+    time_t t = mktime(&timeinfo);
+    struct timeval tv = {.tv_sec = t, .tv_usec = 0};
+    settimeofday(&tv, NULL);
+    return true;
+}
+
 /* Server Callbacks */
 void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) {
-    printf("Client address: %s\n", connInfo.getAddress().toString().c_str());
+    ESP_LOGI(TAG, "Client address: %s", connInfo.getAddress().toString().c_str());
     /**
      *  We can use the connection handle here to ask for different connection parameters.
      *  Args: connection handle, min connection interval, max connection interval
@@ -26,30 +43,32 @@ void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo)
     pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 180);
 }
 void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
-    printf("Client disconnected - start advertising\n");
+    ESP_LOGI(TAG, "Client disconnected (reason=%d) - start advertising", reason);
     NimBLEDevice::startAdvertising();
-
 }
 
 /* Characteristic Callbacks */
 void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
     if(pCharacteristic->getUUID() == NimBLEUUID(CUR_TIME_UUID)) {
         NimBLEAttValue value = pCharacteristic->getValue();
-        if(value.size() < 10) return; 
-        struct tm timeinfo = {};
-        timeinfo.tm_year = (value[0] | value[1] << 8) - 1900;
-        timeinfo.tm_mon = value[2] - 1;
-        timeinfo.tm_mday = value[3];
-        timeinfo.tm_hour = value[4];
-        timeinfo.tm_min = value[5];
-        timeinfo.tm_sec = value[6];
+        if(value.size() < 10) {
+            ESP_LOGW(TAG, "onWrite: value too short (%d bytes)", value.size());
+            return;
+        }
+        if(!syncSysTime(value)) {
+            ESP_LOGW(TAG, "onWrite: failed to sync system time");
+            return;
+        }
 
-        time_t t = mktime(&timeinfo);
-        //ignore microseconds
-        struct timeval tv = {.tv_sec = t, .tv_usec = 0};
-        settimeofday(&tv, NULL);
+        // Read back to verify
+        struct timeval tv_check;
+        gettimeofday(&tv_check, NULL);
+        struct tm tm_check;
+        localtime_r(&tv_check.tv_sec, &tm_check);
+        char buf[64];
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm_check);
+        ESP_LOGI(TAG, "System time set to: %s", buf);
     }
-
 }
 
 bool BleServer::init(int8_t tx_power) {
@@ -108,11 +127,17 @@ bool BleServer::init(int8_t tx_power) {
         pBatteryService->start();
     
     pCurTimeService = pServer->createService(CUR_TIME_SERVICE_UUID);
-        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_NR);
+        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_NR);
         pCurTime->setCallbacks(&chrCallbacks);
 
         /*Start the current time service*/
         pCurTimeService->start();
+
+    NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+    pAdvertising->setName(DEVICE_NAME);
+    pAdvertising->addServiceUUID(BATTERY_UUID);
+    pAdvertising->addServiceUUID(CUR_TIME_SERVICE_UUID);
+    pAdvertising->addServiceUUID(ENVIRO_UUID);
 
     return true;
 }
@@ -130,9 +155,6 @@ bool BleServer::deinit() {
 bool BleServer::startAdvertising() {
 
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
-
-    pAdvertising->setName(DEVICE_NAME);
-
     /* Check if were already advertising*/
     if(!pAdvertising->isAdvertising()) {
         return pAdvertising->start();
@@ -238,99 +260,38 @@ void BleServer::setBattLevelValue(bool notify, bool indicate) {
 
 void BleServer::setBattEnergyValue(bool notify, bool indicate) {
     if(indicate) {
-        pBatteryLevel->setValue(_batteryEnergy);
-        pBatteryLevel->indicate();
+        pBatteryEnergy->setValue(_batteryEnergy);
+        pBatteryEnergy->indicate();
     }
     if(notify) {
-        pBatteryLevel->setValue(_batteryEnergy);
-        pBatteryLevel->notify();
+        pBatteryEnergy->setValue(_batteryEnergy);
+        pBatteryEnergy->notify();
     }
 }
 
 
 void BleServer::setBattTimeValue(bool notify, bool indicate) {
     if(indicate) {
-        pBatteryLevel->setValue(_batteryTime);
-        pBatteryLevel->indicate();
+        pBatteryTime->setValue(_batteryTime);
+        pBatteryTime->indicate();
     }
     if(notify) {
-        pBatteryLevel->setValue(_batteryTime);
-        pBatteryLevel->notify();
+        pBatteryTime->setValue(_batteryTime);
+        pBatteryTime->notify();
     }
 }
 
 
 void BleServer::setBattHealthValue(bool notify, bool indicate) {
     if(indicate) {
-        pBatteryLevel->setValue(_batteryHealth);
-        pBatteryLevel->indicate();
+        pBatteryHealth->setValue(_batteryHealth);
+        pBatteryHealth->indicate();
     }
     if(notify) {
-        pBatteryLevel->setValue(_batteryHealth);
-        pBatteryLevel->notify();
+        pBatteryHealth->setValue(_batteryHealth);
+        pBatteryHealth->notify();
     }
 }
-
-
-
-
-
-/* =============================================================================================================== */
-
-// bool ble_init() {
-
-//     // Initialize device 
-//     NimBLEDevice::init("PetPulse");
-
-//     NimBLEDevice::setMTU(512);
-
-
-//     // bonding: true, mitm: false, secure connection: true
-//     NimBLEDevice::setSecurityAuth(true, false, true);
-//     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
-//     NimBLEDevice::setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-//     NimBLEDevice::setSecurityRespKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-
-    
-//     // Create server
-//     NimBLEServer *pServer = NimBLEDevice::createServer();
-  
-//     // Create vital signs service with charcteristics for heart rate and breath rate
-//     NimBLEService *pService = pServer->createService("180D"); // heart rate service
-//     // Charcteristisc must be encrypted for bonding 
-//     NimBLECharacteristic *pHRChar = pService->createCharacteristic("2A37", NIMBLE_PROPERTY::READ_ENC |  NIMBLE_PROPERTY::NOTIFY);
-
-
-//     pHRChar->setValue("100");
-//     pService->start();
-    
-//     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
-//     pAdvertising->addServiceUUID("180D"); 
-//     pAdvertising->setName("PetPulse"); 
-//     pAdvertising->start(); 
-
-//     while (1) {
-//         if(!pAdvertising->isAdvertising()) {
-//             pAdvertising->start();
-//         }
-//         std::vector<uint16_t> clients = pServer->getPeerDevices();
-
-//         if (clients.size() > 0) {
-//             esp_rom_printf("Clients: %d\n", clients.size());
-//             int i = 0;
-//             for (uint16_t client : clients) {
-//                 NimBLEConnInfo connInfo = pServer->getPeerInfo(client);
-//                 esp_rom_printf("Client Handles %d: %s\n", i, connInfo.isBonded() ? "Bonded" : "Not Bonded");
-//             }
-//         }
-//         vTaskDelay(pdMS_TO_TICKS(1000));
-//     }
-
-//     return true;
-// }
- 
-
-
 
 
 

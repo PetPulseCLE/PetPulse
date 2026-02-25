@@ -14,8 +14,7 @@
 #define VITALS_UUID "792C45E0-7B95-4A4D-8BC2-6D04809BB406"        // Vital signs service (HR,BR)
 #define ACTIVITY_UUID "792C45E1-7B95-4A4D-8BC2-6D04809BB406"      // Motion/Activity Service (Accel,Gyro,Magf,StepCount,ActivityClassfier)
 #define BATTERY_UUID "180F"                                       // Bluetooth assigned numbers battery service UUID = 0x180F
-#define CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805   
-#define REF_TIME_UPDATE "1806"                                    // Bluetooth assigned numbers reference time update service UUID = 0x1806
+#define CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805
 #define ENVIRO_UUID "181A"
 
 /* Vital Signs Service Charcteristics UUIDS*/
@@ -43,6 +42,7 @@
 #define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2BA0
 
 
+bool syncSysTime(NimBLEAttValue& value);
 
 class BleServer  {
     private: 
@@ -79,8 +79,6 @@ class BleServer  {
         NimBLEService *pCurTimeService = nullptr;
             NimBLECharacteristic *pCurTime = nullptr;
 
-
-        
         /* Accel Struct */ 
         struct BleAccel_t {
             float x;
@@ -128,7 +126,6 @@ class BleServer  {
 
         BleActivityClass_t _activityClass;
 
-
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
             uint8_t flags = 0x06; //Battery Level and Additional Status bits set
@@ -138,7 +135,6 @@ class BleServer  {
         }__attribute__((packed));
 
         BatteryLevel_t _batteryLevel;
-
 
         /* Battery Level Status Struct */
         struct BatteryEnergy_t {
