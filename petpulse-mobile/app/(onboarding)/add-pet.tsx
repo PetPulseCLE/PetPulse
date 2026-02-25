@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -6,6 +6,7 @@ import {
   View,
   Keyboard,
   TouchableWithoutFeedback,
+  useColorScheme,
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker, { type DateType } from "@amjed-bouhouch/react-native-ui-datepicker";
@@ -79,6 +80,8 @@ function toSafeDate(value: DateType): Date | null {
 }
 
 export default function AddPetScreen() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === "dark";
   const tint = useThemeColor({}, "tint");
   const brandBlack = useThemeColor({ light: "#0B0B1A", dark: "#1F2937" }, "text");
 
@@ -102,8 +105,12 @@ export default function AddPetScreen() {
     { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" },
     "text"
   );
+  const selectBorder = useThemeColor(
+    { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.45)" },
+    "text"
+  );
 
-  const modalBg = useThemeColor({ light: "#FFFFFF", dark: "#111827" }, "background");
+  const modalBg = useThemeColor({ light: "#FFFFFF", dark: "#F3F4F6" }, "background");
 
 
   // ---- form state ----
@@ -118,6 +125,7 @@ export default function AddPetScreen() {
 
   const [weight, setWeight] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const breedOptions = useMemo(() => {
     if (species === "dog") return DOG_BREEDS;
@@ -144,6 +152,19 @@ export default function AddPetScreen() {
     return requiredOk && mixedOk;
   }, [petName, species, breed, dob, weight, weightNumber, isMixed, secondaryBreed]);
 
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const onShow = Keyboard.addListener(showEvent, () => setIsKeyboardOpen(true));
+    const onHide = Keyboard.addListener(hideEvent, () => setIsKeyboardOpen(false));
+
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
   function formatDob(d: Date | null) {
     if (!d || Number.isNaN(d.getTime())) return "";
     const yyyy = d.getFullYear();
@@ -168,14 +189,27 @@ export default function AddPetScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ThemedView className="flex-1 px-6 pt-20 pb-8">
-        {/* Header */}
-        <View className="items-center mb-6">
-          <ThemedText type="title">Add Your Pet</ThemedText>
-          <ThemedText style={{ opacity: 0.85 }} className="text-center mt-2">
-          A few details for tailored care
-          </ThemedText>
-        </View>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={24}
+      >
+        <ThemedView className="flex-1 px-6 pt-20 pb-8 ">
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1,
+              justifyContent: "center",
+              paddingBottom: 32, }}
+          >
+            {/* Header */}
+            <View className="items-center mb-6">
+              <ThemedText type="title">Add Your Pet</ThemedText>
+              <ThemedText style={{ opacity: 0.85 }} className="text-center mt-2">
+                A few details for tailored care
+              </ThemedText>
+            </View>
 
         {/* Form Card */}
         <View
@@ -218,7 +252,10 @@ export default function AddPetScreen() {
               setIsMixed(false);
             }}
           >
-            <SelectTrigger className="mb-4">
+            <SelectTrigger
+              className="mb-4 w-full"
+              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+            >
               <SelectValue placeholder="Choose Dog or Cat" />
             </SelectTrigger>
 
@@ -245,7 +282,10 @@ export default function AddPetScreen() {
             onValueChange={(option) => setBreed(option?.value ?? "")}
             disabled={!species}
           >
-            <SelectTrigger className="mb-3">
+            <SelectTrigger
+              className="mb-3 w-full"
+              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+            >
               <SelectValue placeholder={species ? "Select a breed" : "Select species first"} />
             </SelectTrigger>
 
@@ -290,8 +330,13 @@ export default function AddPetScreen() {
                 onValueChange={(option) => setSecondaryBreed(option?.value ?? "")}
                 disabled={!species}
               >
-                <SelectTrigger className="mb-4">
-                  <SelectValue placeholder="Select secondary breed" />
+                <SelectTrigger
+                  className="mb-4 w-full"
+                  style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+                >
+                  <SelectValue
+                    placeholder={breed ? "Select secondary breed" : "Select primary breed first"}
+                  />
                 </SelectTrigger>
 
                 <SelectContent>
@@ -360,13 +405,21 @@ export default function AddPetScreen() {
           </ThemedText>
         </Pressable>
 
-        {/* DOB modal */}
-        <Modal visible={dobOpen} transparent animationType="fade" onRequestClose={() => setDobOpen(false)}>
-          <Pressable
-            className="flex-1 items-center justify-center px-6"
-            onPress={() => setDobOpen(false)}
-            style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
-          >
+          {/* Continue button hidden while keyboard is open */}
+          {!isKeyboardOpen ? (
+            <Pressable
+              onPress={onContinue}
+              className="mt-6 h-14 w-full rounded-2xl items-center justify-center"
+              style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
+            >
+              <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+                Continue
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
+          {/* DOB modal */}
+          <Modal visible={dobOpen} transparent animationType="fade" onRequestClose={() => setDobOpen(false)}>
             <Pressable
               onPress={() => {}}
               className="w-full rounded-2xl p-4 border"
@@ -387,9 +440,35 @@ export default function AddPetScreen() {
                 style={{ backgroundColor: brandBlack }}
                 onPress={() => setDobOpen(false)}
               >
-                <ThemedText type="defaultSemiBold" style={{ color: "white" }}>  
-                  Done
+                <ThemedText
+                  type="defaultSemiBold"
+                  className="mb-3"
+                  style={isDarkMode ? { color: "#111827" } : undefined}
+                >
+                  Select Date of Birth
                 </ThemedText>
+
+                <DateTimePicker
+                  mode="single"
+                  date={dob ?? new Date()}
+                  maxDate={new Date()}
+                  headerTextStyle={isDarkMode ? { color: "#111827" } : undefined}
+                  weekDaysTextStyle={isDarkMode ? { color: "#4B5563" } : undefined}
+                  calendarTextStyle={isDarkMode ? { color: "#111827" } : undefined}
+                  todayTextStyle={isDarkMode ? { color: "#111827" } : undefined}
+                  selectedTextStyle={isDarkMode ? { color: "#FFFFFF" } : undefined}
+                  onChange={(params) => setDob(toSafeDate(params.date))}
+                />
+
+                <Pressable
+                  className="mt-6 h-12 rounded-xl items-center justify-center"
+                  style={{ backgroundColor: brandBlack }}
+                  onPress={() => setDobOpen(false)}
+                >
+                  <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+                    Done
+                  </ThemedText>
+                </Pressable>
               </Pressable>
             </Pressable>
           </Pressable>
