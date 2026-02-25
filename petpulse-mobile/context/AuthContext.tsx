@@ -1,16 +1,16 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User } from "@supabase/supabase-js";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
+import { supabase } from "../lib/supabase";
 
 function getEmailRedirectTo(): string {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     const origin =
-      (typeof window !== 'undefined' && window.location?.origin) ||
-      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
+      (typeof window !== "undefined" && window.location?.origin) ||
+      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? "http://localhost:3000");
     return `${origin}/auth/callback`;
   }
-  return 'petpulse://auth/callback';
+  return "petpulse://auth/callback";
 }
 
 type AuthContextType = {
@@ -49,19 +49,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session.user);
     };
 
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(({ data: { session: initialSession } }) => {
         if (!mounted) return;
         applySession(initialSession);
       })
       .catch((err) => {
-        if (__DEV__) console.error('[AuthContext] getSession failed:', err);
+        if (__DEV__) console.error("[AuthContext] getSession failed:", err);
       })
       .finally(() => {
         if (mounted) setLoading(false);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       applySession(session);
     });
@@ -105,12 +108,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return await supabase.auth.verifyOtp({
       email,
       token,
-      type: 'signup',
+      type: "signup",
     });
-  }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, verifyOtp }}>
+    <AuthContext.Provider
+      value={{ user, session, loading, signUp, signIn, signOut, verifyOtp }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,21 +1,22 @@
+import { Link, router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
-  StyleSheet,
+  Alert,
   Keyboard,
+  StyleSheet,
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { Link, router } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/context/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function isValidEmail(email: string) {
   // Basic email format check (simple on purpose)
@@ -31,6 +32,8 @@ export default function LoginScreen() {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const lockoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { signIn } = useAuth();
+
+  const { top } = useSafeAreaInsets();
 
   useEffect(() => {
     if (failedAttempts < 5) return;
@@ -142,7 +145,7 @@ export default function LoginScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ThemedView style={styles.screen}>
+      <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
         <View style={styles.header}>
           <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
             <Ionicons name="heart" size={30} color="white" />

@@ -142,6 +142,7 @@ export default function SignupScreen() {
   }
 
   const onVerify = async () => {
+    setSubmitting(true);
     try {
       const { data, error } = await verifyOtp(email, token);
       if (error) {
@@ -151,6 +152,8 @@ export default function SignupScreen() {
       }
     } catch (e: any) {
       setError(e?.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -184,7 +187,7 @@ export default function SignupScreen() {
             <TextInput
               value={token}
               onChangeText={setToken}
-              placeholder="Enter 6-digit code"
+              placeholder="Enter 8-digit code"
               placeholderTextColor={placeholder}
               keyboardType="number-pad"
               maxLength={8}
@@ -205,9 +208,13 @@ export default function SignupScreen() {
                 token.length !== 8 && styles.buttonDisabled,
               ]}
             >
-              <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-                Verify
-              </ThemedText>
+              {submitting ? (
+                <ActivityIndicator color={spinnerColor} />
+              ) : (
+                <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                  Verify
+                </ThemedText>
+              )}
             </TouchableOpacity>
           </View>
         ) : (
