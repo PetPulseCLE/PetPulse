@@ -22,6 +22,7 @@ bool syncSysTime(NimBLEAttValue& value) {
     timeinfo.tm_mday = value[3];
     timeinfo.tm_hour = value[4];
     timeinfo.tm_min = value[5];
+    timeinfo.tm_sec = value[6];
 
     time_t t = mktime(&timeinfo);
     struct timeval tv = {.tv_sec = t, .tv_usec = 0};
@@ -45,6 +46,16 @@ void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo)
 void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
     ESP_LOGI(TAG, "Client disconnected (reason=%d) - start advertising", reason);
     NimBLEDevice::startAdvertising();
+}
+
+void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
+    if(!connInfo.isEncrypted()) {
+        NimBLEDevice::getServer()->disconnect(connInfo.getConnHandle());
+        NimBLEDevice::deleteBond(connInfo.getAddress());
+        ESP_LOGW(TAG, "Authentication failed - disconnecting client");
+        return;
+    }
+    ESP_LOGI(TAG, "Authentication successful bonded: %s", connInfo.isBonded() ? "true" : "false");
 }
 
 /* Characteristic Callbacks */
@@ -73,6 +84,11 @@ void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, Nim
 
 bool BleServer::init(int8_t tx_power) {
 
+    if(NimBLEDevice::isInitialized()) {
+        ESP_LOGW(TAG, "BLE device already initialized");
+        return false;
+    }
+
     NimBLEDevice::init(DEVICE_NAME);
 
     /* Request mtu = 512 */
@@ -88,6 +104,12 @@ bool BleServer::init(int8_t tx_power) {
 
     /* Create server*/
     pServer = NimBLEDevice::createServer();
+
+    if(pServer == nullptr) {
+        ESP_LOGE(TAG, "Failed to create server");
+        NimBLEDevice::deinit();
+        return false;
+    }
     pServer->setCallbacks(&serverCallbacks); 
 
     /* Define services and respective charcteristics*/
@@ -147,7 +169,6 @@ bool BleServer::deinit() {
     if(!NimBLEDevice::isInitialized()) {
         return false;
     } 
-
     NimBLEDevice::deinit();
     return true;
 }

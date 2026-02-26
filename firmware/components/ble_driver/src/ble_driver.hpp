@@ -39,7 +39,7 @@
 #define BATTERY_HEALTH_STAT_UUID "2BEA"                            // Bluetooth assigned numbers battery health status(summary and current temp fields) charcteristic UUID = 0x2BEA
 
 /* Current Time Service Charcteristics */
-#define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2BA0
+#define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2A2B
 
 
 bool syncSysTime(NimBLEAttValue& value);
@@ -238,6 +238,7 @@ extern BleServer bleServer;
 class ServerCallbacks : public NimBLEServerCallbacks {
    void onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) override;
    void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override;
+   void onAuthenticationComplete(NimBLEConnInfo& connInfo) override;
 };
 
 extern ServerCallbacks serverCallbacks;
