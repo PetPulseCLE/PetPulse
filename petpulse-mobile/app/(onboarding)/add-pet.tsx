@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -192,20 +191,15 @@ export default function AddPetScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={24}
-      >
-        <ThemedView className="flex-1 px-6 pt-20 pb-8 ">
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ flexGrow: 1,
-              justifyContent: "center",
-              paddingBottom: 32, }}
-          >
+      <ThemedView className="flex-1 px-6 pt-20 pb-8 ">
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1,
+            justifyContent: "center",
+            paddingBottom: 32, }}
+        >
             {/* Header */}
             <View className="items-center mb-6">
               <ThemedText type="title">Add Your Pet</ThemedText>
@@ -256,6 +250,7 @@ export default function AddPetScreen() {
             }}
           >
             <SelectTrigger
+              onPress={() => Keyboard.dismiss()}
               className="mb-4 w-full"
               style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
             >
@@ -292,6 +287,7 @@ export default function AddPetScreen() {
             disabled={!species}
           >
             <SelectTrigger
+              onPress={() => Keyboard.dismiss()}
               className="mb-3 w-full"
               style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
             >
@@ -347,6 +343,7 @@ export default function AddPetScreen() {
                 disabled={!species || !breed}
               >
                 <SelectTrigger
+                  onPress={() => Keyboard.dismiss()}
                   className="mb-4 w-full"
                   style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
                 >
@@ -474,8 +471,7 @@ export default function AddPetScreen() {
               </Pressable>
             </Pressable>
           </Modal>
-        </ThemedView>
-      </KeyboardAvoidingView>
+      </ThemedView>
     </TouchableWithoutFeedback>
   );
 }
