@@ -23,12 +23,30 @@ bool syncSysTime(NimBLEAttValue& value) {
     timeinfo.tm_hour = value[4];
     timeinfo.tm_min = value[5];
     timeinfo.tm_sec = value[6];
+    timeinfo.tm_isdst = 0;
 
     time_t t = mktime(&timeinfo);
     struct timeval tv = {.tv_sec = t, .tv_usec = 0};
     settimeofday(&tv, NULL);
     return true;
 }
+
+Timestamp_t getUTCTimestamp() {
+    Timestamp_t ts;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm tm_info;
+    gmtime_r(&tv.tv_sec, &tm_info);
+    ts.year = tm_info.tm_year + 1900;
+    ts.month = tm_info.tm_mon + 1;
+    ts.day = tm_info.tm_mday;
+    ts.hours = tm_info.tm_hour;
+    ts.minutes = tm_info.tm_min;
+    ts.seconds = tm_info.tm_sec;
+    ts.m_seconds = tv.tv_usec / 1000;
+    return ts;
+}
+
 
 /* Server Callbacks */
 void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) {
@@ -186,6 +204,40 @@ bool BleServer::startAdvertising() {
 
 bool BleServer::isAdvertising() {
     return NimBLEDevice::getAdvertising()->isAdvertising();
+}
+ 
+void BleServer::setAccel(bool notify) {
+    if(notify) {
+        _accel.timestamp = getUTCTimestamp();
+        pAccel->setValue(_accel);
+        pAccel->notify();
+    }
+    else {
+        _accel.timestamp = getUTCTimestamp();
+        pAccel->setValue(_accel);
+    }
+}
+void BleServer::setGyro(bool notify) {
+    if(notify) {
+        _gyro.timestamp = getUTCTimestamp();
+        pGyro->setValue(_accel);
+        pGyro->notify();
+    }
+    else {
+        _gyro.timestamp = getUTCTimestamp();
+        pGyro->setValue(_gyro);
+    }
+}
+void BleServer::setMagf(bool notify) {
+    if(notify) {
+        _magf.timestamp = getUTCTimestamp();
+        pMagf->setValue(_magf);
+        pMagf->notify();
+    }
+    else {
+        _magf.timestamp = getUTCTimestamp();
+        pMagf->setValue(_magf);
+    }
 }
 
 /* Battery Level Struct Setters */

@@ -85,7 +85,7 @@ export const useBleTime = (connected: Peripheral | null) => {
   /* Send current time on connect/reconnect, and every 24 hours */
   useEffect(() => {
     if (!connected) return;
-
+    sendCurrentTime(connected);
     if (shouldSendTime()) {
       sendCurrentTime(connected);
     }

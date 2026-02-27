@@ -7,6 +7,7 @@
 #include "NimBLEConnInfo.h"
 #include "BNO08xGlobalTypes.hpp"
 #include "NimBLEServer.h"
+#include <sys/time.h>
 
 #define DEVICE_NAME "PetPulse-0001"
 
@@ -43,6 +44,18 @@
 
 
 bool syncSysTime(NimBLEAttValue& value);
+
+struct Timestamp_t {
+    uint16_t year = 0x0000;
+    uint8_t month = 0x00;
+    uint8_t day = 0x00;
+    uint8_t hours = 0x00;
+    uint8_t minutes = 0x00;
+    uint8_t seconds = 0x00;
+    uint16_t m_seconds = 0x00;
+}__attribute__((packed));
+
+Timestamp_t getUTCTimestamp();
 
 class BleServer  {
     private: 
@@ -85,6 +98,15 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleAccel_t& operator=(const bno08x_accel_t& accel) {
+                x = accel.x;
+                y = accel.y;
+                z = accel.z;
+                accuracy = static_cast<uint8_t>(accel.accuracy);
+                return *this;
+            }
         }__attribute__((packed));
 
         BleAccel_t _accel;
@@ -95,6 +117,15 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleGyro_t& operator=(const bno08x_gyro_t& gyro) {
+                x = gyro.x;
+                y = gyro.y;
+                z = gyro.z;
+                accuracy = static_cast<uint8_t>(gyro.accuracy);
+                return *this;
+            }
         }__attribute__((packed));
 
         BleGyro_t _gyro;
@@ -105,6 +136,15 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleMagf_t& operator=(const bno08x_magf_t& magf) {
+                x = magf.x;
+                y = magf.y;
+                z = magf.z;
+                accuracy = static_cast<uint8_t>(magf.accuracy);
+                return *this;
+            }
         }__attribute__((packed));
 
         BleMagf_t _magf;
@@ -113,11 +153,20 @@ class BleServer  {
         struct BleStepCount_t {
             uint32_t latency;
             uint16_t steps;
+            uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleStepCount_t& operator=(const bno08x_step_counter_t& stepCount) {
+                latency = stepCount.latency;
+                steps = stepCount.steps;
+                accuracy = static_cast<uint8_t>(stepCount.accuracy);
+                return *this;
+            }
         }__attribute__((packed));
 
         BleStepCount_t _stepCount;
 
-        /* Activity Classifier Struct */ 
+        /* Activity Classifier Struct TODO.... */ 
         struct BleActivityClass_t {
             uint8_t confidence[10];
             uint8_t mostLikelyState;
@@ -176,6 +225,7 @@ class BleServer  {
 
         CurrentTime_t _currentTime;
 
+
         public: 
             bool init(int8_t tx_power);
             bool deinit();
@@ -230,6 +280,7 @@ class BleServer  {
             void setBattEnergyValue(bool notify = false, bool indicate = true);
             void setBattTimeValue(bool notify = false, bool indicate = true);
             void setBattHealthValue(bool notify = false, bool indicate = true);
+            
 
 };
 
