@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
+import { useAuth } from '../../context/AuthContext';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
 const SCAN_TIMEOUT = 10;
@@ -32,6 +33,7 @@ export const useBleConnection = () => {
   const reconnecting = useRef(false);
   const noDeviceAlertShown = useRef(false);
   const [mtu, setMtu] = useState(0);
+  const { session } = useAuth();
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -272,10 +274,12 @@ export const useBleConnection = () => {
       /* All attempts exhausted */
       reconnecting.current = false;
       setReconnectFailed(true);
-      Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
-        { text: 'Retry', onPress: () => reconnect() },
-        { text: 'Dismiss', style: 'cancel' },
-      ]);
+      if (session) {
+        Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
+          { text: 'Retry', onPress: () => reconnect() },
+          { text: 'Dismiss', style: 'cancel' },
+        ]);
+      }
     }
   };
 
