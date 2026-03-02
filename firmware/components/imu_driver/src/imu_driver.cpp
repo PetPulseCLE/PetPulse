@@ -549,60 +549,43 @@ void motion_detection_task(void *pvParameters) {
 }
 
 void data_processing_task(void *pvParameters) {
-    static volatile int sample_count = 0;
-    static constexpr int MAX_SAMPLES = 10;
+    static int step_samples = 0;
+    static int activity_samples = 0;
+    static constexpr int MAX_STEP_SAMPLES = 10;
+    static constexpr int MAX_ACTIVITY_SAMPLES = 10;
 
     imu_report_cfg_t rpts_to_enable[] = {
-        {SH2_ACCELEROMETER, 100000UL},
-        {SH2_GYROSCOPE_CALIBRATED, 100000UL},
-        {SH2_MAGNETIC_FIELD_CALIBRATED, 100000UL},
-        {SH2_ROTATION_VECTOR, 100000UL},
-        {SH2_PERSONAL_ACTIVITY_CLASSIFIER, 100000UL}, 
+        {SH2_STEP_COUNTER, 100000UL},
+        {SH2_PERSONAL_ACTIVITY_CLASSIFIER, 100000UL},
     };
 
     imu_enable_multi_rpts(rpts_to_enable, sizeof(rpts_to_enable)/sizeof(rpts_to_enable[0]));
 
     imu.register_cb([]()
     {
-        if(sample_count >= MAX_SAMPLES) return;
-        if(!bleServer.isAuthenticated()){
-            return;
-        } else {
-        if(imu_has_new_data(SH2_ACCELEROMETER)) {
-            bno08x_accel_t accel = imu.rpt.accelerometer.get();
-            ESP_LOGI(TAG, "[%d/%d] Accel: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, accel.x, accel.y, accel.z);
-            bleServer.setAccel(accel);
+        if(step_samples >= MAX_STEP_SAMPLES && activity_samples >= MAX_ACTIVITY_SAMPLES) return;
+        if(!bleServer.isAuthenticated()) return;
+
+        if(imu_has_new_data(SH2_STEP_COUNTER) && step_samples < MAX_STEP_SAMPLES) {
+            bno08x_step_counter_t step_counter = imu.rpt.step_counter.get();
+            ESP_LOGI(TAG, "[%d/%d] Step Counter: %d", step_samples + 1, MAX_STEP_SAMPLES, step_counter.steps);
+            bleServer.setStepCount(step_counter);
+            step_samples = step_samples + 1;
         }
-        if(imu_has_new_data(SH2_GYROSCOPE_CALIBRATED)) {
-            bno08x_gyro_t gyro = imu.rpt.cal_gyro.get();
-            ESP_LOGI(TAG, "[%d/%d] Gyro: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, gyro.x, gyro.y, gyro.z);
-            bleServer.setGyro(gyro);
-        }
-        if(imu_has_new_data(SH2_MAGNETIC_FIELD_CALIBRATED)) {
-            bno08x_magf_t magf = imu.rpt.cal_magnetometer.get();
-            ESP_LOGI(TAG, "[%d/%d] Magf: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, magf.x, magf.y, magf.z);
-            bleServer.setMagf(magf);
-        }
-        if(imu_has_new_data(SH2_ROTATION_VECTOR)) {
-            bno08x_quat_t rv = imu.rpt.rv.get_quat();
-            ESP_LOGI(TAG, "[%d/%d] RV: %.2f, %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, rv.real, rv.i, rv.j, rv.k);
-        }
-        if(imu_has_new_data(SH2_PERSONAL_ACTIVITY_CLASSIFIER)) {
+        if(imu_has_new_data(SH2_PERSONAL_ACTIVITY_CLASSIFIER) && activity_samples < MAX_ACTIVITY_SAMPLES) {
             bno08x_activity_classifier_t activity = imu.rpt.activity_classifier.get();
-            ESP_LOGI(TAG, "[%d/%d] Activity: %d", sample_count + 1, MAX_SAMPLES, activity.mostLikelyState);
-            ESP_LOGI(TAG, "Confidence: %d", activity.confidence);
+            ESP_LOGI(TAG, "[%d/%d] Activity: %d", activity_samples + 1, MAX_ACTIVITY_SAMPLES, activity.mostLikelyState);
+            bleServer.setActivityClass(activity);
+            activity_samples = activity_samples + 1;
         }
 
-        sample_count++;
-
-        if(sample_count >= MAX_SAMPLES) {
-            ESP_LOGI(TAG, "=== %d samples sent, disabling reports ===", MAX_SAMPLES);
+        if(step_samples >= MAX_STEP_SAMPLES && activity_samples >= MAX_ACTIVITY_SAMPLES) {
+            ESP_LOGI(TAG, "=== All samples collected, disabling reports ===");
             imu_disable_all_rpts();
-        }
         }
     });
 
-    while(sample_count < MAX_SAMPLES) {
+    while(step_samples < MAX_STEP_SAMPLES || activity_samples < MAX_ACTIVITY_SAMPLES) {
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 

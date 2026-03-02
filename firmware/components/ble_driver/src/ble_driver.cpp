@@ -59,12 +59,26 @@ void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo)
      *  Latency: number of intervals allowed to skip.
      *  Timeout: 10 millisecond increments.
      */
-    pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 180);
+    pServer->updateConnParams(connInfo.getConnHandle(), 24, 48, 0, 400);
 }
 void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
-    ESP_LOGI(TAG, "Client disconnected (reason=%d) - start advertising", reason);
     bleServer.setAuthenticated(false);
-    NimBLEDevice::startAdvertising();
+
+    switch(reason) {
+        case BLE_HS_ETIMEOUT_HCI:
+        case BLE_HS_EOS:
+        case BLE_HS_ECONTROLLER:
+        case BLE_HS_ENOTSYNCED:
+            ESP_LOGW(TAG, "Client disconnected - BLE stack reset (reason=%d), waiting for host re-sync", reason);
+            return;
+        default:
+            ESP_LOGI(TAG, "Client disconnected (reason=%d) - restarting advertising", reason);
+            break;
+    }
+
+    if(!NimBLEDevice::startAdvertising()) {
+        ESP_LOGE(TAG, "Failed to restart advertising after disconnect");
+    }
 }
 
 void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
@@ -80,6 +94,11 @@ void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
 
 /* Characteristic Callbacks */
 void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
+    if(!connInfo.isEncrypted()) {
+        ESP_LOGW(TAG, "onWrite: rejecting write from unencrypted client");
+        return;
+    }
+
     if(pCharacteristic->getUUID() == NimBLEUUID(CUR_TIME_UUID)) {
         NimBLEAttValue value = pCharacteristic->getValue();
         if(value.size() < 10) {
@@ -146,6 +165,7 @@ bool BleServer::init(int8_t tx_power) {
         pMagf = pActivityService->createCharacteristic(MAGF_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
         pStepCount = pActivityService->createCharacteristic(STEP_COUNT_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
         pActivityClass = pActivityService->createCharacteristic(ACTIVITY_CLASS_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+        pRV = pActivityService->createCharacteristic(RV_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
 
         /*Start the Activity Service*/
         pActivityService->start();
@@ -169,7 +189,7 @@ bool BleServer::init(int8_t tx_power) {
         pBatteryService->start();
     
     pCurTimeService = pServer->createService(CUR_TIME_SERVICE_UUID);
-        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_NR);
+        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_NR);
         pCurTime->setCallbacks(&chrCallbacks);
 
         /*Start the current time service*/
