@@ -10,20 +10,14 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    // Matches deep link scheme used in README (petpulse://...)
-    scheme: "petpulse",
+    scheme: "petpulsemobile",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier:
-        process.env.BUNDLE_IDENTIFIER ?? "com.anonymous.petpulsemobile",
+      bundleIdentifier: process.env.BUNDLE_IDENTIFIER,
       appleTeamId: process.env.APPLE_TEAM_ID,
       infoPlist: {
-        NSLocationWhenInUseUsageDescription:
-          "PetPulse uses your location to show nearby and live pet safety features.",
-        NSLocationAlwaysAndWhenInUseUsageDescription:
-          "PetPulse uses your location in the background to help track and protect your pet.",
         UIBackgroundModes: ["location"],
       },
     },
