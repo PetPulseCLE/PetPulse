@@ -17,7 +17,11 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<any>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: { firstName?: string; lastName?: string }
+  ) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
@@ -75,11 +79,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    metadata?: { firstName?: string; lastName?: string }
+  ) => {
     return await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: getEmailRedirectTo() },
+      options: {
+        emailRedirectTo: getEmailRedirectTo(),
+        data: metadata
+          ? {
+              first_name: metadata.firstName,
+              last_name: metadata.lastName,
+            }
+          : undefined,
+      },
     });
   };
 

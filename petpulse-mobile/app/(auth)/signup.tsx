@@ -26,6 +26,8 @@ function isPasswordValid(pw: string) {
 }
 
 export default function SignupScreen() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,14 +43,18 @@ export default function SignupScreen() {
 
   const canSubmit = useMemo(() => {
     const e = email.trim();
+    const first = firstName.trim();
+    const last = lastName.trim();
     return (
+      first.length > 0 &&
+      last.length > 0 &&
       e.length > 0 &&
       isValidEmail(e) &&
       isPasswordValid(password) &&
       isPasswordValid(confirmPassword) &&
       password === confirmPassword
     );
-  }, [email, password, confirmPassword]);
+  }, [firstName, lastName, email, password, confirmPassword]);
 
   const passwordValid = useMemo(() => isPasswordValid(password), [password]);
   const confirmValid = useMemo(
@@ -95,7 +101,15 @@ export default function SignupScreen() {
     const trimmedEmail = email.trim();
 
     // Client-side validation
-    if (!trimmedEmail || !password || !confirmPassword) {
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+    if (
+      !trimmedFirst ||
+      !trimmedLast ||
+      !trimmedEmail ||
+      !password ||
+      !confirmPassword
+    ) {
       setError("Please fill in all fields.");
       return;
     }
@@ -117,6 +131,7 @@ export default function SignupScreen() {
       const { data: signUpData, error: signUpError } = await signUp(
         trimmedEmail,
         password,
+        { firstName: trimmedFirst, lastName: trimmedLast },
       );
       if (signUpError) {
         if (
@@ -144,7 +159,7 @@ export default function SignupScreen() {
   const onVerify = async () => {
     setSubmitting(true);
     try {
-      const { data, error } = await verifyOtp(email, token);
+      const { error } = await verifyOtp(email, token);
       if (error) {
         setError(error.message);
       } else {
@@ -224,6 +239,48 @@ export default function SignupScreen() {
               { backgroundColor: cardBg, borderColor: cardBorder },
             ]}
           >
+            <ThemedText type="defaultSemiBold" style={styles.label}>
+              First Name
+            </ThemedText>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="First name"
+              placeholderTextColor={placeholder}
+              autoCapitalize="words"
+              textContentType="givenName"
+              editable={!submitting}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                },
+              ]}
+            />
+
+            <ThemedText type="defaultSemiBold" style={styles.label}>
+              Last Name
+            </ThemedText>
+            <TextInput
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder="Last name"
+              placeholderTextColor={placeholder}
+              autoCapitalize="words"
+              textContentType="familyName"
+              editable={!submitting}
+              style={[
+                styles.input,
+                {
+                  color: inputText,
+                  backgroundColor: inputBg,
+                  borderColor: inputBorder,
+                },
+              ]}
+            />
+
             <ThemedText type="defaultSemiBold" style={styles.label}>
               Email
             </ThemedText>
