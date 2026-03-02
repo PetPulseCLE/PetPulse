@@ -54,7 +54,11 @@ export default function Settings() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const firstName = user?.user_metadata?.first_name ?? "N/A";
+  const lastName = user?.user_metadata?.last_name ?? "N/A";
+  const fullName = firstName + " " + lastName
+  const email = user?.email ?? "N/A";
 
   const handleScan = async () => {
     if (initialized) {
@@ -108,22 +112,22 @@ export default function Settings() {
   return (
     <View className="flex flex-col pt-5 bg-background h-full">
       {/* ============================= USER ACCOUNT SETTINGS ============================= */}
-      <View className="flex flex-row mb-12 px-4 justify-evenly">
+      <View className="flex flex-row mb-12 px-4 justify-evenly items-center">
         {/* TODO: Allow Users to change their profile picture */}
-        <Avatar alt={"user.name"} className="size-24">
+        <Avatar alt={fullName} className="size-24">
           <AvatarImage source={{ uri: "" }} />
           <AvatarFallback>
-            <Text>
-              {"user.name.first".charAt(0).toUpperCase() +
-                "user.name.last".charAt(0).toUpperCase()}
+            <Text className="text-4xl">
+              {firstName.charAt(0).toUpperCase() +
+                lastName.charAt(0).toUpperCase()}
             </Text>
           </AvatarFallback>
         </Avatar>
         <View className="flex flex-col">
           <Text className="text-secondary-foreground text-lg">
-            {"user.name.first " + "user.name.last"}
+            {fullName}
           </Text>
-          <Text className="text-muted-foreground text-md">{"user.email"}</Text>
+          <Text className="text-muted-foreground text-md">{email}</Text>
         </View>
       </View>
       <View className="rounded-full mx-3 overflow-hidden mb-6">
