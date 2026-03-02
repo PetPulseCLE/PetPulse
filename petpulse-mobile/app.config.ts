@@ -18,10 +18,6 @@ export default {
         bundleIdentifier: process.env.BUNDLE_IDENTIFIER ,
         appleTeamId: process.env.APPLE_TEAM_ID,
         infoPlist: {
-          NSLocationWhenInUseUsageDescription:
-            "PetPulse uses your location to show nearby and live pet safety features.",
-          NSLocationAlwaysAndWhenInUseUsageDescription:
-            "PetPulse uses your location in the background to help track and protect your pet.",
           UIBackgroundModes: ["location"],
         }
       },
