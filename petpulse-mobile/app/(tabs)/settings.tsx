@@ -55,10 +55,10 @@ export default function Settings() {
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const { user, signOut } = useAuth();
-  const firstName = user?.user_metadata?.first_name ?? "N/A";
-  const lastName = user?.user_metadata?.last_name ?? "N/A";
-  const fullName = firstName + " " + lastName
-  const email = user?.email ?? "N/A";
+  const firstName = user?.user_metadata?.first_name ?? "";
+  const lastName = user?.user_metadata?.last_name ?? "";
+  const fullName = firstName + " " + lastName;
+  const email = user?.email ?? "";
 
   const handleScan = async () => {
     if (initialized) {
@@ -124,9 +124,7 @@ export default function Settings() {
           </AvatarFallback>
         </Avatar>
         <View className="flex flex-col">
-          <Text className="text-secondary-foreground text-lg">
-            {fullName}
-          </Text>
+          <Text className="text-secondary-foreground text-lg">{fullName}</Text>
           <Text className="text-muted-foreground text-md">{email}</Text>
         </View>
       </View>
