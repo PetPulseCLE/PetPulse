@@ -117,11 +117,12 @@ export const useBleActivity = (connected: Peripheral | null) => {
       const timestamp = UTCFromBytes(stepCountView.buffer.slice(7, 16));
       // TODO: Read stepCount into database
       const stepCountData = { latency, steps, accuracy, timestamp };
+      console.log('stepCount: ', stepCountData);
     }
     if (chr === CHR_UUIDS.activityClass) {
       const activityClassBuffer = new Uint8Array(data.value);
       const activityClassView = new DataView(activityClassBuffer.buffer);
-      const confidenceArray = new Uint8Array();
+      const confidenceArray = new Uint8Array(10);
       for (let i = 0; i < 10; i++) {
         confidenceArray.set([activityClassView.getUint8(i)], i);
       }
@@ -130,6 +131,7 @@ export const useBleActivity = (connected: Peripheral | null) => {
       const timestamp = UTCFromBytes(activityClassView.buffer.slice(12, 21));
       // TODO: Read activityClass into database
       const activityData = { confidenceArray, activityClass, accuracy, timestamp };
+      console.log('activityClass: ', activityData);
     }
     if (chr === CHR_UUIDS.rv) {
       const rvBuffer = new Uint8Array(data.value);
@@ -138,11 +140,21 @@ export const useBleActivity = (connected: Peripheral | null) => {
     }
   };
 
-  const subscribeToActivity = async (peripheral: Peripheral) => {
+  const subscribeToRaw = async (peripheral: Peripheral) => {
     try {
       await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
       await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.gyro);
       await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.magf);
+      console.log('Subscribed to activity notifications');
+    } catch (error) {
+      console.log('subscribeToActivity: ', error);
+    }
+  };
+
+  const subscribeToActivity = async (peripheral: Peripheral) => {
+    try {
+      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.stepCount);
+      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.activityClass);
       console.log('Subscribed to activity notifications');
     } catch (error) {
       console.log('subscribeToActivity: ', error);

@@ -9,8 +9,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   BleManager = require('react-native-ble-manager').default;
 }
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -33,8 +32,6 @@ export const UTCFromBytes = (timestamp: ArrayBuffer): Date => {
 };
 
 export const useBleTime = (connected: Peripheral | null) => {
-  const lastTimeRef = useRef<number | null>(null);
-
   const getCurrentTime = (): { data: number[]; time_ms: number } => {
     /* Buffer for current time */
     const buffer = new ArrayBuffer(BLE_TIMESTAMP_SIZE);
@@ -61,52 +58,22 @@ export const useBleTime = (connected: Peripheral | null) => {
     return { data: time, time_ms: date.getTime() };
   };
 
-  const shouldSendTime = (): boolean => {
-    return getCurrentTime().time_ms - (lastTimeRef.current || 0) > 1000 * 60 * 60 * 24;
-  };
-
-  const setLastSentTime = async (time_ms: number) => {
-    try {
-      await AsyncStorage.setItem('LastSentTime', time_ms.toString());
-    } catch (error) {
-      console.log('setLastSentTime: ', error);
-    }
-  };
-
-  const getLastSentTime = async () => {
-    try {
-      const time_ms = await AsyncStorage.getItem('LastSentTime');
-      lastTimeRef.current = time_ms ? parseInt(time_ms) : 0;
-    } catch (error) {
-      console.log('getLastSentTime: ', error);
-    }
-  };
-
   const sendCurrentTime = async (peripheral: Peripheral) => {
     try {
       await BleManager?.retrieveServices(peripheral.id);
-      const { data, time_ms } = getCurrentTime();
+      const { data } = getCurrentTime();
       await BleManager?.writeWithoutResponse(peripheral.id, SERVICE_UUIDS.currentTime, CHR_UUIDS.currentTime, data);
-      await setLastSentTime(time_ms);
-      lastTimeRef.current = time_ms;
       console.log('sendCurrentTime: ', UTCFromBytes(new Uint8Array(data).buffer));
     } catch (error) {
       console.log('sendCurrentTime: ', error);
     }
   };
 
-  /* Load last sent time from storage on mount */
-  useEffect(() => {
-    getLastSentTime();
-  }, []);
-
-  /* Send current time on connect/reconnect, and every 24 hours */
+  /* Send current time on every connect/reconnect — device has no RTC backup
+     and loses its clock on power cycle */
   useEffect(() => {
     if (!connected) return;
     sendCurrentTime(connected);
-    if (shouldSendTime()) {
-      sendCurrentTime(connected);
-    }
   }, [connected]);
 
   return {};

@@ -33,24 +33,55 @@ export const useBleConnection = () => {
   const noDeviceAlertShown = useRef(false);
   const [mtu, setMtu] = useState(0);
 
-  /* Reject promise every 8 seconds for connect to race against */
-  const timeout = (ms: number): Promise<void> => {
-    return new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
-  };
+  type ConnectResult = { success: boolean; error?: string };
 
-  /* If connect fails, await disconnect and continue reconnect for loop (10 attempts) */
-  const connectWithTimeout = (peripheral_id: string): Promise<void> => {
-    return Promise.race([BleManager?.connect(peripheral_id), timeout(8000)]) as Promise<void>;
+  /* Connect with an 8s timeout. Returns { success, error } so callers
+     can handle specific failures (e.g. pairing lost) gracefully.
+     If timeout wins, disconnects to kill any in-progress OS connection
+     so we don't leave a zombie. */
+  const connectWithTimeout = async (peripheral_id: string): Promise<ConnectResult> => {
+    let timedOut = false;
+    const timer = setTimeout(async () => {
+      timedOut = true;
+      try {
+        await BleManager?.disconnect(peripheral_id);
+      } catch (error) {
+        console.log('connectWithTimeout: timeout cleanup disconnect failed:', error);
+      }
+    }, 8000);
+
+    try {
+      await BleManager?.connect(peripheral_id);
+      clearTimeout(timer);
+      if (timedOut) {
+        /* Timeout already fired — tear down the zombie connection */
+        try {
+          await BleManager?.disconnect(peripheral_id);
+        } catch (error) {
+          console.log('connectWithTimeout: zombie cleanup disconnect failed:', error);
+        }
+        console.log('connectWithTimeout: timed out for', peripheral_id);
+        return { success: false, error: 'Timeout' };
+      }
+      return { success: true };
+    } catch (error) {
+      clearTimeout(timer);
+      const errorMsg = timedOut ? 'Timeout' : String(error);
+      console.log('connectWithTimeout:', errorMsg);
+      return { success: false, error: errorMsg };
+    }
   };
 
   /* Start Ble Manager */
-  const initBleManager = async () => {
+  const initBleManager = async (): Promise<boolean> => {
     try {
       await BleManager?.start({ showAlert: true });
       setInitialized(true);
+      return true;
     } catch (error) {
       setInitialized(false);
       console.log('initBleManager: ', error);
+      return false;
     }
   };
 
@@ -137,39 +168,38 @@ export const useBleConnection = () => {
   /* Connect to peripheral, save its ID for reconnection, set connected state */
   const connectToPeripheral = async (peripheral: Peripheral) => {
     userDisconnectedRef.current = false;
-    try {
-      await connectWithTimeout(peripheral.id);
-
-      const peripheral_info = await BleManager?.retrieveServices(peripheral.id);
-
-      /* If peripheral info is not found, clear connections */
-      if (!peripheral_info) {
-        await BleManager?.disconnect(peripheral.id);
-        return;
-      }
-
-      /* Force OS pairing by touching an encrypted characteristic */
-      try {
-        await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
-      } catch {
-        /* Read may fail if characteristic isn't readable — that's fine,
-           the pairing dialog will still have been triggered */
-      }
-
-      setConnectedDevice(peripheral_info);
-      await setSavedPrphId(peripheral.id);
-      await getMtu(peripheral);
-      setReconnectFailed(false);
-      console.log('Connected', peripheral.id);
-    } catch (error) {
+    const result = await connectWithTimeout(peripheral.id);
+    if (!result.success) {
       setConnectedDevice(null);
+      return;
+    }
+
+    const peripheral_info = await BleManager?.retrieveServices(peripheral.id);
+
+    /* If peripheral info is not found, clear connections */
+    if (!peripheral_info) {
       try {
         await BleManager?.disconnect(peripheral.id);
       } catch (error) {
-        console.log('Error Disconnecting: ', error);
+        console.log('connectToPeripheral: disconnect failed:', error);
       }
-      console.log('connectToPeripheral: ', error);
+      setConnectedDevice(null);
+      return;
     }
+
+    /* Force OS pairing by touching an encrypted characteristic */
+    try {
+      await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
+    } catch {
+      /* Read may fail if characteristic isn't readable — that's fine,
+         the pairing dialog will still have been triggered */
+    }
+
+    setConnectedDevice(peripheral_info);
+    await setSavedPrphId(peripheral.id);
+    await getMtu(peripheral);
+    setReconnectFailed(false);
+    console.log('Connected', peripheral.id);
   };
 
   /*
@@ -181,16 +211,9 @@ export const useBleConnection = () => {
   const reconnect = async () => {
     if (!connectedRef.current && !reconnecting.current && !userDisconnectedRef.current) {
       reconnecting.current = true;
-      for (let i = 0; i <= 6; i++) {
-        if (i === 6) {
-          reconnecting.current = false;
-          setReconnectFailed(true);
-          Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
-            { text: 'Retry', onPress: () => reconnect() },
-            { text: 'Dismiss', style: 'cancel' },
-          ]);
-          return;
-        }
+      const MAX_ATTEMPTS = 6;
+
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
         /* Check for previously connected device */
         const bonded_prph_id = await getSavedPrphId();
 
@@ -204,43 +227,10 @@ export const useBleConnection = () => {
           reconnecting.current = false;
           return;
         }
-        try {
-          /* Get Saved Peripheral Info for Display */
-          await connectWithTimeout(bonded_prph_id);
-          const peripheral_info = await BleManager?.retrieveServices(bonded_prph_id);
 
-          if (peripheral_info) {
-            try {
-              await BleManager?.read(bonded_prph_id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
-            } catch {
-              /* Pairing trigger — read failure is acceptable */
-            }
-            setConnectedDevice(peripheral_info);
-            await getMtu(peripheral_info);
-            reconnecting.current = false;
-            setReconnectFailed(false);
-            return;
-          } else {
-            setConnectedDevice(null);
-            setReconnectFailed(true);
-            try {
-              // Clear all connections before attempting to reconnect
-              await BleManager?.disconnect(bonded_prph_id);
-            } catch (error) {
-              console.log('Error Disconnecting: ', error);
-            }
-            console.log('Error Fetching Peripheral Info');
-          }
-        } catch (error) {
-          setReconnectFailed(true);
-          try {
-            await BleManager?.disconnect(bonded_prph_id);
-          } catch (disconnectError) {
-            console.log('Error Disconnecting: ', disconnectError);
-          }
-
-          const errorMsg = String(error);
-          if (errorMsg.includes('Peer removed pairing information')) {
+        const result = await connectWithTimeout(bonded_prph_id);
+        if (!result.success) {
+          if (result.error?.includes('Peer removed pairing information')) {
             reconnecting.current = false;
             await removeSavedPrphId();
             Alert.alert(
@@ -249,13 +239,43 @@ export const useBleConnection = () => {
             );
             return;
           }
+          await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1)));
+          continue;
+        }
 
-          console.log('reconnect', error);
+        const peripheral_info = await BleManager?.retrieveServices(bonded_prph_id);
+
+        if (peripheral_info) {
+          try {
+            await BleManager?.read(bonded_prph_id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
+          } catch {
+            /* Pairing trigger — read failure is acceptable */
+          }
+          setConnectedDevice(peripheral_info);
+          await getMtu(peripheral_info);
+          reconnecting.current = false;
+          setReconnectFailed(false);
+          return;
+        }
+
+        /* retrieveServices failed — clean up and retry */
+        console.log('reconnect: failed to retrieve services');
+        setConnectedDevice(null);
+        try {
+          await BleManager?.disconnect(bonded_prph_id);
+        } catch (error) {
+          console.log('reconnect: disconnect failed:', error);
         }
         await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1)));
       }
+
+      /* All attempts exhausted */
       reconnecting.current = false;
-      Alert.alert('Failed to reconnect to device', 'Please try again');
+      setReconnectFailed(true);
+      Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
+        { text: 'Retry', onPress: () => reconnect() },
+        { text: 'Dismiss', style: 'cancel' },
+      ]);
     }
   };
 
@@ -293,11 +313,13 @@ export const useBleConnection = () => {
   /* Remove listeners on unmount */
   useEffect(() => {
     const init = async () => {
-      await initBleManager();
+      const bleReady = await initBleManager();
+      if (!bleReady) return;
+
       const savedId = await getSavedPrphId();
       if (savedId) {
         await reconnect();
-      } else if (initialized && !noDeviceAlertShown.current) {
+      } else if (!noDeviceAlertShown.current) {
         noDeviceAlertShown.current = true;
         Alert.alert('No Harness Connected', 'Please connect a harness', [
           {
