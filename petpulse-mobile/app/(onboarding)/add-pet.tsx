@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 type Species = "dog" | "cat";
 
@@ -89,6 +91,7 @@ export default function AddPetScreen() {
 
   const inputText = useThemeColor({}, "text");
   const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+  const { user } = useAuth();
 
   const cardBg = useThemeColor(
     { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
@@ -128,6 +131,7 @@ export default function AddPetScreen() {
   const [weight, setWeight] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const breedOptions = useMemo(() => {
     if (species === "dog") return DOG_BREEDS;
@@ -175,7 +179,7 @@ export default function AddPetScreen() {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  function onContinue() {
+  async function onContinue() {
     setError(null);
 
     if (!petName.trim()) return setError("Please enter your pet’s name.");
@@ -184,6 +188,30 @@ export default function AddPetScreen() {
     if (isMixed && !secondaryBreed) return setError("Please select the secondary breed.");
     if (!dob) return setError("Please select date of birth.");
     if (!(weightNumber > 0)) return setError("Weight must be greater than 0.");
+
+    if (!user?.id) {
+      setError("You must be signed in to add a pet.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error: insertError } = await supabase.from("pets").insert({
+      user_id: user.id,
+      name: petName.trim(),
+      pet_type: species,
+      breed_primary: breed,
+      is_mixed_breed: isMixed,
+      breed_secondary: isMixed ? secondaryBreed : null,
+      birth_date: formatDob(dob)!,
+      weight_lbs: weightNumber,
+    });
+
+    setIsSubmitting(false);
+
+    if (insertError) {
+      setError(insertError.message ?? "Failed to save pet.");
+      return;
+    }
 
     // Next step not built yet -> go to tabs for now
     router.replace("/(tabs)");
@@ -475,3 +503,4 @@ export default function AddPetScreen() {
     </TouchableWithoutFeedback>
   );
 }
+
