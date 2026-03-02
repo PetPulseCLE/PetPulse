@@ -55,8 +55,8 @@ export default function Settings() {
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const { user, signOut } = useAuth();
-  const firstName = user?.user_metadata?.first_name ?? "";
-  const lastName = user?.user_metadata?.last_name ?? "";
+  const firstName = user?.user_metadata?.first_name ?? "FirstName";
+  const lastName = user?.user_metadata?.last_name ?? "LastName";
   const fullName = firstName + " " + lastName;
   const email = user?.email ?? "";
 
