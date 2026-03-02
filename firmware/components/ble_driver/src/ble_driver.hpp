@@ -28,6 +28,7 @@
 #define MAGF_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"          // Magnetometer
 #define STEP_COUNT_UUID "792C45E7-7B95-4A4D-8BC2-6D04809BB406"     // Step Counter
 #define ACTIVITY_CLASS_UUID "792C45E8-7B95-4A4D-8BC2-6D04809BB406" // Activity Classifier
+#define RV_UUID "792C45E9-7B95-4A4D-8BC2-6D04809BB406"
 
 /* Environmental Sensor Service Charcteristics */
 #define TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
@@ -43,8 +44,6 @@
 #define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2A2B
 
 
-bool syncSysTime(NimBLEAttValue& value);
-
 struct Timestamp_t {
     uint16_t year = 0x0000;
     uint8_t month = 0x00;
@@ -56,6 +55,8 @@ struct Timestamp_t {
 }__attribute__((packed));
 
 Timestamp_t getUTCTimestamp();
+
+bool syncSysTime(NimBLEAttValue& value);
 
 class BleServer  {
     private: 
@@ -74,6 +75,7 @@ class BleServer  {
             NimBLECharacteristic *pMagf = nullptr;
             NimBLECharacteristic *pStepCount = nullptr;
             NimBLECharacteristic *pActivityClass = nullptr;
+            NimBLECharacteristic *pRV = nullptr;
 
         /* Environmental Sensors Service */
         NimBLEService *pEnviroService = nullptr;
@@ -171,9 +173,42 @@ class BleServer  {
             uint8_t confidence[10];
             uint8_t mostLikelyState;
             uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleActivityClass_t& operator=(const bno08x_activity_classifier_t& activity_class) {
+                for(int i = 0; i < 10; i++) {
+                    confidence[i] = activity_class.confidence[i];
+                };
+                mostLikelyState = static_cast<uint8_t> (activity_class.mostLikelyState);
+                accuracy = static_cast<uint8_t>(activity_class.accuracy);
+                return *this;
+            }
+
         }__attribute__((packed));
 
         BleActivityClass_t _activityClass;
+
+        struct BleRV_t {
+            float real;
+            float x;
+            float y;
+            float z ;
+            float rad_accuracy;
+            uint8_t accuracy;
+            Timestamp_t timestamp;
+
+            BleRV_t& operator=(const bno08x_quat_t& rv) {
+                real = rv.real;
+                x = rv.i;
+                y = rv.j;
+                z = rv.k;
+                rad_accuracy = rv.rad_accuracy;
+                accuracy = static_cast<uint8_t>(rv.accuracy);
+                return *this;
+            }
+        }__attribute__((packed));
+
+        BleRV_t _rv;
 
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
@@ -226,7 +261,12 @@ class BleServer  {
         CurrentTime_t _currentTime;
 
 
-        public: 
+        volatile bool _authenticated = false;
+
+        public:
+            bool hasSubscriber() { return pServer && pServer->getConnectedCount() > 0; }
+            bool isAuthenticated() { return hasSubscriber() && _authenticated; }
+            void setAuthenticated(bool auth) { _authenticated = auth; }
             bool init(int8_t tx_power);
             bool deinit();
             bool restart();
@@ -239,47 +279,53 @@ class BleServer  {
             void setBR(bool notify = true);
 
             /* Acitivty Charcteristic Setters */
-            void setAccel(bool notify = true);
-            void setGyro(bool notify = true);
-            void setMagf(bool notify = true);
-            void setStepCount(bool notify = true) ;
-            void setActivityClass(bool notify = true);
+            void setAccel(const bno08x_accel_t& accel, bool notify = true);
+            void setGyro(const bno08x_gyro_t& gyro, bool notify = true);
+            void setMagf(const bno08x_magf_t& magf, bool notify = true);
+            void setStepCount(const bno08x_step_counter_t& step_count, bool notify = true) ;
+            void setActivityClass(const bno08x_activity_classifier_t& activity_class, bool notify = true);
+            void setRV(const bno08x_quat_t& rv_quat, bool notify = true);
 
             /* Environmental Sensor Charcteristic Setters */
             void setTemp(bool notify = true); //sint16_t temperature resolution: 0.1°C
             void setHumidity(bool notify = true); //uint16_t humidity resolution: 0.01%
 
-            // TO-DO: Add more functions 
-
-            /* Battery Level Status Functions */
-            void setPowerState(uint8_t wired_ext, uint8_t charge_state, uint8_t charge_level, uint8_t charge_type, uint8_t charge_fault);
-
-            /* Battery Level Setter */
-            void setBatteryLevel(uint8_t battery_level);
-
-            /* Additional Status Field Bits Setter*/
-            void setAdditionalStatus(uint8_t service_req, uint8_t batt_fault);
-
-            /* Present Terminal Voltage Stter*/
-            void setCurrVoltage(uint16_t curr_voltage);
-
-            /*Battery Time Status Setters*/
-            void setTimeDischarge(uint8_t time_to_discharge[3]);
-            void setTimeRecharge(uint8_t time_to_recharge[3]);
-
-            /* Battery Health Status Setter */
-            void setHealthSummary(uint8_t health_summary);
-            void setCurrentTemp(int8_t current_temp);
-        
             /** 
             Battery Charcteristic Value Setters
             @param  notify - Set NimBLE to notify on this charcteristic
             @param indicate - Set NimBLE to indicate on this charcteristic
             */
-            void setBattLevelValue(bool notify = false, bool indicate = true);
-            void setBattEnergyValue(bool notify = false, bool indicate = true);
-            void setBattTimeValue(bool notify = false, bool indicate = true);
-            void setBattHealthValue(bool notify = false, bool indicate = true);
+           void setBattLevelValue(bool notify = false, bool indicate = true);
+           void setBattEnergyValue(bool notify = false, bool indicate = true);
+           void setBattTimeValue(bool notify = false, bool indicate = true);
+           void setBattHealthValue(bool notify = false, bool indicate = true);
+
+            /* Battery Level Status Functions */
+            void updatePowerState(uint8_t wired_ext, uint8_t charge_state, uint8_t charge_level, uint8_t charge_type, uint8_t charge_fault);
+
+            /* Battery Level Setter */
+            void updateBatteryLevel(uint8_t battery_level);
+
+            /* Additional Status Field Bits Setter*/
+            void updateAdditionalStatus(uint8_t service_req, uint8_t batt_fault);
+
+            /* Present Terminal Voltage Stter*/
+            void updateCurrVoltage(uint16_t curr_voltage);
+
+            /*Battery Time Status Setters*/
+            void updateTimeDischarge(uint8_t time_to_discharge[3]);
+            void updateTimeRecharge(uint8_t time_to_recharge[3]);
+
+            /* Battery Health Status Setter */
+            void updateHealthSummary(uint8_t health_summary);
+            void updateCurrentTemp(int8_t current_temp);
+
+
+       
+
+
+
+            
             
 
 };

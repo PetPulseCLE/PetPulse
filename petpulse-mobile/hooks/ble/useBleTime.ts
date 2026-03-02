@@ -15,12 +15,29 @@ import { Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
+export const BLE_TIMESTAMP_SIZE = 10;
+
+export const UTCFromBytes = (timestamp: ArrayBuffer): Date => {
+  const timeView = new DataView(timestamp);
+  const utc = Date.UTC(
+    timeView.getUint16(0, true),
+    timeView.getUint8(2) - 1,
+    timeView.getUint8(3),
+    timeView.getUint8(4),
+    timeView.getUint8(5),
+    timeView.getUint8(6),
+    timeView.getUint16(7, true),
+  );
+  const utcTimestamp = new Date(utc);
+  return utcTimestamp;
+};
+
 export const useBleTime = (connected: Peripheral | null) => {
   const lastTimeRef = useRef<number | null>(null);
 
   const getCurrentTime = (): { data: number[]; time_ms: number } => {
     /* Buffer for current time */
-    const buffer = new ArrayBuffer(10);
+    const buffer = new ArrayBuffer(BLE_TIMESTAMP_SIZE);
     const view = new DataView(buffer);
     /* Set current time */
     const date = new Date();
@@ -72,6 +89,7 @@ export const useBleTime = (connected: Peripheral | null) => {
       await BleManager?.writeWithoutResponse(peripheral.id, SERVICE_UUIDS.currentTime, CHR_UUIDS.currentTime, data);
       await setLastSentTime(time_ms);
       lastTimeRef.current = time_ms;
+      console.log('sendCurrentTime: ', UTCFromBytes(new Uint8Array(data).buffer));
     } catch (error) {
       console.log('sendCurrentTime: ', error);
     }

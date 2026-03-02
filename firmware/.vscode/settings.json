@@ -2,9 +2,7 @@
   "C_Cpp.intelliSenseEngine": "default",
   "idf.espIdfPath": "/Users/willmain/esp/v5.5.2/esp-idf",
   "idf.pythonInstallPath": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
-  "idf.openOcdConfigs": [
-    "board/esp32s3-builtin.cfg"
-  ],
+  "idf.openOcdConfigs": ["board/esp32s3-builtin.cfg"],
   "idf.port": "/dev/tty.debug-console",
   "idf.toolsPath": "/Users/willmain/.espressif",
   "idf.customExtraVars": {
@@ -17,6 +15,9 @@
     "--compile-commands-dir=${workspaceFolder}/build"
   ],
   "files.associations": {
-    "atomic": "cpp"
+    "atomic": "cpp",
+    "condition_variable": "cpp",
+    "ctime": "cpp",
+    "mutex": "cpp"
   }
 }

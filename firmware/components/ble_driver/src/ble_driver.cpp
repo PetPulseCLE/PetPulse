@@ -63,6 +63,7 @@ void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo)
 }
 void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
     ESP_LOGI(TAG, "Client disconnected (reason=%d) - start advertising", reason);
+    bleServer.setAuthenticated(false);
     NimBLEDevice::startAdvertising();
 }
 
@@ -74,6 +75,7 @@ void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
         return;
     }
     ESP_LOGI(TAG, "Authentication successful bonded: %s", connInfo.isBonded() ? "true" : "false");
+    bleServer.setAuthenticated(true);
 }
 
 /* Characteristic Callbacks */
@@ -206,7 +208,8 @@ bool BleServer::isAdvertising() {
     return NimBLEDevice::getAdvertising()->isAdvertising();
 }
  
-void BleServer::setAccel(bool notify) {
+void BleServer::setAccel(const bno08x_accel_t& accel, bool notify) {
+    _accel = accel;
     if(notify) {
         _accel.timestamp = getUTCTimestamp();
         pAccel->setValue(_accel);
@@ -217,10 +220,11 @@ void BleServer::setAccel(bool notify) {
         pAccel->setValue(_accel);
     }
 }
-void BleServer::setGyro(bool notify) {
+void BleServer::setGyro(const bno08x_gyro_t& gyro, bool notify) {
+    _gyro = gyro;
     if(notify) {
         _gyro.timestamp = getUTCTimestamp();
-        pGyro->setValue(_accel);
+        pGyro->setValue(_gyro);
         pGyro->notify();
     }
     else {
@@ -228,7 +232,8 @@ void BleServer::setGyro(bool notify) {
         pGyro->setValue(_gyro);
     }
 }
-void BleServer::setMagf(bool notify) {
+void BleServer::setMagf(const bno08x_magf_t& magf, bool notify) {
+    _magf = magf;
     if(notify) {
         _magf.timestamp = getUTCTimestamp();
         pMagf->setValue(_magf);
@@ -239,85 +244,43 @@ void BleServer::setMagf(bool notify) {
         pMagf->setValue(_magf);
     }
 }
-
-/* Battery Level Struct Setters */
-void BleServer::setPowerState(uint8_t wired_ext, uint8_t charge_state, uint8_t charge_level, uint8_t charge_type, uint8_t charge_fault) {
-    if(wired_ext > 2) return;
-    if(charge_state > 3) return;
-    if(charge_level > 3) return;
-    if(charge_type > 4) return;
-    if(charge_fault > 7) return;
-
-    uint16_t newPowerState = _batteryLevel.power_state;
-
-    /* Clear relevant bits and set new values */
-    newPowerState &= ~(0x03 << 1);
-    newPowerState |= (static_cast<uint16_t>(wired_ext) & 0x03) << 1; //Located at bits 1-2
-    newPowerState &= ~(0x03 << 5);
-    newPowerState |= (static_cast<uint16_t>(charge_state) & 0x03) << 5; //Located at bits 5-6
-    newPowerState &= ~(0x03 << 7);
-    newPowerState |= (static_cast<uint16_t>(charge_level) & 0x03) << 7; //Located at bits 7-8
-    newPowerState &= ~(0x07 << 9);
-    newPowerState |= (static_cast<uint16_t>(charge_type) & 0x07) << 9; //Located at bits 9-11
-    newPowerState &= ~(0x07 << 12);
-    newPowerState |= (static_cast<uint16_t>(charge_fault) & 0x07) << 12; //Located at bits 12-14
-                
-    _batteryLevel.power_state = newPowerState;
-}
-
-void BleServer::setBatteryLevel(uint8_t battery_level) {
-    if(battery_level > 100) return;
-    _batteryLevel.battery_level = battery_level;
-
+void BleServer::setStepCount(const bno08x_step_counter_t& step_count, bool notify) {
+    _stepCount = step_count;
+    if(notify) {
+        _stepCount.timestamp = getUTCTimestamp();
+        pStepCount->setValue(_stepCount);
+        pStepCount->notify();
     }
-
-void BleServer::setAdditionalStatus(uint8_t service_req, uint8_t batt_fault) {
-    if(service_req > 2) return;
-    if(batt_fault > 1) return;
-
-    uint8_t newAdditionalStatus = _batteryLevel.additional_status;
-
-    newAdditionalStatus &= ~(0x03); 
-    newAdditionalStatus |= (service_req & 0x03);
-    newAdditionalStatus &= ~(0x03 << 2); 
-    newAdditionalStatus |= (batt_fault & 0x01) << 2;
-
-
-    _batteryLevel.additional_status = newAdditionalStatus;
-    
+    else {
+        _stepCount.timestamp = getUTCTimestamp();
+        pStepCount->setValue(_stepCount);
+    }
+}
+void BleServer::setActivityClass(const bno08x_activity_classifier_t& activity_class, bool notify) {
+    _activityClass = activity_class;
+    if(notify) {
+        _activityClass.timestamp = getUTCTimestamp();
+        pActivityClass->setValue(_activityClass);
+        pActivityClass->notify();
+    }
+    else {
+        _activityClass.timestamp = getUTCTimestamp();
+        pActivityClass->setValue(_activityClass);
+    }
 }
 
-/* Battery Energy Struct Setters */
-void BleServer::setCurrVoltage(uint16_t curr_voltage) {
-
-    _batteryEnergy.curr_voltage = curr_voltage;
-
+void BleServer::setRV(const bno08x_quat_t& rv_quat, bool notify) {
+    _rv = rv_quat;
+    if(notify) {
+        _rv.timestamp = getUTCTimestamp();
+        pRV->setValue(_rv);
+        pRV->notify();
+    }
+    else {
+        _rv.timestamp = getUTCTimestamp();
+        pRV->setValue(_rv);
+    }
 }
-
-/* Battery Time Struct Setters */
-void BleServer::setTimeDischarge(uint8_t time_to_discharge[3]) {
-    _batteryTime.time_to_discharge[0] = time_to_discharge[0];
-    _batteryTime.time_to_discharge[1] = time_to_discharge[1];
-    _batteryTime.time_to_discharge[2] = time_to_discharge[2];
-
-}
-
-void BleServer::setTimeRecharge(uint8_t time_to_recharge[3]) {
-    _batteryTime.time_to_recharge[0] = time_to_recharge[0];
-    _batteryTime.time_to_recharge[1] = time_to_recharge[1];
-    _batteryTime.time_to_recharge[2] = time_to_recharge[2];
-    
-}
-
-/* Battery Health Struct Setters  */
-void BleServer::setHealthSummary(uint8_t health_summary) {
-    _batteryHealth.health_summary = health_summary;
-}
-
-void BleServer::setCurrentTemp(int8_t current_temp) {
-    _batteryHealth.current_temp = current_temp;
-}
-
 
 /* Battery Level Charcteristic Value Setters */
 void BleServer::setBattLevelValue(bool notify, bool indicate) {
@@ -365,6 +328,86 @@ void BleServer::setBattHealthValue(bool notify, bool indicate) {
         pBatteryHealth->notify();
     }
 }
+    
+
+/* Battery Structs Update Fields */
+void BleServer::updatePowerState(uint8_t wired_ext, uint8_t charge_state, uint8_t charge_level, uint8_t charge_type, uint8_t charge_fault) {
+    if(wired_ext > 2) return;
+    if(charge_state > 3) return;
+    if(charge_level > 3) return;
+    if(charge_type > 4) return;
+    if(charge_fault > 7) return;
+
+    uint16_t newPowerState = _batteryLevel.power_state;
+
+    /* Clear relevant bits and set new values */
+    newPowerState &= ~(0x03 << 1);
+    newPowerState |= (static_cast<uint16_t>(wired_ext) & 0x03) << 1; //Located at bits 1-2
+    newPowerState &= ~(0x03 << 5);
+    newPowerState |= (static_cast<uint16_t>(charge_state) & 0x03) << 5; //Located at bits 5-6
+    newPowerState &= ~(0x03 << 7);
+    newPowerState |= (static_cast<uint16_t>(charge_level) & 0x03) << 7; //Located at bits 7-8
+    newPowerState &= ~(0x07 << 9);
+    newPowerState |= (static_cast<uint16_t>(charge_type) & 0x07) << 9; //Located at bits 9-11
+    newPowerState &= ~(0x07 << 12);
+    newPowerState |= (static_cast<uint16_t>(charge_fault) & 0x07) << 12; //Located at bits 12-14
+                
+    _batteryLevel.power_state = newPowerState;
+}
+
+void BleServer::updateBatteryLevel(uint8_t battery_level) {
+    if(battery_level > 100) return;
+    _batteryLevel.battery_level = battery_level;
+
+    }
+
+void BleServer::updateAdditionalStatus(uint8_t service_req, uint8_t batt_fault) {
+    if(service_req > 2) return;
+    if(batt_fault > 1) return;
+
+    uint8_t newAdditionalStatus = _batteryLevel.additional_status;
+
+    newAdditionalStatus &= ~(0x03); 
+    newAdditionalStatus |= (service_req & 0x03);
+    newAdditionalStatus &= ~(0x03 << 2); 
+    newAdditionalStatus |= (batt_fault & 0x01) << 2;
+
+
+    _batteryLevel.additional_status = newAdditionalStatus;
+    
+}
+
+/* Battery Energy Struct Setters */
+void BleServer::updateCurrVoltage(uint16_t curr_voltage) {
+
+    _batteryEnergy.curr_voltage = curr_voltage;
+
+}
+
+/* Battery Time Struct Setters */
+void BleServer::updateTimeDischarge(uint8_t time_to_discharge[3]) {
+    _batteryTime.time_to_discharge[0] = time_to_discharge[0];
+    _batteryTime.time_to_discharge[1] = time_to_discharge[1];
+    _batteryTime.time_to_discharge[2] = time_to_discharge[2];
+
+}
+
+void BleServer::updateTimeRecharge(uint8_t time_to_recharge[3]) {
+    _batteryTime.time_to_recharge[0] = time_to_recharge[0];
+    _batteryTime.time_to_recharge[1] = time_to_recharge[1];
+    _batteryTime.time_to_recharge[2] = time_to_recharge[2];
+    
+}
+
+/* Battery Health Struct Setters  */
+void BleServer::updateHealthSummary(uint8_t health_summary) {
+    _batteryHealth.health_summary = health_summary;
+}
+
+void BleServer::updateCurrentTemp(int8_t current_temp) {
+    _batteryHealth.current_temp = current_temp;
+}
+
 
 
 

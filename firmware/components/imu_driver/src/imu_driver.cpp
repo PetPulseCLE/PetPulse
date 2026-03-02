@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "sh2.h"
 #include "esp_log.h"
+#include "ble_driver.hpp"
 
 static constexpr const char *TAG = "IMU_DRIVER";
 volatile bool motion_flag = false;
@@ -548,8 +549,10 @@ void motion_detection_task(void *pvParameters) {
 }
 
 void data_processing_task(void *pvParameters) {
-    imu_report_cfg_t rpts_to_enable[] = {
+    static volatile int sample_count = 0;
+    static constexpr int MAX_SAMPLES = 10;
 
+    imu_report_cfg_t rpts_to_enable[] = {
         {SH2_ACCELEROMETER, 100000UL},
         {SH2_GYROSCOPE_CALIBRATED, 100000UL},
         {SH2_MAGNETIC_FIELD_CALIBRATED, 100000UL},
@@ -558,32 +561,51 @@ void data_processing_task(void *pvParameters) {
     };
 
     imu_enable_multi_rpts(rpts_to_enable, sizeof(rpts_to_enable)/sizeof(rpts_to_enable[0]));
-    
+
     imu.register_cb([]()
     {
+        if(sample_count >= MAX_SAMPLES) return;
+        if(!bleServer.isAuthenticated()){
+            return;
+        } else {
         if(imu_has_new_data(SH2_ACCELEROMETER)) {
             bno08x_accel_t accel = imu.rpt.accelerometer.get();
-            ESP_LOGI(TAG, "Accel: %.2f, %.2f, %.2f", accel.x, accel.y, accel.z);
+            ESP_LOGI(TAG, "[%d/%d] Accel: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, accel.x, accel.y, accel.z);
+            bleServer.setAccel(accel);
         }
         if(imu_has_new_data(SH2_GYROSCOPE_CALIBRATED)) {
             bno08x_gyro_t gyro = imu.rpt.cal_gyro.get();
-            ESP_LOGI(TAG, "Gyro: %.2f, %.2f, %.2f", gyro.x, gyro.y, gyro.z);
+            ESP_LOGI(TAG, "[%d/%d] Gyro: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, gyro.x, gyro.y, gyro.z);
+            bleServer.setGyro(gyro);
         }
         if(imu_has_new_data(SH2_MAGNETIC_FIELD_CALIBRATED)) {
             bno08x_magf_t magf = imu.rpt.cal_magnetometer.get();
-            ESP_LOGI(TAG, "Magf: %.2f, %.2f, %.2f", magf.x, magf.y, magf.z);
+            ESP_LOGI(TAG, "[%d/%d] Magf: %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, magf.x, magf.y, magf.z);
+            bleServer.setMagf(magf);
         }
         if(imu_has_new_data(SH2_ROTATION_VECTOR)) {
             bno08x_quat_t rv = imu.rpt.rv.get_quat();
-            ESP_LOGI(TAG, "RV: %.2f, %.2f, %.2f, %.2f", rv.real, rv.i, rv.j, rv.k);
+            ESP_LOGI(TAG, "[%d/%d] RV: %.2f, %.2f, %.2f, %.2f", sample_count + 1, MAX_SAMPLES, rv.real, rv.i, rv.j, rv.k);
         }
         if(imu_has_new_data(SH2_PERSONAL_ACTIVITY_CLASSIFIER)) {
             bno08x_activity_classifier_t activity = imu.rpt.activity_classifier.get();
-            ESP_LOGI(TAG, "Activity: %d", activity.mostLikelyState);
+            ESP_LOGI(TAG, "[%d/%d] Activity: %d", sample_count + 1, MAX_SAMPLES, activity.mostLikelyState);
             ESP_LOGI(TAG, "Confidence: %d", activity.confidence);
         }
+
+        sample_count++;
+
+        if(sample_count >= MAX_SAMPLES) {
+            ESP_LOGI(TAG, "=== %d samples sent, disabling reports ===", MAX_SAMPLES);
+            imu_disable_all_rpts();
+        }
+        }
     });
-    while (1) {
-        vTaskDelay(pdMS_TO_TICKS(100));
+
+    while(sample_count < MAX_SAMPLES) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
+
+    ESP_LOGI(TAG, "Data processing task complete");
+    vTaskDelete(NULL);
 }
