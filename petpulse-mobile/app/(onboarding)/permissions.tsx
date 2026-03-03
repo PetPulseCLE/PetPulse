@@ -44,13 +44,9 @@ export default function PermissionsScreen() {
         return;
       }
 
-      const backgroundPermission =
-        Platform.OS === "ios"
-          ? PERMISSIONS.IOS.LOCATION_ALWAYS
-          : PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION;
-
-      const bg = await request(backgroundPermission);
-      setLocationState(isAllowed(bg) ? "allowed" : "denied");
+      // Treat foreground access as success. Background can be requested later
+      // without marking the primary location permission as denied.
+      setLocationState("allowed");
     } catch {
       setLocationState("denied");
       Alert.alert("Location permission", "Could not request location permission.");
