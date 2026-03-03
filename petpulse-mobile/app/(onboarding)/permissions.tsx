@@ -14,7 +14,8 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-type PermState = "pending" | "allowed" | "denied";
+type PermState = "pending" | "allowed" | "denied" | "blocked";
+type ActionRequiredState = Extract<PermState, "denied" | "blocked">;
 
 export default function PermissionsScreen() {
   const tint = useThemeColor({}, "tint");
@@ -24,11 +25,36 @@ export default function PermissionsScreen() {
   const [notifState, setNotifState] = useState<PermState>("pending");
 
   const showWarning = useMemo(() => {
-    return locationState !== "allowed" || notifState !== "allowed";
+    return needsAttention(locationState) || needsAttention(notifState);
   }, [locationState, notifState]);
 
   function isAllowed(status: string) {
     return status === RESULTS.GRANTED || status === RESULTS.LIMITED;
+  }
+
+  function toPermState(status: string): PermState {
+    if (isAllowed(status)) {
+      return "allowed";
+    }
+
+    if (status === RESULTS.BLOCKED || status === RESULTS.UNAVAILABLE) {
+      return "blocked";
+    }
+
+    return "denied";
+  }
+
+  function needsAttention(state: PermState): state is ActionRequiredState {
+    return state === "denied" || state === "blocked";
+  }
+
+  async function handleOpenSettings() {
+    try {
+      await openSettings();
+    } catch (error) {
+      console.error("Failed to open app settings", error);
+      Alert.alert("Settings", "Could not open settings. Please open them manually.");
+    }
   }
 
   async function requestLocation() {
@@ -40,7 +66,7 @@ export default function PermissionsScreen() {
 
       const fg = await request(whenInUsePermission);
       if (!isAllowed(fg)) {
-        setLocationState("denied");
+        setLocationState(toPermState(fg));
         return;
       }
 
@@ -56,7 +82,7 @@ export default function PermissionsScreen() {
   async function requestAppNotifications() {
     try {
       const result = await requestNotifications(["alert", "sound", "badge"]);
-      setNotifState(isAllowed(result.status) ? "allowed" : "denied");
+      setNotifState(toPermState(result.status));
     } catch {
       setNotifState("denied");
       Alert.alert("Notifications permission", "Could not request notifications permission.");
@@ -68,6 +94,12 @@ export default function PermissionsScreen() {
       return {
         bg: "bg-green-600",
         text: "Allowed",
+      };
+    }
+    if (state === "blocked") {
+      return {
+        bg: "bg-red-600",
+        text: "Blocked",
       };
     }
     if (state === "denied") {
@@ -151,7 +183,7 @@ export default function PermissionsScreen() {
       {showWarning && (
         <ThemedText className="mt-5 text-center text-xs text-muted-foreground">
           You can enable permissions later in{" "}
-          <ThemedText type="link" onPress={() => openSettings()} className="text-xs">
+          <ThemedText type="link" onPress={handleOpenSettings} className="text-xs">
             Settings
           </ThemedText>{" "}
           for the best experience.
