@@ -9,7 +9,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   BleManager = require('react-native-ble-manager').default;
 }
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -31,6 +31,8 @@ export const UTCFromBytes = (timestamp: Uint8Array): Date => {
 };
 
 export const useBleTime = (connected: Peripheral | null) => {
+  const cancelRef = useRef<boolean>(false);
+
   const getCurrentTime = (): { data: number[]; time_ms: number } => {
     /* Buffer for current time */
     const buffer = new ArrayBuffer(BLE_TIMESTAMP_SIZE);
@@ -69,6 +71,7 @@ export const useBleTime = (connected: Peripheral | null) => {
         console.log('sendCurrentTime success: ', UTCFromBytes(new Uint8Array(data)));
         return;
       } catch (error) {
+        if (cancelRef.current) return;
         console.log(`sendCurrentTime attempt ${attempt + 1}/${MAX_RETRIES} failed:`, error);
         if (attempt < MAX_RETRIES - 1) {
           await new Promise<void>((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
@@ -81,7 +84,11 @@ export const useBleTime = (connected: Peripheral | null) => {
   /* Send current time on every connect/reconnect — device has no RTC backup
      and loses its clock on power cycle */
   useEffect(() => {
-    if (!connected) return;
+    if (!connected) {
+      cancelRef.current = true;
+      return;
+    }
+    cancelRef.current = false;
     sendCurrentTime(connected).catch((error) => console.log('sendCurrentTime uncaught:', error));
   }, [connected]);
 

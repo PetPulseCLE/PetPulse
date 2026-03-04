@@ -304,31 +304,14 @@ UNDEFINED = 9 // used for unit tests
 }
 ```
 
-```json
- LOG  Subscribed to activity notifications
- LOG  sendCurrentTime:  2026-03-02T19:43:38.001Z
- LOG  stepCount:  {"accuracy": 3, "latency": 10614, "steps": 0, "timestamp": 2026-03-02T19:43:43.877Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 35519, "steps": 0, "timestamp": 2026-03-02T19:43:43.972Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 17123, "steps": 0, "timestamp": 2026-03-02T19:43:44.067Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 25738, "steps": 0, "timestamp": 2026-03-02T19:43:44.162Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 7476, "steps": 0, "timestamp": 2026-03-02T19:43:44.257Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 18620, "steps": 0, "timestamp": 2026-03-02T19:43:44.352Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 10015, "steps": 0, "timestamp": 2026-03-02T19:43:44.447Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 10810, "steps": 0, "timestamp": 2026-03-02T19:43:44.541Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 52619, "steps": 0, "timestamp": 2026-03-02T19:43:44.636Z}
- LOG  stepCount:  {"accuracy": 3, "latency": 65500, "steps": 0, "timestamp": 2026-03-02T19:43:44.731Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 0, "confidenceArray": [91, 2, 0, 3, 4, 0, 1, 2, 0, 0], "timestamp": 2026-03-02T19:43:44.772Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 0, "confidenceArray": [77, 2, 0, 6, 15, 0, 3, 3, 0, 0], "timestamp": 2026-03-02T19:43:45.759Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 0, "confidenceArray": [55, 4, 0, 6, 35, 0, 3, 3, 0, 0], "timestamp": 2026-03-02T19:43:46.747Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [30, 4, 0, 6, 60, 0, 3, 3, 0, 0], "timestamp": 2026-03-02T19:43:47.735Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [14, 3, 0, 4, 79, 0, 2, 2, 0, 0], "timestamp": 2026-03-02T19:43:48.723Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [6, 2, 0, 2, 90, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:49.711Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [3, 1, 0, 2, 94, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:50.699Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:51.687Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:52.675Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:53.663Z}
+## Activity Data Example
 
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:52.675Z}
- LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:53.663Z}
+```json
+activity:
+{
+  "classifier": {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 97, 0, 1, 1, 0, 0]},
+  "stepCount": {"accuracy": 3, "latency": 54588, "steps": 0},
+  "utcTimestamp": "2026-03-04T14:29:24.005Z"
+}
 
 ```

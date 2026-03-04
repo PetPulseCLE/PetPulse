@@ -5,16 +5,16 @@
 #include <atomic>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
-
-#define BLE_AUTHENTICATED_BIT  (1 << 0)
-#define BLE_TIME_SYNCED_BIT    (1 << 1)
-
 #include "NimBLEAdvertising.h"
 #include "NimBLEDevice.h"
 #include "NimBLEConnInfo.h"
 #include "BNO08xGlobalTypes.hpp"
 #include "NimBLEServer.h"
 #include <sys/time.h>
+
+#define BLE_AUTHENTICATED_BIT  (1 << 0)
+#define BLE_TIME_SYNCED_BIT    (1 << 1)
+
 
 #define DEVICE_NAME "PetPulse-0001"
 
