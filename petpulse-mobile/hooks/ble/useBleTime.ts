@@ -30,7 +30,7 @@ export const UTCFromBytes = (timestamp: Uint8Array): Date => {
   return new Date(utc);
 };
 
-export const useBleTime = (connected: Peripheral | null) => {
+export const useBleTime = (connected: Peripheral | null, bonded: boolean) => {
   const cancelRef = useRef<boolean>(false);
 
   const getCurrentTime = (): { data: number[]; time_ms: number } => {
@@ -62,7 +62,6 @@ export const useBleTime = (connected: Peripheral | null) => {
   const sendCurrentTime = async (peripheral: Peripheral): Promise<void> => {
     const MAX_RETRIES = 5;
     const RETRY_DELAY_MS = 1000;
-
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         await BleManager?.retrieveServices(peripheral.id);
@@ -84,7 +83,7 @@ export const useBleTime = (connected: Peripheral | null) => {
   /* Send current time on every connect/reconnect — device has no RTC backup
      and loses its clock on power cycle */
   useEffect(() => {
-    if (!connected) {
+    if (!connected || !bonded) {
       cancelRef.current = true;
       return;
     }

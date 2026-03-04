@@ -14,13 +14,14 @@ type BleContextType = {
   forgetDevice: () => Promise<void>;
   mtu: number;
   getRSSI: (peripheral: Peripheral) => Promise<number>;
+  bonded: boolean;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const connection = useBleConnection();
-  const data = useBleTime(connection.connected);
+  const data = useBleTime(connection.connected, connection.bonded);
 
   return (
     <BleContext.Provider

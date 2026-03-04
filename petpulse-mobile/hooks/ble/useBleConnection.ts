@@ -33,14 +33,17 @@ export const useBleConnection = () => {
   const reconnecting = useRef(false);
   const noDeviceAlertShown = useRef(false);
   const [mtu, setMtu] = useState(0);
+  const [bonded, setBonded] = useState(false);
   const { session } = useAuth();
 
   type ConnectResult = { success: boolean; error?: string };
 
-  /* Connect with an 8s timeout. Returns { success, error } so callers
-     can handle specific failures (e.g. pairing lost) gracefully.
-     If timeout wins, disconnects to kill any in-progress OS connection
-     so we don't leave a zombie. */
+  /* 
+    Connect with an 8s timeout. Returns { success, error } so callers
+    can handle specific failures (e.g. pairing lost) gracefully.
+    If timeout wins, disconnects to kill any in-progress OS connection
+    so we don't leave a zombie.
+  */
   const connectWithTimeout = async (peripheral_id: string): Promise<ConnectResult> => {
     let timedOut = false;
     const timer = setTimeout(async () => {
@@ -83,6 +86,23 @@ export const useBleConnection = () => {
     } catch (error) {
       setInitialized(false);
       console.log('initBleManager: ', error);
+      return false;
+    }
+  };
+
+  /* Returns true if device auth characteristic confirms bonded */
+  const triggerBonding = async (peripheral: Peripheral): Promise<boolean> => {
+    try {
+      await BleManager?.retrieveServices(peripheral.id);
+      const auth = await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.auth);
+      console.log('auth: ', auth);
+      const isBonded = !!(auth && new Uint8Array(auth)[0] === 1);
+      setBonded(isBonded);
+      console.log('triggerBonding: auth read success, bonded=', isBonded);
+      return isBonded;
+    } catch (error) {
+      console.log('triggerBonding: auth read failed:', JSON.stringify(error));
+      setBonded(false);
       return false;
     }
   };
@@ -194,14 +214,16 @@ export const useBleConnection = () => {
       return;
     }
 
-    /* Force OS pairing by touching an encrypted characteristic */
-    try {
-      await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
-    } catch {
-      /* Read may fail if characteristic isn't readable — that's fine,
-         the pairing dialog will still have been triggered */
+    const isBonded = await triggerBonding(peripheral);
+    if (!isBonded) {
+      try {
+        await BleManager?.disconnect(peripheral.id);
+      } catch (error) {
+        console.log('connectToPeripheral: disconnect after bond failure:', error);
+      }
+      setConnectedDevice(null);
+      return;
     }
-
     setConnectedDevice(peripheral_info);
     await setSavedPrphId(peripheral.id);
     await getMtu(peripheral);
@@ -228,6 +250,7 @@ export const useBleConnection = () => {
           reconnecting.current = false;
           return;
         }
+
         if (!bonded_prph_id) {
           console.log('No Saved Peripheral');
           reconnecting.current = false;
@@ -256,12 +279,20 @@ export const useBleConnection = () => {
           console.log('reconnect: retrieveServices failed:', error);
         }
 
-        if (peripheral_info) {
+        if (!peripheral_info) {
+          console.log('reconnect: failed to retrieve services');
+          setConnectedDevice(null);
           try {
-            await BleManager?.read(bonded_prph_id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
-          } catch {
-            /* Pairing trigger — read failure is acceptable */
+            await BleManager?.disconnect(bonded_prph_id);
+          } catch (error) {
+            console.log('reconnect: disconnect failed:', error);
           }
+          await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1)));
+          continue;
+        }
+
+        const isBonded = await triggerBonding(peripheral_info);
+        if (isBonded) {
           setConnectedDevice(peripheral_info);
           await getMtu(peripheral_info);
           reconnecting.current = false;
@@ -269,9 +300,6 @@ export const useBleConnection = () => {
           return;
         }
 
-        /* retrieveServices failed — clean up and retry */
-        console.log('reconnect: failed to retrieve services');
-        setConnectedDevice(null);
         try {
           await BleManager?.disconnect(bonded_prph_id);
         } catch (error) {
@@ -407,6 +435,7 @@ export const useBleConnection = () => {
     startScan,
     stopScan,
     connectToPeripheral,
+    bonded,
     disconnect,
     forgetDevice,
     mtu,

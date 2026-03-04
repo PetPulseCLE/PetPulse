@@ -127,6 +127,7 @@ void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, Nim
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm_check);
         ESP_LOGI(TAG, "System time set to: %s", buf);
     }
+
     if(pCharacteristic->getUUID() == NimBLEUUID(C_MODE_UUID)) {
         if(!connInfo.isEncrypted()) {
             ESP_LOGW(TAG, "onWrite: rejecting mode write from unencrypted client");
@@ -142,6 +143,20 @@ void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, Nim
             return;
         }
         bleServer.setMode(static_cast<Mode>(value[0]));
+    }
+
+    if(pCharacteristic->getUUID() == NimBLEUUID(C_AUTH_PING)) {
+        uint8_t ping = bleServer.isAuthenticated() ? 0x01 : 0x00;
+        pCharacteristic->setValue(&ping, 1);
+        return;
+    }
+}
+void CharacteristicCallbacks::onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
+    if(pCharacteristic->getUUID() == NimBLEUUID(C_AUTH_PING)) {
+        ESP_LOGI(TAG, "onRead: auth ping read");
+        uint8_t ping = connInfo.isBonded() ? 0x01 : 0x00;
+        pCharacteristic->setValue(&ping, 1);
+        return;
     }
 }
 
@@ -193,6 +208,8 @@ bool BleServer::init(int8_t tx_power) {
         pRaw = pMotionService->createCharacteristic(C_RAW_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
         pActivity = pMotionService->createCharacteristic(C_ACTIVITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
         pMode = pMotionService->createCharacteristic(C_MODE_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE);
+
+        pAuthPing = pMotionService->createCharacteristic(C_AUTH_PING, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ);
         pMode->setCallbacks(&chrCallbacks);
 
         /*Start the Activity Service*/
@@ -275,6 +292,13 @@ void BleServer::updateStepCount(const bno08x_step_counter_t& step_count) {
 }
 void BleServer::updateActivityClass(const bno08x_activity_classifier_t& activity_class) {
     _activityClass = activity_class;
+}
+
+void BleServer::setAuthenticated(bool auth) {
+    _authenticated = auth;
+    if (!pAuthPing) return;
+    uint8_t val = _authenticated ? 0x01 : 0x00;
+    pAuthPing->setValue(&val, 1);
 }
 
 void BleServer::setRaw(bool notify) {

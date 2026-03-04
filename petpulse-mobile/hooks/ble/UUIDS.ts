@@ -11,6 +11,7 @@ export const CHR_UUIDS = {
   vitals: '792c45e3-7b95-4a4d-8bc2-6d04809bb406',
   raw: '792c45e4-7b95-4a4d-8bc2-6d04809bb406',
   activity: '792c45e5-7b95-4a4d-8bc2-6d04809bb406',
+  auth: '792c45e7-7b95-4a4d-8bc2-6d04809bb406',
   temperature: '2a6e',
   humidity: '2a6f',
   levelStat: '2bed',

@@ -33,6 +33,8 @@
 #define C_ACTIVITY_UUID "792C45E5-7B95-4A4D-8BC2-6D04809BB406"       // Step Counter, Activity Classifier
 #define C_MODE_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"           // Mode
 
+#define C_AUTH_PING  "792C45E7-7B95-4A4D-8BC2-6D04809BB406" 
+
 /* Environmental Sensor Service Characteristics */
 #define C_TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
 #define C_HUMIDITY_UUID "2A6F"                                       // Bluetooth assigned numbers humidity charcteristic UUID = 0x2A6F
@@ -82,6 +84,8 @@ class BleServer  {
             NimBLECharacteristic *pRaw = nullptr;
             NimBLECharacteristic *pActivity = nullptr;
             NimBLECharacteristic *pMode = nullptr;
+
+            NimBLECharacteristic *pAuthPing = nullptr;
 
         /* Environmental Sensors Service */
         NimBLEService *pEnviroService = nullptr;
@@ -275,7 +279,7 @@ class BleServer  {
         public:
             bool hasSubscriber() { return pServer && pServer->getConnectedCount() > 0; }
             bool isAuthenticated() { return hasSubscriber() && _authenticated; }
-            void setAuthenticated(bool auth) { _authenticated = auth; }
+            void setAuthenticated(bool auth);
             bool init(int8_t tx_power);
             bool deinit();
             bool restart();
@@ -333,15 +337,6 @@ class BleServer  {
             /* Battery Health Status Setter */
             void updateHealthSummary(uint8_t health_summary);
             void updateCurrentTemp(int8_t current_temp);
-
-
-       
-
-
-
-            
-            
-
 };
 
 extern BleServer bleServer;
@@ -357,6 +352,7 @@ extern ServerCallbacks serverCallbacks;
 
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
     void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
+    void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override;
 };
 
 extern CharacteristicCallbacks chrCallbacks;
