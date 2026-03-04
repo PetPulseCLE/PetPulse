@@ -17,37 +17,15 @@ import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
-import { DeviceMode } from '@/hooks/ble/UUIDS';
 import clsx from 'clsx';
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  ChevronRight,
-  CircleEllipsis,
-  ClockArrowDown,
-  Loader,
-  LogOut,
-  PawPrint,
-  RocketIcon,
-  UserPenIcon,
-  X,
-} from 'lucide-react-native';
+import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
-  const {
-    initialized,
-    connected,
-    discovered,
-    startScan,
-    stopScan,
-    connectToPeripheral,
-    forgetDevice,
-    mtu,
-    getRSSI,
-    mode,
-    updateMode,
-  } = useBle();
+  const { initialized, connected, discovered, startScan, stopScan, connectToPeripheral, forgetDevice, mtu, getRSSI } =
+    useBle();
 
   const { modalState } = useLocalSearchParams();
   const modalStateBool = modalState === 'true' ? true : false;
@@ -112,10 +90,6 @@ export default function Settings() {
         console.error('onDeviceInfoOpen: ', error);
       }
     }
-  };
-
-  const onToggleDevMode = () => {
-    updateMode(mode === DeviceMode.Dev ? DeviceMode.Background : DeviceMode.Dev);
   };
 
   useEffect(() => {
@@ -250,17 +224,7 @@ export default function Settings() {
                       <Text className="text-secondary-foreground">
                         Service UUIDs: {'[' + (connected?.advertising?.serviceUUIDs?.join(', ') ?? '') + ']'}
                       </Text>
-                      <View className="flex flex-row gap-2 items-center">
-                        <Button variant="outline" className="rounded-md w-full" onPress={onToggleDevMode}>
-                          <Icon
-                            as={mode === DeviceMode.Dev ? RocketIcon : ClockArrowDown}
-                            className={clsx('size-4', mode === DeviceMode.Dev ? 'text-green-500' : 'text-red-500')}
-                          />
-                          <Text className="text-secondary-foreground">
-                            Mode: {mode === DeviceMode.Dev ? 'Dev' : 'Background'}
-                          </Text>
-                        </Button>
-                      </View>
+                      <View className="flex flex-row gap-2 items-center"></View>
                       <DialogClose asChild>
                         <Button variant="destructive" className="rounded-md" onPress={() => onForget()}>
                           <Text className="text-secondary-foreground">Forget This Device</Text>
