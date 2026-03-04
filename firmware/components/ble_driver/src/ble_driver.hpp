@@ -2,6 +2,13 @@
 #define BLE_DRIVER_H
 
 #include <stdio.h>
+#include <atomic>
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+
+#define BLE_AUTHENTICATED_BIT  (1 << 0)
+#define BLE_TIME_SYNCED_BIT    (1 << 1)
+
 #include "NimBLEAdvertising.h"
 #include "NimBLEDevice.h"
 #include "NimBLEConnInfo.h"
@@ -12,35 +19,31 @@
 #define DEVICE_NAME "PetPulse-0001"
 
 /* Service UUIDS */
-#define VITALS_UUID "792C45E0-7B95-4A4D-8BC2-6D04809BB406"        // Vital signs service (HR,BR)
-#define ACTIVITY_UUID "792C45E1-7B95-4A4D-8BC2-6D04809BB406"      // Motion/Activity Service (Accel,Gyro,Magf,StepCount,ActivityClassfier)
-#define BATTERY_UUID "180F"                                       // Bluetooth assigned numbers battery service UUID = 0x180F
-#define CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805
-#define ENVIRO_UUID "181A"
+#define S_VITALS_UUID "792C45E0-7B95-4A4D-8BC2-6D04809BB406"        // Vital signs service (HR,BR)
+#define S_MOTION_UUID "792C45E1-7B95-4A4D-8BC2-6D04809BB406"        // Motion/Activity Service (Accel,Gyro,Magf,StepCount,ActivityClassfier)
+#define S_BATTERY_UUID "180F"                                       // Bluetooth assigned numbers battery service UUID = 0x180F
+#define S_CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805
+#define S_ENVIRO_UUID "792C45E2-7B95-4A4D-8BC2-6D04809BB406" 
 
-/* Vital Signs Service Charcteristics UUIDS*/
-#define HR_UUID "792C45E2-7B95-4A4D-8BC2-6D04809BB406"            // Heart Rate
-#define BR_UUID "792C45E3-7B95-4A4D-8BC2-6D04809BB406"            // Breath Rate 
+/* Vital Signs Service Characteristics UUIDS*/
+#define C_VITALS_UUID "792C45E3-7B95-4A4D-8BC2-6D04809BB406"            // Breath Rate 
 
-/* Activity Service Charcteristics UUIDS */
-#define ACCEL_UUID "792C45E4-7B95-4A4D-8BC2-6D04809BB406"         // Accelorometer
-#define GYRO_UUID "792C45E5-7B95-4A4D-8BC2-6D04809BB406"          // Gyroscope
-#define MAGF_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"          // Magnetometer
-#define STEP_COUNT_UUID "792C45E7-7B95-4A4D-8BC2-6D04809BB406"     // Step Counter
-#define ACTIVITY_CLASS_UUID "792C45E8-7B95-4A4D-8BC2-6D04809BB406" // Activity Classifier
-#define RV_UUID "792C45E9-7B95-4A4D-8BC2-6D04809BB406"
+/* Activity Service Characteristics UUIDS */
+#define C_RAW_UUID "792C45E4-7B95-4A4D-8BC2-6D04809BB406"            //Accel,Gyro,Magf,RV           
+#define C_ACTIVITY_UUID "792C45E5-7B95-4A4D-8BC2-6D04809BB406"       // Step Counter, Activity Classifier
+#define C_MODE_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"           // Mode
 
-/* Environmental Sensor Service Charcteristics */
-#define TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
-#define HUMIDITY_UUID "2A6F"                                       // Bluetooth assigned numbers humidity charcteristic UUID = 0x2A6F
+/* Environmental Sensor Service Characteristics */
+#define C_TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
+#define C_HUMIDITY_UUID "2A6F"                                       // Bluetooth assigned numbers humidity charcteristic UUID = 0x2A6F
 
-/* Battery Service Charcteristics UUIDS */
+/* Battery Service Characteristics UUIDS */
 #define BATTERY_LEVEL_STAT_UUID "2BED"                             // Bluetooth assigned numbers battery level status (charge state bits, wired external power source fields) charcteristic UUID = 0x2BED
 #define BATTERY_ENERGY_STAT_UUID "2BF0"                            // Bluetooth assigned numbers battery energy status (present terminal voltage field) charcteristic UUID = 0x2BF0
 #define BATTERY_TIME_STAT_UUID "2BEE"                              // Bluetooth assigned numbers battery time status (time to recharge/discharge fields) charcteristic UUID = 0x2BEE
 #define BATTERY_HEALTH_STAT_UUID "2BEA"                            // Bluetooth assigned numbers battery health status(summary and current temp fields) charcteristic UUID = 0x2BEA
 
-/* Current Time Service Charcteristics */
+/* Current Time Service Characteristics */
 #define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2A2B
 
 
@@ -54,9 +57,16 @@ struct Timestamp_t {
     uint16_t m_seconds = 0x00;
 }__attribute__((packed));
 
+enum Mode {
+    Background = 0,
+    Live = 1,
+    Dev = 2
+};
+
 Timestamp_t getUTCTimestamp();
 
 bool syncSysTime(NimBLEAttValue& value);
+Mode setMode();
 
 class BleServer  {
     private: 
@@ -65,17 +75,13 @@ class BleServer  {
         NimBLEServer *pServer = nullptr;
        /* Vital Signs Service Pointer and Characteristics */
         NimBLEService *pVitalsService = nullptr;
-            NimBLECharacteristic *pHeartRate = nullptr;
-            NimBLECharacteristic *pBreathRate = nullptr;
-
+            NimBLECharacteristic *pVitals = nullptr;
+    
         /* IMUService Pointer and Characteristics */
-        NimBLEService *pActivityService = nullptr;
-            NimBLECharacteristic *pAccel = nullptr;
-            NimBLECharacteristic *pGyro= nullptr;
-            NimBLECharacteristic *pMagf = nullptr;
-            NimBLECharacteristic *pStepCount = nullptr;
-            NimBLECharacteristic *pActivityClass = nullptr;
-            NimBLECharacteristic *pRV = nullptr;
+        NimBLEService *pMotionService = nullptr;
+            NimBLECharacteristic *pRaw = nullptr;
+            NimBLECharacteristic *pActivity = nullptr;
+            NimBLECharacteristic *pMode = nullptr;
 
         /* Environmental Sensors Service */
         NimBLEService *pEnviroService = nullptr;
@@ -100,7 +106,6 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
-            Timestamp_t timestamp;
 
             BleAccel_t& operator=(const bno08x_accel_t& accel) {
                 x = accel.x;
@@ -119,7 +124,6 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
-            Timestamp_t timestamp;
 
             BleGyro_t& operator=(const bno08x_gyro_t& gyro) {
                 x = gyro.x;
@@ -138,7 +142,6 @@ class BleServer  {
             float y;
             float z;
             uint8_t accuracy;
-            Timestamp_t timestamp;
 
             BleMagf_t& operator=(const bno08x_magf_t& magf) {
                 x = magf.x;
@@ -151,12 +154,44 @@ class BleServer  {
 
         BleMagf_t _magf;
 
+        struct BleRV_t {
+            float real;
+            float x;
+            float y;
+            float z ;
+            float rad_accuracy;
+            uint8_t accuracy;
+
+            BleRV_t& operator=(const bno08x_quat_t& rv) {
+                real = rv.real;
+                x = rv.i;
+                y = rv.j;
+                z = rv.k;
+                rad_accuracy = rv.rad_accuracy;
+                accuracy = static_cast<uint8_t>(rv.accuracy);
+                return *this;
+            }
+        }__attribute__((packed));
+
+        BleRV_t _rv;
+
+        /* Raw Aggregated Struct */ 
+        struct BleRaw_t {
+            BleAccel_t accel;
+            BleGyro_t gyro;
+            BleMagf_t magf;
+            BleRV_t rv;
+            Timestamp_t timestamp;
+        }__attribute__((packed));
+
+        BleRaw_t _raw;
+
         /* Step Count Struct */ 
         struct BleStepCount_t {
             uint32_t latency;
             uint16_t steps;
             uint8_t accuracy;
-            Timestamp_t timestamp;
+            
 
             BleStepCount_t& operator=(const bno08x_step_counter_t& stepCount) {
                 latency = stepCount.latency;
@@ -173,7 +208,7 @@ class BleServer  {
             uint8_t confidence[10];
             uint8_t mostLikelyState;
             uint8_t accuracy;
-            Timestamp_t timestamp;
+            
 
             BleActivityClass_t& operator=(const bno08x_activity_classifier_t& activity_class) {
                 for(int i = 0; i < 10; i++) {
@@ -188,28 +223,16 @@ class BleServer  {
 
         BleActivityClass_t _activityClass;
 
-        struct BleRV_t {
-            float real;
-            float x;
-            float y;
-            float z ;
-            float rad_accuracy;
-            uint8_t accuracy;
+        /* Activity Aggregated Struct */ 
+        struct BleActivity_t {
+            BleStepCount_t stepCount;
+            BleActivityClass_t activityClass;
             Timestamp_t timestamp;
 
-            BleRV_t& operator=(const bno08x_quat_t& rv) {
-                real = rv.real;
-                x = rv.i;
-                y = rv.j;
-                z = rv.k;
-                rad_accuracy = rv.rad_accuracy;
-                accuracy = static_cast<uint8_t>(rv.accuracy);
-                return *this;
-            }
         }__attribute__((packed));
 
-        BleRV_t _rv;
-
+        BleActivity_t _activity;
+        
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
             uint8_t flags = 0x06; //Battery Level and Additional Status bits set
@@ -220,7 +243,7 @@ class BleServer  {
 
         BatteryLevel_t _batteryLevel;
 
-        /* Battery Level Status Struct */
+        /* Battery Energy Status Struct */
         struct BatteryEnergy_t {
             uint8_t flags = 0x01; //Terminal voltage bit set
             uint16_t curr_voltage = 0x0000; //medfloat16 let client interpret
@@ -228,7 +251,7 @@ class BleServer  {
 
         BatteryEnergy_t _batteryEnergy;
 
-        /* Battery Level Status Struct */
+        /* Battery Time Status Struct */
         struct BatteryTime_t {
             uint8_t flags = 0x03; //Time until recharged bit set
             uint8_t time_to_discharge[3] = {0x00, 0x00, 0x00}; // uint8_t[3] to represent 24 bits
@@ -237,7 +260,7 @@ class BleServer  {
 
         BatteryTime_t _batteryTime;
 
-        /* Battery Level Status Struct */
+        /* Battery Health Status Struct */
         struct BatteryHealth_t {
             uint8_t flags = 0x03; //Summary and current temp bits set
             uint8_t health_summary = 0x00;
@@ -246,22 +269,8 @@ class BleServer  {
 
         BatteryHealth_t _batteryHealth;
 
-        struct CurrentTime_t {
-            uint16_t year = 0x0000;
-            uint8_t month = 0x00;
-            uint8_t day = 0x00;
-            uint8_t hours = 0x00;
-            uint8_t minutes = 0x00;
-            uint8_t seconds = 0x00;
-            uint8_t weekday = 0x00;
-            uint8_t fraction_ms = 0x00;  // 1/256th of a second ~ 3.906ms precision
-            uint8_t adjust_reason = 0x00;
-        }__attribute__((packed));
-
-        CurrentTime_t _currentTime;
-
-
-        volatile bool _authenticated = false;
+        std::atomic<Mode> _mode{Background};
+        std::atomic<bool> _authenticated{false};
 
         public:
             bool hasSubscriber() { return pServer && pServer->getConnectedCount() > 0; }
@@ -274,24 +283,29 @@ class BleServer  {
             bool isAdvertising();
             void setTXPower(int8_t tx_power);
 
-            /* Vitals Charcteristic Setters */
+            /* Vitals Characteristic Setters */
             void setHR(bool notify = true);
             void setBR(bool notify = true);
 
-            /* Acitivty Charcteristic Setters */
-            void setAccel(const bno08x_accel_t& accel, bool notify = true);
-            void setGyro(const bno08x_gyro_t& gyro, bool notify = true);
-            void setMagf(const bno08x_magf_t& magf, bool notify = true);
-            void setStepCount(const bno08x_step_counter_t& step_count, bool notify = true) ;
-            void setActivityClass(const bno08x_activity_classifier_t& activity_class, bool notify = true);
-            void setRV(const bno08x_quat_t& rv_quat, bool notify = true);
+            /* Activity Characteristic Setters */
+            void updateAccel(const bno08x_accel_t& accel);
+            void updateGyro(const bno08x_gyro_t& gyro);
+            void updateMagf(const bno08x_magf_t& magf);
+            void updateRV(const bno08x_quat_t& rv_quat);
+            void updateStepCount(const bno08x_step_counter_t& step_count) ;
+            void updateActivityClass(const bno08x_activity_classifier_t& activity_class);
+            void setRaw(bool notify = true);
+            void setActivity(bool notify = true);
+            
+            void setMode(Mode mode);
+            Mode getMode();
 
-            /* Environmental Sensor Charcteristic Setters */
+            /* Environmental Sensor Characteristic Setters */
             void setTemp(bool notify = true); //sint16_t temperature resolution: 0.1°C
             void setHumidity(bool notify = true); //uint16_t humidity resolution: 0.01%
 
             /** 
-            Battery Charcteristic Value Setters
+            Battery Characteristic Value Setters
             @param  notify - Set NimBLE to notify on this charcteristic
             @param indicate - Set NimBLE to indicate on this charcteristic
             */
@@ -331,6 +345,7 @@ class BleServer  {
 };
 
 extern BleServer bleServer;
+extern EventGroupHandle_t bleEventGroup;
 
 class ServerCallbacks : public NimBLEServerCallbacks {
    void onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) override;

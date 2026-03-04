@@ -1,20 +1,16 @@
 export const SERVICE_UUIDS = {
-  vitals: '792c45e0-7b95-4a4d-8bc2-6d04809bb406',
-  activity: '792c45e1-7b95-4a4d-8bc2-6d04809bb406',
-  battery: '180f',
-  currentTime: '1805',
-  envSensors: '181a',
+  vitals_service: '792c45e0-7b95-4a4d-8bc2-6d04809bb406',
+  activity_service: '792c45e1-7b95-4a4d-8bc2-6d04809bb406',
+  battery_service: '180f',
+  currentTime_service: '1805',
+  envSensors_service: '792c45e2-7b95-4a4d-8bc2-6d04809bb406',
 };
 
 export const CHR_UUIDS = {
-  heartRate: '792c45e2-7b95-4a4d-8bc2-6d04809bb406',
-  rspRate: '792c45e3-7b95-4a4d-8bc2-6d04809bb406',
-  accel: '792c45e4-7b95-4a4d-8bc2-6d04809bb406',
-  gyro: '792c45e5-7b95-4a4d-8bc2-6d04809bb406',
-  magf: '792c45e6-7b95-4a4d-8bc2-6d04809bb406',
-  stepCount: '792c45e7-7b95-4a4d-8bc2-6d04809bb406',
-  activityClass: '792c45e8-7b95-4a4d-8bc2-6d04809bb406',
-  rv: '792c45e9-7b95-4a4d-8bc2-6d04809bb406',
+  mode: '792c45e6-7b95-4a4d-8bc2-6d04809bb406',
+  vitals: '792c45e3-7b95-4a4d-8bc2-6d04809bb406',
+  raw: '792c45e4-7b95-4a4d-8bc2-6d04809bb406',
+  activity: '792c45e5-7b95-4a4d-8bc2-6d04809bb406',
   temperature: '2a6e',
   humidity: '2a6f',
   levelStat: '2bed',
@@ -23,6 +19,20 @@ export const CHR_UUIDS = {
   healthStat: '2bea',
   currentTime: '2a2b',
 };
+
+export enum DeviceMode {
+  Background = 0,
+  Live = 1,
+  Dev = 2,
+}
+
+export const MODES = [
+  { value: 0, label: 'Background' },
+  { value: 1, label: 'Live' },
+  { value: 2, label: 'Dev' },
+];
+
+export type ModeOption = (typeof MODES)[number];
 
 export const accuracyMap: Record<number, string> = {
   0: 'Unreliable',

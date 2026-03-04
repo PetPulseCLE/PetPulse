@@ -3,6 +3,7 @@
 #include "NimBLEAdvertising.h"
 #include "NimBLEDevice.h"
 #include "NimBLEConnInfo.h"
+#include "NimBLEUUID.h"
 #include "esp_log.h"
 #include "ble_driver.hpp"
 #include <sys/time.h>
@@ -13,6 +14,7 @@ static const char *TAG = "BLE";
 BleServer bleServer;
 ServerCallbacks serverCallbacks;
 CharacteristicCallbacks chrCallbacks;
+EventGroupHandle_t bleEventGroup = nullptr;
 
 bool syncSysTime(NimBLEAttValue& value) {
     if(value.size() < 10) return false;
@@ -23,11 +25,16 @@ bool syncSysTime(NimBLEAttValue& value) {
     timeinfo.tm_hour = value[4];
     timeinfo.tm_min = value[5];
     timeinfo.tm_sec = value[6];
+    /* Throw out weekday, fraction_ms, and adjust reason*/
     timeinfo.tm_isdst = 0;
 
     time_t t = mktime(&timeinfo);
     struct timeval tv = {.tv_sec = t, .tv_usec = 0};
-    settimeofday(&tv, NULL);
+    if(settimeofday(&tv, NULL) != 0) {
+        ESP_LOGE(TAG, "syncSysTime: settimeofday() failed");
+        return false;
+    }
+    xEventGroupSetBits(bleEventGroup, BLE_TIME_SYNCED_BIT);
     return true;
 }
 
@@ -63,6 +70,7 @@ void ServerCallbacks::onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo)
 }
 void ServerCallbacks::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) {
     bleServer.setAuthenticated(false);
+    xEventGroupClearBits(bleEventGroup, BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT);
 
     switch(reason) {
         case BLE_HS_ETIMEOUT_HCI:
@@ -90,16 +98,16 @@ void ServerCallbacks::onAuthenticationComplete(NimBLEConnInfo& connInfo) {
     }
     ESP_LOGI(TAG, "Authentication successful bonded: %s", connInfo.isBonded() ? "true" : "false");
     bleServer.setAuthenticated(true);
+    xEventGroupSetBits(bleEventGroup, BLE_AUTHENTICATED_BIT);
 }
 
 /* Characteristic Callbacks */
 void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
-    if(!connInfo.isEncrypted()) {
-        ESP_LOGW(TAG, "onWrite: rejecting write from unencrypted client");
-        return;
-    }
-
     if(pCharacteristic->getUUID() == NimBLEUUID(CUR_TIME_UUID)) {
+        if(!connInfo.isEncrypted()) {
+            ESP_LOGW(TAG, "onWrite: rejecting time write from unencrypted client");
+            return;
+        }
         NimBLEAttValue value = pCharacteristic->getValue();
         if(value.size() < 10) {
             ESP_LOGW(TAG, "onWrite: value too short (%d bytes)", value.size());
@@ -119,6 +127,22 @@ void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, Nim
         strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm_check);
         ESP_LOGI(TAG, "System time set to: %s", buf);
     }
+    if(pCharacteristic->getUUID() == NimBLEUUID(C_MODE_UUID)) {
+        if(!connInfo.isEncrypted()) {
+            ESP_LOGW(TAG, "onWrite: rejecting mode write from unencrypted client");
+            return;
+        }
+        NimBLEAttValue value = pCharacteristic->getValue();
+        if(value.size() != 1) {
+            ESP_LOGW(TAG, "onWrite: mode value wrong size (%d bytes)", value.size());
+            return;
+        }
+        if(value[0] > 2) {
+            ESP_LOGW(TAG, "onWrite: invalid mode value (%d), must be 0-2", value[0]);
+            return;
+        }
+        bleServer.setMode(static_cast<Mode>(value[0]));
+    }
 }
 
 bool BleServer::init(int8_t tx_power) {
@@ -129,6 +153,12 @@ bool BleServer::init(int8_t tx_power) {
     }
 
     NimBLEDevice::init(DEVICE_NAME);
+    bleEventGroup = xEventGroupCreate();
+    if(bleEventGroup == nullptr) {
+        ESP_LOGE(TAG, "Failed to create BLE event group");
+        NimBLEDevice::deinit();
+        return false;
+    }
 
     /* Request mtu = 512 */
     NimBLEDevice::setMTU(512);
@@ -152,33 +182,31 @@ bool BleServer::init(int8_t tx_power) {
     pServer->setCallbacks(&serverCallbacks); 
 
     /* Define services and respective charcteristics*/
-    pVitalsService = pServer->createService(VITALS_UUID);
-        pHeartRate = pVitalsService->createCharacteristic(HR_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pBreathRate = pVitalsService->createCharacteristic(BR_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY); 
+    pVitalsService = pServer->createService(S_VITALS_UUID);
+        pVitals = pVitalsService->createCharacteristic(C_VITALS_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+
 
         /*Start the vital signs service*/
         pVitalsService->start();
 
-    pActivityService = pServer->createService(ACTIVITY_UUID);
-        pAccel = pActivityService->createCharacteristic(ACCEL_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pGyro = pActivityService->createCharacteristic(GYRO_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pMagf = pActivityService->createCharacteristic(MAGF_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pStepCount = pActivityService->createCharacteristic(STEP_COUNT_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pActivityClass = pActivityService->createCharacteristic(ACTIVITY_CLASS_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pRV = pActivityService->createCharacteristic(RV_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+    pMotionService = pServer->createService(S_MOTION_UUID);
+        pRaw = pMotionService->createCharacteristic(C_RAW_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+        pActivity = pMotionService->createCharacteristic(C_ACTIVITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+        pMode = pMotionService->createCharacteristic(C_MODE_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE);
+        pMode->setCallbacks(&chrCallbacks);
 
         /*Start the Activity Service*/
-        pActivityService->start();
+        pMotionService->start();
 
-    pEnviroService = pServer->createService(ENVIRO_UUID);
-        pTemp = pEnviroService->createCharacteristic(TEMP_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pHumidity = pEnviroService->createCharacteristic(HUMIDITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+    pEnviroService = pServer->createService(S_ENVIRO_UUID);
+        pTemp = pEnviroService->createCharacteristic(C_TEMP_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+        pHumidity = pEnviroService->createCharacteristic(C_HUMIDITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
 
         /* Start the environmental sensors service */
         pEnviroService->start();
         
 
-    pBatteryService = pServer->createService(BATTERY_UUID);
+    pBatteryService = pServer->createService(S_BATTERY_UUID);
         pBatteryLevel = pBatteryService->createCharacteristic(BATTERY_LEVEL_STAT_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE);
         pBatteryEnergy = pBatteryService->createCharacteristic(BATTERY_ENERGY_STAT_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE);
         pBatteryTime = pBatteryService->createCharacteristic(BATTERY_TIME_STAT_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE);
@@ -188,8 +216,8 @@ bool BleServer::init(int8_t tx_power) {
         /*Start the battery service*/
         pBatteryService->start();
     
-    pCurTimeService = pServer->createService(CUR_TIME_SERVICE_UUID);
-        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_NR);
+    pCurTimeService = pServer->createService(S_CUR_TIME_SERVICE_UUID);
+        pCurTime = pCurTimeService->createCharacteristic(CUR_TIME_UUID, NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::WRITE);
         pCurTime->setCallbacks(&chrCallbacks);
 
         /*Start the current time service*/
@@ -197,9 +225,8 @@ bool BleServer::init(int8_t tx_power) {
 
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->setName(DEVICE_NAME);
-    pAdvertising->addServiceUUID(BATTERY_UUID);
-    pAdvertising->addServiceUUID(CUR_TIME_SERVICE_UUID);
-    pAdvertising->addServiceUUID(ENVIRO_UUID);
+    pAdvertising->addServiceUUID(S_BATTERY_UUID);
+    pAdvertising->addServiceUUID(S_CUR_TIME_SERVICE_UUID);
 
     return true;
 }
@@ -228,81 +255,67 @@ bool BleServer::isAdvertising() {
     return NimBLEDevice::getAdvertising()->isAdvertising();
 }
  
-void BleServer::setAccel(const bno08x_accel_t& accel, bool notify) {
+void BleServer::updateAccel(const bno08x_accel_t& accel) {
     _accel = accel;
-    if(notify) {
-        _accel.timestamp = getUTCTimestamp();
-        pAccel->setValue(_accel);
-        pAccel->notify();
-    }
-    else {
-        _accel.timestamp = getUTCTimestamp();
-        pAccel->setValue(_accel);
-    }
+
 }
-void BleServer::setGyro(const bno08x_gyro_t& gyro, bool notify) {
+void BleServer::updateGyro(const bno08x_gyro_t& gyro) {
     _gyro = gyro;
-    if(notify) {
-        _gyro.timestamp = getUTCTimestamp();
-        pGyro->setValue(_gyro);
-        pGyro->notify();
-    }
-    else {
-        _gyro.timestamp = getUTCTimestamp();
-        pGyro->setValue(_gyro);
-    }
 }
-void BleServer::setMagf(const bno08x_magf_t& magf, bool notify) {
+void BleServer::updateMagf(const bno08x_magf_t& magf) {
     _magf = magf;
-    if(notify) {
-        _magf.timestamp = getUTCTimestamp();
-        pMagf->setValue(_magf);
-        pMagf->notify();
-    }
-    else {
-        _magf.timestamp = getUTCTimestamp();
-        pMagf->setValue(_magf);
-    }
-}
-void BleServer::setStepCount(const bno08x_step_counter_t& step_count, bool notify) {
-    _stepCount = step_count;
-    if(notify) {
-        _stepCount.timestamp = getUTCTimestamp();
-        pStepCount->setValue(_stepCount);
-        pStepCount->notify();
-    }
-    else {
-        _stepCount.timestamp = getUTCTimestamp();
-        pStepCount->setValue(_stepCount);
-    }
-}
-void BleServer::setActivityClass(const bno08x_activity_classifier_t& activity_class, bool notify) {
-    _activityClass = activity_class;
-    if(notify) {
-        _activityClass.timestamp = getUTCTimestamp();
-        pActivityClass->setValue(_activityClass);
-        pActivityClass->notify();
-    }
-    else {
-        _activityClass.timestamp = getUTCTimestamp();
-        pActivityClass->setValue(_activityClass);
-    }
 }
 
-void BleServer::setRV(const bno08x_quat_t& rv_quat, bool notify) {
+void BleServer::updateRV(const bno08x_quat_t& rv_quat) {
     _rv = rv_quat;
+}
+void BleServer::updateStepCount(const bno08x_step_counter_t& step_count) {
+    _stepCount = step_count;
+
+}
+void BleServer::updateActivityClass(const bno08x_activity_classifier_t& activity_class) {
+    _activityClass = activity_class;
+}
+
+void BleServer::setRaw(bool notify) {
+    _raw = {
+        .accel = _accel,
+        .gyro = _gyro,
+        .magf = _magf,
+        .rv = _rv,
+        .timestamp = getUTCTimestamp(),
+    };
     if(notify) {
-        _rv.timestamp = getUTCTimestamp();
-        pRV->setValue(_rv);
-        pRV->notify();
-    }
-    else {
-        _rv.timestamp = getUTCTimestamp();
-        pRV->setValue(_rv);
+        pRaw->setValue(_raw);
+        pRaw->notify();
     }
 }
 
-/* Battery Level Charcteristic Value Setters */
+void BleServer::setActivity(bool notify) {
+    _activity = {
+        .stepCount = _stepCount,
+        .activityClass = _activityClass,
+        .timestamp = getUTCTimestamp(),
+    };
+    if(notify) {
+        pActivity->setValue(_activity);
+        pActivity->notify();
+    }
+}
+
+
+void BleServer::setMode(Mode mode) {
+    _mode = mode;
+    uint8_t val = static_cast<uint8_t>(mode);
+    pMode->setValue(&val, 1);
+    ESP_LOGI(TAG, "Mode set to: %d", val);
+}
+
+Mode BleServer::getMode() {
+    return _mode;
+}
+
+/* Battery Level Characteristic Value Setters */
 void BleServer::setBattLevelValue(bool notify, bool indicate) {
     if(indicate) {
         pBatteryLevel->setValue(_batteryLevel);

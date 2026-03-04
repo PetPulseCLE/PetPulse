@@ -9,7 +9,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   BleManager = require('react-native-ble-manager').default;
 }
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -20,7 +20,6 @@ export interface Accel {
   y: number;
   z: number;
   accuracy: number;
-  utcTimestamp: Date;
 }
 
 export interface Gyro {
@@ -28,7 +27,6 @@ export interface Gyro {
   y: number;
   z: number;
   accuracy: number;
-  utcTimestamp: Date;
 }
 
 export interface Magf {
@@ -36,7 +34,6 @@ export interface Magf {
   y: number;
   z: number;
   accuracy: number;
-  utcTimestamp: Date;
 }
 
 export interface Quat {
@@ -46,6 +43,13 @@ export interface Quat {
   z: number;
   rad_accuracy: number;
   accuracy: number;
+}
+
+export interface Raw {
+  accel: Accel;
+  gyro: Gyro;
+  magf: Magf;
+  rv: Quat;
   utcTimestamp: Date;
 }
 
@@ -53,108 +57,99 @@ export interface StepCount {
   latency: number;
   steps: number;
   accuracy: number;
-  utcTimestamp: Date;
 }
 
 export interface ActivityClass {
-  confidence: number[];
+  confidenceArray: Uint8Array;
   activityClass: number;
   accuracy: number;
+}
+
+export interface Activity {
+  classifier: ActivityClass;
+  stepCount: StepCount;
   utcTimestamp: Date;
 }
 
 const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
-  const view = new DataView(data.buffer);
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const x = view.getFloat32(0, true);
   const y = view.getFloat32(4, true);
   const z = view.getFloat32(8, true);
   const accuracy = view.getUint8(12);
-  const utcTimestamp = UTCFromBytes(data.slice(13, 22).buffer as ArrayBuffer);
-  return { x, y, z, accuracy, utcTimestamp };
+  return { x, y, z, accuracy } as Accel | Gyro | Magf;
 };
 
 const parseQuat = (data: Uint8Array): Quat => {
-  const view = new DataView(data.buffer);
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const real = view.getFloat32(0, true);
   const x = view.getFloat32(4, true);
   const y = view.getFloat32(8, true);
   const z = view.getFloat32(12, true);
   const rad_accuracy = view.getFloat32(16, true);
   const accuracy = view.getUint8(20);
-  const utcTimestamp = UTCFromBytes(data.slice(21, 30).buffer as ArrayBuffer);
-  return { real, x, y, z, rad_accuracy, accuracy, utcTimestamp };
+  return { real, x, y, z, rad_accuracy, accuracy } as Quat;
+};
+
+const parseRaw = (data: Uint8Array): Raw => {
+  const accel = parseMajorAxes(data.slice(0, 13));
+  const gyro = parseMajorAxes(data.slice(13, 26));
+  const magf = parseMajorAxes(data.slice(26, 39));
+  const rv = parseQuat(data.slice(39, 60));
+  const utcTimestamp = UTCFromBytes(data.slice(60, 69));
+  return { accel, gyro, magf, rv, utcTimestamp } as Raw;
+};
+
+const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
+  const activityClassBuffer = new Uint8Array(data);
+  const activityClassView = new DataView(activityClassBuffer.buffer);
+  const confidenceArray = new Uint8Array(10);
+  for (let i = 0; i < 10; i++) {
+    confidenceArray.set([activityClassView.getUint8(i)], i);
+  }
+  const activityClass = activityClassView.getUint8(10);
+  const accuracy = activityClassView.getUint8(11);
+  // TODO: Read activityClass into database
+  return { confidenceArray, activityClass, accuracy } as ActivityClass;
+};
+const parseStepCount = (data: Uint8Array): StepCount => {
+  const stepCountBuffer = new Uint8Array(data);
+  const stepCountView = new DataView(stepCountBuffer.buffer);
+  const latency = stepCountView.getUint32(0, true);
+  const steps = stepCountView.getUint16(4, true);
+  const accuracy = stepCountView.getUint8(6);
+  // TODO: Read stepCount into database
+  return { latency, steps, accuracy } as StepCount;
+};
+
+const parseActivity = (data: Uint8Array): Activity => {
+  const stepCount = parseStepCount(data.slice(0, 7));
+  const classifier = parseActivityClassifier(data.slice(7, 19));
+  const utcTimestamp = UTCFromBytes(data.slice(19, 28));
+  return { classifier, stepCount, utcTimestamp } as Activity;
 };
 
 export const useBleActivity = (connected: Peripheral | null) => {
-  const [accel, setAccel] = useState<Accel | undefined>(undefined);
-
   const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
     const chr = data.characteristic.toLowerCase();
-    if (chr === CHR_UUIDS.accel) {
-      const accelBuffer = new Uint8Array(data.value);
-      const accel = parseMajorAxes(accelBuffer);
+    if (chr === CHR_UUIDS.raw) {
+      const rawArray = new Uint8Array(data.value);
+      const raw = parseRaw(rawArray);
       // TODO: Read accel into database
-      console.log('accel: ', accel);
+      console.log('raw: ', raw);
     }
-    if (chr === CHR_UUIDS.gyro) {
-      const gyroBuffer = new Uint8Array(data.value);
-      const gyro = parseMajorAxes(gyroBuffer);
-      // TODO: Read gyro into database
-      console.log('gyro: ', gyro);
-    }
-    if (chr === CHR_UUIDS.magf) {
-      const magfBuffer = new Uint8Array(data.value);
-      const magf = parseMajorAxes(magfBuffer);
-      // TODO: Read magf into database
-      console.log('magf: ', magf);
-    }
-    if (chr === CHR_UUIDS.stepCount) {
-      const stepCountBuffer = new Uint8Array(data.value);
-      const stepCountView = new DataView(stepCountBuffer.buffer);
-      const latency = stepCountView.getUint32(0, true);
-      const steps = stepCountView.getUint16(4, true);
-      const accuracy = stepCountView.getUint8(6);
-      const timestamp = UTCFromBytes(stepCountView.buffer.slice(7, 16));
-      // TODO: Read stepCount into database
-      const stepCountData = { latency, steps, accuracy, timestamp };
-      console.log('stepCount: ', stepCountData);
-    }
-    if (chr === CHR_UUIDS.activityClass) {
-      const activityClassBuffer = new Uint8Array(data.value);
-      const activityClassView = new DataView(activityClassBuffer.buffer);
-      const confidenceArray = new Uint8Array(10);
-      for (let i = 0; i < 10; i++) {
-        confidenceArray.set([activityClassView.getUint8(i)], i);
-      }
-      const activityClass = activityClassView.getUint8(10);
-      const accuracy = activityClassView.getUint8(11);
-      const timestamp = UTCFromBytes(activityClassView.buffer.slice(12, 21));
-      // TODO: Read activityClass into database
-      const activityData = { confidenceArray, activityClass, accuracy, timestamp };
-      console.log('activityClass: ', activityData);
-    }
-    if (chr === CHR_UUIDS.rv) {
-      const rvBuffer = new Uint8Array(data.value);
-      const rv = parseQuat(rvBuffer);
-      // TODO: Read rv into database
-    }
-  };
-
-  const subscribeToRaw = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.gyro);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.magf);
-      console.log('Subscribed to activity notifications');
-    } catch (error) {
-      console.log('subscribeToActivity: ', error);
+    if (chr === CHR_UUIDS.activity) {
+      const activityBuffer = new Uint8Array(data.value);
+      const activity = parseActivity(activityBuffer);
+      // TODO: Read activity into database
+      console.log('activity: ', activity);
     }
   };
 
   const subscribeToActivity = async (peripheral: Peripheral) => {
     try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.stepCount);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.activityClass);
+      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
+      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw);
       console.log('Subscribed to activity notifications');
     } catch (error) {
       console.log('subscribeToActivity: ', error);
@@ -164,10 +159,12 @@ export const useBleActivity = (connected: Peripheral | null) => {
   useEffect(() => {
     if (!connected) return;
     subscribeToActivity(connected);
-    const accelListener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
+    const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
 
     return () => {
-      accelListener?.remove();
+      listener?.remove();
+      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity).catch(() => {});
+      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw).catch(() => {});
     };
   }, [connected]);
 

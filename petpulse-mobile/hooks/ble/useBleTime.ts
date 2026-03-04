@@ -16,8 +16,8 @@ import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
 export const BLE_TIMESTAMP_SIZE = 10;
 
-export const UTCFromBytes = (timestamp: ArrayBuffer): Date => {
-  const timeView = new DataView(timestamp);
+export const UTCFromBytes = (timestamp: Uint8Array): Date => {
+  const timeView = new DataView(timestamp.buffer);
   const utc = Date.UTC(
     timeView.getUint16(0, true),
     timeView.getUint8(2) - 1,
@@ -27,8 +27,7 @@ export const UTCFromBytes = (timestamp: ArrayBuffer): Date => {
     timeView.getUint8(6),
     timeView.getUint16(7, true),
   );
-  const utcTimestamp = new Date(utc);
-  return utcTimestamp;
+  return new Date(utc);
 };
 
 export const useBleTime = (connected: Peripheral | null) => {
@@ -58,22 +57,32 @@ export const useBleTime = (connected: Peripheral | null) => {
     return { data: time, time_ms: date.getTime() };
   };
 
-  const sendCurrentTime = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.retrieveServices(peripheral.id);
-      const { data } = getCurrentTime();
-      await BleManager?.writeWithoutResponse(peripheral.id, SERVICE_UUIDS.currentTime, CHR_UUIDS.currentTime, data);
-      console.log('sendCurrentTime: ', UTCFromBytes(new Uint8Array(data).buffer));
-    } catch (error) {
-      console.log('sendCurrentTime: ', error);
+  const sendCurrentTime = async (peripheral: Peripheral): Promise<void> => {
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY_MS = 1000;
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        await BleManager?.retrieveServices(peripheral.id);
+        const { data } = getCurrentTime();
+        await BleManager?.write(peripheral.id, SERVICE_UUIDS.currentTime_service, CHR_UUIDS.currentTime, data);
+        console.log('sendCurrentTime success: ', UTCFromBytes(new Uint8Array(data)));
+        return;
+      } catch (error) {
+        console.log(`sendCurrentTime attempt ${attempt + 1}/${MAX_RETRIES} failed:`, error);
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise<void>((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        }
+      }
     }
+    console.error('sendCurrentTime: all retries exhausted, time not synced');
   };
 
   /* Send current time on every connect/reconnect — device has no RTC backup
      and loses its clock on power cycle */
   useEffect(() => {
     if (!connected) return;
-    sendCurrentTime(connected);
+    sendCurrentTime(connected).catch((error) => console.log('sendCurrentTime uncaught:', error));
   }, [connected]);
 
   return {};

@@ -98,7 +98,7 @@ UNDEFINED = 9 // used for unit tests
 };
 
 ```JSON
- Services:  {
+{
   "id": "18ef74ce-c224-d7c1-a0e5-38756a0b967b",
   "services": [
     {
@@ -301,6 +301,7 @@ UNDEFINED = 9 // used for unit tests
     }
   ],
   "name": "PetPulse-0001"
+}
 ```
 
 ```json
@@ -326,4 +327,8 @@ UNDEFINED = 9 // used for unit tests
  LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:51.687Z}
  LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:52.675Z}
  LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:53.663Z}
+
+ LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:52.675Z}
+ LOG  activityClass:  {"accuracy": 3, "activityClass": 4, "confidenceArray": [1, 1, 0, 2, 96, 0, 1, 1, 0, 0], "timestamp": 2026-03-02T19:43:53.663Z}
+
 ```

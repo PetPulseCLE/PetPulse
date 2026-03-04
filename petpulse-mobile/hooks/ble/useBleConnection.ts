@@ -125,7 +125,7 @@ export const useBleConnection = () => {
     if (initialized) {
       setDiscovered([]);
       await BleManager?.scan({
-        serviceUUIDs: [SERVICE_UUIDS.battery, SERVICE_UUIDS.currentTime, SERVICE_UUIDS.envSensors],
+        serviceUUIDs: [SERVICE_UUIDS.battery_service, SERVICE_UUIDS.currentTime_service],
         seconds: SCAN_TIMEOUT,
       });
     }
@@ -176,7 +176,12 @@ export const useBleConnection = () => {
       return;
     }
 
-    const peripheral_info = await BleManager?.retrieveServices(peripheral.id);
+    let peripheral_info;
+    try {
+      peripheral_info = await BleManager?.retrieveServices(peripheral.id);
+    } catch (error) {
+      console.log('connectToPeripheral: retrieveServices failed:', error);
+    }
 
     /* If peripheral info is not found, clear connections */
     if (!peripheral_info) {
@@ -191,7 +196,7 @@ export const useBleConnection = () => {
 
     /* Force OS pairing by touching an encrypted characteristic */
     try {
-      await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
+      await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
     } catch {
       /* Read may fail if characteristic isn't readable — that's fine,
          the pairing dialog will still have been triggered */
@@ -206,9 +211,8 @@ export const useBleConnection = () => {
 
   /*
     ~ Reconnect to previously connected device
-        - 10 attempts to reconnect
+        - 6 attempts to reconnect with exponential backoff
         - If reconnect fails, alert user
-
     */
   const reconnect = async () => {
     if (!connectedRef.current && !reconnecting.current && !userDisconnectedRef.current) {
@@ -245,11 +249,16 @@ export const useBleConnection = () => {
           continue;
         }
 
-        const peripheral_info = await BleManager?.retrieveServices(bonded_prph_id);
+        let peripheral_info;
+        try {
+          peripheral_info = await BleManager?.retrieveServices(bonded_prph_id);
+        } catch (error) {
+          console.log('reconnect: retrieveServices failed:', error);
+        }
 
         if (peripheral_info) {
           try {
-            await BleManager?.read(bonded_prph_id, SERVICE_UUIDS.activity, CHR_UUIDS.accel);
+            await BleManager?.read(bonded_prph_id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
           } catch {
             /* Pairing trigger — read failure is acceptable */
           }
@@ -316,6 +325,8 @@ export const useBleConnection = () => {
   /* Listen for app state change, reconnect to previously connected device */
   /* Remove listeners on unmount */
   useEffect(() => {
+    if (!session) return;
+
     const init = async () => {
       const bleReady = await initBleManager();
       if (!bleReady) return;
@@ -363,7 +374,11 @@ export const useBleConnection = () => {
       if (userDisconnectedRef.current) {
         return;
       }
-      await reconnect();
+      try {
+        await reconnect();
+      } catch (error) {
+        console.log('disconnectListener: reconnect threw:', error);
+      }
     });
 
     /* Listen for app state change, attempt reconnect */
@@ -383,7 +398,7 @@ export const useBleConnection = () => {
       onDiscover?.remove();
       AppStateListener.remove();
     };
-  }, []);
+  }, [session]);
 
   return {
     initialized,

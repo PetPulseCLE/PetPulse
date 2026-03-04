@@ -17,15 +17,37 @@ import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
+import { DeviceMode } from '@/hooks/ble/UUIDS';
 import clsx from 'clsx';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
+import {
+  ChevronRight,
+  CircleEllipsis,
+  ClockArrowDown,
+  Loader,
+  LogOut,
+  PawPrint,
+  RocketIcon,
+  UserPenIcon,
+  X,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
-  const { initialized, connected, discovered, startScan, stopScan, connectToPeripheral, forgetDevice, mtu, getRSSI } =
-    useBle();
+  const {
+    initialized,
+    connected,
+    discovered,
+    startScan,
+    stopScan,
+    connectToPeripheral,
+    forgetDevice,
+    mtu,
+    getRSSI,
+    mode,
+    updateMode,
+  } = useBle();
 
   const { modalState } = useLocalSearchParams();
   const modalStateBool = modalState === 'true' ? true : false;
@@ -35,6 +57,7 @@ export default function Settings() {
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [liveRssi, setLiveRssi] = useState<number | null>(null);
+
   const { signOut } = useAuth();
 
   const handleScan = async () => {
@@ -82,9 +105,17 @@ export default function Settings() {
 
   const onDeviceInfoOpen = async () => {
     if (connected) {
-      const rssi = await getRSSI(connected);
-      setLiveRssi(rssi);
+      try {
+        const rssi = await getRSSI(connected);
+        setLiveRssi(rssi);
+      } catch (error) {
+        console.error('onDeviceInfoOpen: ', error);
+      }
     }
+  };
+
+  const onToggleDevMode = () => {
+    updateMode(mode === DeviceMode.Dev ? DeviceMode.Background : DeviceMode.Dev);
   };
 
   useEffect(() => {
@@ -126,9 +157,8 @@ export default function Settings() {
           </Button>
         </View>
       </View>
-
       {/* ============================= HARNESS SETTINGS ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
         <View className="flex flex-row bg-card w-full align-center">
           <Button
             variant="ghost"
@@ -147,7 +177,7 @@ export default function Settings() {
       </View>
 
       {/* ============================= LOG OUT ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
         <View className="flex flex-row bg-card w-full align-center">
           <Button
             variant="ghost"
@@ -164,9 +194,7 @@ export default function Settings() {
           </Button>
         </View>
       </View>
-
       {/* Device Connection Modal */}
-
       <Modal visible={showDeviceModal} animationType="slide" presentationStyle="pageSheet">
         <View className="flex flex-col pt-5 bg-background flex-1">
           <View className="flex flex-row justify-between items-center pl-4 pr-2 mb-4">
@@ -222,6 +250,17 @@ export default function Settings() {
                       <Text className="text-secondary-foreground">
                         Service UUIDs: {'[' + (connected?.advertising?.serviceUUIDs?.join(', ') ?? '') + ']'}
                       </Text>
+                      <View className="flex flex-row gap-2 items-center">
+                        <Button variant="outline" className="rounded-md w-full" onPress={onToggleDevMode}>
+                          <Icon
+                            as={mode === DeviceMode.Dev ? RocketIcon : ClockArrowDown}
+                            className={clsx('size-4', mode === DeviceMode.Dev ? 'text-green-500' : 'text-red-500')}
+                          />
+                          <Text className="text-secondary-foreground">
+                            Mode: {mode === DeviceMode.Dev ? 'Dev' : 'Background'}
+                          </Text>
+                        </Button>
+                      </View>
                       <DialogClose asChild>
                         <Button variant="destructive" className="rounded-md" onPress={() => onForget()}>
                           <Text className="text-secondary-foreground">Forget This Device</Text>
