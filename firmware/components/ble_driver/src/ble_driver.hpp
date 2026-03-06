@@ -24,6 +24,7 @@
 #define S_BATTERY_UUID "180F"                                       // Bluetooth assigned numbers battery service UUID = 0x180F
 #define S_CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805
 #define S_ENVIRO_UUID "792C45E2-7B95-4A4D-8BC2-6D04809BB406" 
+#define S_AGGREGATED_UUID "792C45E9-7B95-4A4D-8BC2-6D04809BB406" 
 
 /* Vital Signs Service Characteristics UUIDS*/
 #define C_VITALS_UUID "792C45E3-7B95-4A4D-8BC2-6D04809BB406"            // Breath Rate 
@@ -31,9 +32,13 @@
 /* Activity Service Characteristics UUIDS */
 #define C_RAW_UUID "792C45E4-7B95-4A4D-8BC2-6D04809BB406"            //Accel,Gyro,Magf,RV           
 #define C_ACTIVITY_UUID "792C45E5-7B95-4A4D-8BC2-6D04809BB406"       // Step Counter, Activity Classifier
-#define C_MODE_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"           // Mode
 
+/* Utility Charcteristics */
+#define C_MODE_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"           // Mode
 #define C_AUTH_PING  "792C45E7-7B95-4A4D-8BC2-6D04809BB406" 
+
+
+#define C_ENV_UUID  "792C45E8-7B95-4A4D-8BC2-6D04809BB406" 
 
 /* Environmental Sensor Service Characteristics */
 #define C_TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
@@ -47,6 +52,7 @@
 
 /* Current Time Service Characteristics */
 #define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2A2B
+
 
 
 struct Timestamp_t {
@@ -84,7 +90,6 @@ class BleServer  {
             NimBLECharacteristic *pRaw = nullptr;
             NimBLECharacteristic *pActivity = nullptr;
             NimBLECharacteristic *pMode = nullptr;
-
             NimBLECharacteristic *pAuthPing = nullptr;
 
         /* Environmental Sensors Service */
@@ -103,6 +108,21 @@ class BleServer  {
         /* Current Time Service Pointer and Characteristics */
         NimBLEService *pCurTimeService = nullptr;
             NimBLECharacteristic *pCurTime = nullptr;
+
+        /* Aggregated Service Pointer and Characteristics */
+        NimBLEService *pAggregatedService = nullptr;
+            NimBLECharacteristic *pAggregated = nullptr;
+
+
+
+        struct BleVitals_t {
+            uint8_t breath_rate;
+            uint8_t heart_rate;
+            uint8_t hr_confidence;
+            Timestamp_t timestamp;
+        }__attribute__((packed));
+
+        BleVitals_t _vitals;
 
         /* Accel Struct */ 
         struct BleAccel_t {
@@ -236,6 +256,16 @@ class BleServer  {
         }__attribute__((packed));
 
         BleActivity_t _activity;
+
+        /* Aggregated Sensor Struct */
+        struct BleAggregatedAll_t {
+            uint8_t presence_bitmask = 0x00;
+            BleRaw_t raw;
+            BleActivity_t activity;
+            BleVitals_t vitals;
+        }__attribute__((packed));
+
+        BleAggregatedAll_t _aggregatedAll;
         
         /* Battery Level Status Struct */
         struct BatteryLevel_t {

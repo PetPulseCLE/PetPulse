@@ -74,6 +74,9 @@ NimBLEDevice::init("PetPulse-A3F2");
 | `ESP_PWR_LVL_P6`  | +6 dBm          |
 | `ESP_PWR_LVL_P9`  | +9 dBm          |
 
+##Accuracy Enum
+
+```c++
 enum class BNO08xAccuracy : uint8_t
 {
 UNRELIABLE = 0,
@@ -82,7 +85,11 @@ MED = 2,
 HIGH = 3,
 UNDEFINED = 4
 };
+```
 
+## Activity Enum
+
+```c++
 enum class BNO08xActivity : uint8_t
 {
 UNKNOWN = 0, // 0 = unknown
@@ -96,6 +103,9 @@ RUNNING = 7, // 7 = running
 ON_STAIRS = 8, // 8 = on stairs
 UNDEFINED = 9 // used for unit tests
 };
+```
+
+## Device Scan Output Logs
 
 ```JSON
 {
@@ -315,3 +325,8 @@ activity:
 }
 
 ```
+
+## Aggregate Sensor Struct
+
+- Write all fields along with presence bitmask to csv
+- Read all fields and have client parse bitmask to see whats there.

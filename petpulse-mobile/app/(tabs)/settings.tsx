@@ -18,19 +18,27 @@ import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
 import clsx from 'clsx';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
-  const { initialized, connected, discovered, startScan, stopScan, connectToPeripheral, forgetDevice, mtu, getRSSI } =
-    useBle();
+  const {
+    initialized,
+    connected,
+    discovered,
+    startScan,
+    stopScan,
+    connectToPeripheral,
+    forgetDevice,
+    mtu,
+    getRSSI,
+    showScanModal,
+    setShowScanModal,
+  } = useBle();
 
-  const { modalState } = useLocalSearchParams();
-  const modalStateBool = modalState === 'true' ? true : false;
-
-  const [showDeviceModal, setShowDeviceModal] = useState(modalStateBool);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
@@ -92,11 +100,16 @@ export default function Settings() {
     }
   };
 
+  const queryPetProfile = async () => {
+    //const {data, error} = await supabase.from('pets');
+  };
+
   useEffect(() => {
-    if (modalStateBool) {
+    if (showScanModal) {
       openDeviceModal();
+      setShowScanModal(false);
     }
-  }, []);
+  }, [showScanModal]);
 
   return (
     <View className="flex flex-col pt-5 bg-background h-full">

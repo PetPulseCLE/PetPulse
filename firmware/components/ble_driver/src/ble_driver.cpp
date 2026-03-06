@@ -28,12 +28,14 @@ bool syncSysTime(NimBLEAttValue& value) {
     /* Throw out weekday, fraction_ms, and adjust reason*/
     timeinfo.tm_isdst = 0;
 
+
     time_t t = mktime(&timeinfo);
     struct timeval tv = {.tv_sec = t, .tv_usec = 0};
     if(settimeofday(&tv, NULL) != 0) {
         ESP_LOGE(TAG, "syncSysTime: settimeofday() failed");
         return false;
     }
+
     xEventGroupSetBits(bleEventGroup, BLE_TIME_SYNCED_BIT);
     return true;
 }

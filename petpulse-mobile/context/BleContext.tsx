@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Peripheral } from 'react-native-ble-manager';
-import { useBleConnection } from '../hooks/ble/useBleConnection';
+import { useBleConn } from '../hooks/ble/useBleConn-v2';
 import { useBleTime } from '../hooks/ble/useBleTime';
 
 type BleContextType = {
@@ -15,12 +15,14 @@ type BleContextType = {
   mtu: number;
   getRSSI: (peripheral: Peripheral) => Promise<number>;
   bonded: boolean;
+  showScanModal: boolean;
+  setShowScanModal: (show: boolean) => void;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
-  const connection = useBleConnection();
+  const connection = useBleConn();
   const data = useBleTime(connection.connected, connection.bonded);
 
   return (
