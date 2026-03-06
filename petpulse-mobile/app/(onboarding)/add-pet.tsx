@@ -189,6 +189,7 @@ export default function AddPetScreen() {
     if (!dob) return setError("Please select date of birth.");
     if (!(weightNumber > 0)) return setError("Weight must be greater than 0.");
 
+
     if (!user?.id) {
       setError("You must be signed in to add a pet.");
       return;
@@ -213,8 +214,9 @@ export default function AddPetScreen() {
       return;
     }
 
-    // Next step not built yet -> go to tabs for now
-    router.replace("/(tabs)");
+    // Next step -> go to permissions
+    router.replace("./permissions");
+
   }
 
   return (

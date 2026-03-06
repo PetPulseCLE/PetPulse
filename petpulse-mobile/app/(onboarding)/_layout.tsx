@@ -6,6 +6,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="features" />
       <Stack.Screen name="add-pet" />
+      <Stack.Screen name="permissions" />
     </Stack>
   );
 }
