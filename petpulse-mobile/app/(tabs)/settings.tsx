@@ -1,5 +1,5 @@
-import { Alert, Modal, ScrollView, Text, View } from "react-native";
-import type { Peripheral } from "react-native-ble-manager";
+import { Alert, Modal, ScrollView, Text, View } from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
 
 import {
   AlertDialog,
@@ -10,30 +10,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Icon } from "@/components/ui/icon";
-import { useBle } from "@/context/BleContext";
-import clsx from "clsx";
-import { router, useLocalSearchParams } from "expo-router";
-import {
-  ChevronRight,
-  CircleEllipsis,
-  Loader,
-  LogOut,
-  PawPrint,
-  UserPenIcon,
-  X,
-} from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Icon } from '@/components/ui/icon';
+import { useAuth } from '@/context/AuthContext';
+import { useBle } from '@/context/BleContext';
+import clsx from 'clsx';
+import { router } from 'expo-router';
+import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -45,15 +32,18 @@ export default function Settings() {
     stopScan,
     connectToPeripheral,
     forgetDevice,
+    mtu,
+    getRSSI,
+    showScanModal,
+    setShowScanModal,
   } = useBle();
 
-  const { modalState } = useLocalSearchParams();
-  const modalStateBool = modalState === "true" ? true : false;
-
-  const [showDeviceModal, setShowDeviceModal] = useState(modalStateBool);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [liveRssi, setLiveRssi] = useState<number | null>(null);
+
   const { signOut } = useAuth();
 
   const handleScan = async () => {
@@ -61,7 +51,7 @@ export default function Settings() {
       try {
         await startScan();
       } catch (error) {
-        console.error("startScan: ", error);
+        console.error('startScan: ', error);
       }
     }
   };
@@ -81,7 +71,7 @@ export default function Settings() {
     try {
       await connectToPeripheral(peripheral);
     } catch (error) {
-      console.error("onConnect: ", error);
+      console.error('onConnect: ', error);
     } finally {
       setIsConnecting(false);
       await closeDeviceModal();
@@ -92,38 +82,48 @@ export default function Settings() {
     try {
       await forgetDevice();
     } catch (error) {
-      console.error("onForget: ", error);
+      console.error('onForget: ', error);
     } finally {
       setShowForgetAlert(true);
       await closeDeviceModal();
     }
   };
 
-  useEffect(() => {
-    if (modalStateBool) {
-      openDeviceModal();
+  const onDeviceInfoOpen = async () => {
+    if (connected) {
+      try {
+        const rssi = await getRSSI(connected);
+        setLiveRssi(rssi);
+      } catch (error) {
+        console.error('onDeviceInfoOpen: ', error);
+      }
     }
-  }, []);
+  };
+
+  const queryPetProfile = async () => {
+    //const {data, error} = await supabase.from('pets');
+  };
+
+  useEffect(() => {
+    if (showScanModal) {
+      openDeviceModal();
+      setShowScanModal(false);
+    }
+  }, [showScanModal]);
 
   return (
     <View className="flex flex-col pt-5 bg-background h-full">
       {/* ============================= USER ACCOUNT SETTINGS ============================= */}
       <View className="flex flex-row mb-12 px-4 justify-evenly">
         {/* TODO: Allow Users to change their profile picture */}
-        <Avatar alt={"user.name"} className="size-24">
-          <AvatarImage source={{ uri: "" }} />
+        <Avatar alt={'user.name'} className="size-24">
           <AvatarFallback>
-            <Text>
-              {"user.name.first".charAt(0).toUpperCase() +
-                "user.name.last".charAt(0).toUpperCase()}
-            </Text>
+            <Text>{'user.name.first'.charAt(0).toUpperCase() + 'user.name.last'.charAt(0).toUpperCase()}</Text>
           </AvatarFallback>
         </Avatar>
         <View className="flex flex-col">
-          <Text className="text-secondary-foreground text-lg">
-            {"user.name.first " + "user.name.last"}
-          </Text>
-          <Text className="text-muted-foreground text-md">{"user.email"}</Text>
+          <Text className="text-secondary-foreground text-lg">{'user.name.first ' + 'user.name.last'}</Text>
+          <Text className="text-muted-foreground text-md">{'user.email'}</Text>
         </View>
       </View>
       <View className="rounded-full mx-3 overflow-hidden mb-6">
@@ -131,23 +131,20 @@ export default function Settings() {
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full"
-            onPress={() => router.push("/(tabs)/explore")}
+            onPress={() => router.push('/(tabs)/explore')}
           >
             <View className="flex flex-row items-center gap-4">
               <Icon as={UserPenIcon} className="text-blue-500 size-6" />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">
-                  My Profile
-                </Text>
+                <Text className="text-secondary-foreground font-medium">My Profile</Text>
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
           </Button>
         </View>
       </View>
-
       {/* ============================= HARNESS SETTINGS ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
         <View className="flex flex-row bg-card w-full align-center">
           <Button
             variant="ghost"
@@ -155,17 +152,9 @@ export default function Settings() {
             onPress={openDeviceModal}
           >
             <View className="flex flex-row items-center gap-3">
-              <Icon
-                as={PawPrint}
-                className={clsx(
-                  "size-6",
-                  connected ? "text-green-500" : "text-orange-500",
-                )}
-              />
+              <Icon as={PawPrint} className={clsx('size-6', connected ? 'text-green-500' : 'text-orange-500')} />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">
-                  My Harness: {connected?.name ?? "None"}
-                </Text>
+                <Text className="text-secondary-foreground font-medium">My Harness: {connected?.name ?? 'None'}</Text>
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
@@ -174,7 +163,7 @@ export default function Settings() {
       </View>
 
       {/* ============================= LOG OUT ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
         <View className="flex flex-row bg-card w-full align-center">
           <Button
             variant="ghost"
@@ -184,33 +173,19 @@ export default function Settings() {
             <View className="flex flex-row items-center gap-4">
               <Icon as={LogOut} className="text-red-500 size-6" />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">
-                  Log Out
-                </Text>
+                <Text className="text-secondary-foreground font-medium">Log Out</Text>
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
           </Button>
         </View>
       </View>
-
       {/* Device Connection Modal */}
-
-      <Modal
-        visible={showDeviceModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showDeviceModal} animationType="slide" presentationStyle="pageSheet">
         <View className="flex flex-col pt-5 bg-background flex-1">
           <View className="flex flex-row justify-between items-center pl-4 pr-2 mb-4">
-            <Text className="text-foreground text-lg font-bold">
-              Connect to Harness
-            </Text>
-            <Button
-              variant="ghost"
-              className="active:text-foreground"
-              onPress={closeDeviceModal}
-            >
+            <Text className="text-foreground text-lg font-bold">Connect to Harness</Text>
+            <Button variant="ghost" className="active:text-foreground" onPress={closeDeviceModal}>
               <Icon as={X} className="text-muted-foreground size-6" />
             </Button>
           </View>
@@ -238,58 +213,33 @@ export default function Settings() {
                   <Button
                     variant="default"
                     className="flex flex-row w-11/12 items-center bg-active justify-between active:bg-card-active"
-                    onPress={() =>
-                      Alert.alert(
-                        "Already Connected",
-                        "Forget this device to connect to a new one",
-                      )
-                    }
+                    onPress={() => Alert.alert('Already Connected', 'Forget this device to connect to a new one')}
                   >
-                    <Text className="text-secondary-foreground">
-                      {connected?.name ?? "Unknown"}
-                    </Text>
+                    <Text className="text-secondary-foreground">{connected?.name ?? 'Unknown'}</Text>
                     <Text className="text-sm text-green-500">Connected</Text>
                   </Button>
-                  <Dialog>
+                  <Dialog onOpenChange={onDeviceInfoOpen}>
                     <DialogTrigger asChild>
-                      <Icon
-                        as={CircleEllipsis}
-                        className="text-blue-500 size-6"
-                      />
+                      <Icon as={CircleEllipsis} className="text-blue-500 size-6" />
                     </DialogTrigger>
                     <DialogContent className="w-full bg-background">
-                      <Text className="text-muted-foreground">
-                        Device Information
+                      <Text className="text-muted-foreground">Device Information</Text>
+                      <Text className="text-secondary-foreground">ID: {connected?.id}</Text>
+                      <Text className="text-secondary-foreground">Name: {connected?.name ?? 'Unknown'}</Text>
+                      <Text className="text-secondary-foreground">
+                        RSSI: {liveRssi ? liveRssi + ' dBm' : 'Unknown'}
+                      </Text>
+                      <Text className="text-secondary-foreground">MTU: {mtu ?? 'Unknown'}</Text>
+                      <Text className="text-secondary-foreground">
+                        Is Connectable: {connected?.advertising?.isConnectable ? 'Yes' : 'No'}
                       </Text>
                       <Text className="text-secondary-foreground">
-                        ID: {connected?.id}
+                        Service UUIDs: {'[' + (connected?.advertising?.serviceUUIDs?.join(', ') ?? '') + ']'}
                       </Text>
-                      <Text className="text-secondary-foreground">
-                        Name: {connected?.name ?? "Unknown"}
-                      </Text>
-                      <Text className="text-secondary-foreground">
-                        RSSI: {connected?.rssi ?? "Unknown"}
-                      </Text>
-                      <Text className="text-secondary-foreground">
-                        Is Connectable:{" "}
-                        {connected?.advertising?.isConnectable ? "Yes" : "No"}
-                      </Text>
-                      <Text className="text-secondary-foreground">
-                        Service UUIDs:{" "}
-                        {"[" +
-                          (connected?.advertising?.serviceUUIDs?.join(", ") ??
-                            "") +
-                          "]"}
-                      </Text>
+                      <View className="flex flex-row gap-2 items-center"></View>
                       <DialogClose asChild>
-                        <Button
-                          variant="destructive"
-                          className="rounded-md"
-                          onPress={() => onForget()}
-                        >
-                          <Text className="text-secondary-foreground">
-                            Forget This Device
-                          </Text>
+                        <Button variant="destructive" className="rounded-md" onPress={() => onForget()}>
+                          <Text className="text-secondary-foreground">Forget This Device</Text>
                         </Button>
                       </DialogClose>
                     </DialogContent>
@@ -302,9 +252,9 @@ export default function Settings() {
                   <View
                     key={peripheral.id}
                     className={clsx(
-                      "flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3",
-                      index === 0 && "rounded-t-xl",
-                      index === discovered.length - 1 && "rounded-b-xl",
+                      'flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3',
+                      index === 0 && 'rounded-t-xl',
+                      index === discovered.length - 1 && 'rounded-b-xl',
                     )}
                   >
                     <Button
@@ -312,40 +262,22 @@ export default function Settings() {
                       className="flex flex-row w-11/12 items-center bg-active justify-between active:bg-card-active"
                       onPress={() => onConnect(peripheral)}
                     >
-                      <Text className="text-secondary-foreground">
-                        {peripheral.name ?? "Unknown"}
-                      </Text>
+                      <Text className="text-secondary-foreground">{peripheral.name ?? 'Unknown'}</Text>
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Icon
-                          as={CircleEllipsis}
-                          className="text-blue-500 size-6"
-                        />
+                        <Icon as={CircleEllipsis} className="text-blue-500 size-6" />
                       </DialogTrigger>
                       <DialogContent className="w-full bg-background">
-                        <Text className="text-muted-foreground">
-                          Device Information
+                        <Text className="text-muted-foreground">Device Information</Text>
+                        <Text className="text-secondary-foreground">ID: {peripheral.id}</Text>
+                        <Text className="text-secondary-foreground">Name: {peripheral.name ?? 'Unknown'}</Text>
+                        <Text className="text-secondary-foreground">RSSI: {peripheral.rssi ?? 'Unknown'}</Text>
+                        <Text className="text-secondary-foreground">
+                          Is Connectable: {peripheral.advertising.isConnectable ? 'Yes' : 'No'}
                         </Text>
                         <Text className="text-secondary-foreground">
-                          ID: {peripheral.id}
-                        </Text>
-                        <Text className="text-secondary-foreground">
-                          Name: {peripheral.name ?? "Unknown"}
-                        </Text>
-                        <Text className="text-secondary-foreground">
-                          RSSI: {peripheral.rssi ?? "Unknown"}
-                        </Text>
-                        <Text className="text-secondary-foreground">
-                          Is Connectable:{" "}
-                          {peripheral.advertising.isConnectable ? "Yes" : "No"}
-                        </Text>
-                        <Text className="text-secondary-foreground">
-                          Service UUIDs:{" "}
-                          {"[" +
-                            (peripheral.advertising.serviceUUIDs?.join(", ") ??
-                              "") +
-                            "]"}
+                          Service UUIDs: {'[' + (peripheral.advertising.serviceUUIDs?.join(', ') ?? '') + ']'}
                         </Text>
                         <DialogClose asChild>
                           <Button
@@ -353,9 +285,7 @@ export default function Settings() {
                             className="rounded-md bg-green-500"
                             onPress={() => onConnect(peripheral)}
                           >
-                            <Text className="text-secondary-foreground">
-                              Connect
-                            </Text>
+                            <Text className="text-secondary-foreground">Connect</Text>
                           </Button>
                         </DialogClose>
                       </DialogContent>
@@ -372,14 +302,13 @@ export default function Settings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Device Forgotten</AlertDialogTitle>
             <AlertDialogDescription>
-              The device has been forgotten in the app. To fully unpair, open
-              the Settings app and navigate to:
+              The device has been forgotten in the app. To fully unpair, open the Settings app and navigate to:
             </AlertDialogDescription>
             <AlertDialogDescription>
               <Text className="text-secondary-foreground">
-                {"Settings > Bluetooth > PetPulse"}
-                <Text className="text-blue-500 text-md">{" \u24D8"}</Text>
-                <Text>{" > "}</Text>
+                {'Settings > Bluetooth > PetPulse'}
+                <Text className="text-blue-500 text-md">{' \u24D8'}</Text>
+                <Text>{' > '}</Text>
                 <Text className="text-blue-500">Forget This Device.</Text>
               </Text>
             </AlertDialogDescription>
@@ -396,8 +325,7 @@ export default function Settings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Log Out?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to log out? You will need to sign in again
-              to access your account.
+              Are you sure you want to log out? You will need to sign in again to access your account.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -409,7 +337,7 @@ export default function Settings() {
               onPress={async () => {
                 await signOut();
                 setShowLogoutAlert(false);
-                router.replace("/(auth)");
+                router.replace('/(auth)');
               }}
             >
               <Text className="text-destructive-foreground">Log out</Text>

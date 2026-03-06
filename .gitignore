@@ -11,6 +11,7 @@
 *.sln.docstates
 *.env
 .env.*
+docs/plans/
 *.pem
 *.key
 **/serviceAccount*.json
