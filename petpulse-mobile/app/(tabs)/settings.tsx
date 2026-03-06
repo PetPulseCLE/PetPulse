@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
@@ -117,7 +117,6 @@ export default function Settings() {
       <View className="flex flex-row mb-12 px-4 justify-evenly">
         {/* TODO: Allow Users to change their profile picture */}
         <Avatar alt={'user.name'} className="size-24">
-          <AvatarImage source={{ uri: '' }} />
           <AvatarFallback>
             <Text>{'user.name.first'.charAt(0).toUpperCase() + 'user.name.last'.charAt(0).toUpperCase()}</Text>
           </AvatarFallback>

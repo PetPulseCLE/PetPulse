@@ -46,36 +46,21 @@ export const useBleConn = () => {
     If timeout wins, disconnects to kill any in-progress OS connection
     so we don't leave a zombie.
   */
-  const connectWithTimeout = async (peripheral_id: string): Promise<ConnectResult> => {
-    let timedOut = false;
-    const timer = setTimeout(async () => {
-      timedOut = true;
-      try {
-        await BleManager?.disconnect(peripheral_id);
-      } catch (error) {
-        console.log('connectWithTimeout: timeout cleanup disconnect failed:', error);
-      }
-    }, 8000);
+  const timeout = (ms: number): Promise<never> => {
+    return new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms));
+  };
 
+  const connectWithTimeout = async (peripheral_id: string): Promise<ConnectResult> => {
     try {
-      await BleManager?.connect(peripheral_id);
-      clearTimeout(timer);
-      if (timedOut) {
-        /* Timeout already fired — tear down the zombie connection */
-        try {
-          await BleManager?.disconnect(peripheral_id);
-        } catch (error) {
-          console.log('connectWithTimeout: zombie cleanup disconnect failed:', error);
-        }
-        console.log('connectWithTimeout: timed out for', peripheral_id);
-        return { success: false, error: 'Timeout' };
-      }
+      await Promise.race([BleManager?.connect(peripheral_id), timeout(8000)]);
       return { success: true };
     } catch (error) {
-      clearTimeout(timer);
-      const errorMsg = timedOut ? 'Timeout' : String(error);
-      console.log('connectWithTimeout:', errorMsg);
-      return { success: false, error: errorMsg };
+      if (error instanceof Error && error.message.includes('Timeout')) {
+        try {
+          await BleManager?.disconnect(peripheral_id);
+        } catch {}
+      }
+      return { success: false, error: String(error) };
     }
   };
 
@@ -106,7 +91,7 @@ export const useBleConn = () => {
       const isBonded = buffer.length === 1 && buffer[0] === 1;
       setBonded(isBonded);
       console.log('triggerBonding: auth read success, bonded=', isBonded);
-      return true;
+      return isBonded;
     } catch (error) {
       console.log('triggerBonding: auth read failed:', JSON.stringify(error));
       setBonded(false);
@@ -313,9 +298,18 @@ export const useBleConn = () => {
       /* All attempts exhausted */
       reconnecting.current = false;
       setReconnectFailed(true);
+      await removeSavedPrphId();
       if (session) {
         Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
-          { text: 'Retry', onPress: () => reconnect() },
+          {
+            text: 'Reconnect',
+            onPress: () => {
+              router.push({
+                pathname: '/(tabs)/settings',
+              });
+              setShowScanModal(true);
+            },
+          },
           { text: 'Dismiss', style: 'cancel' },
         ]);
       }
