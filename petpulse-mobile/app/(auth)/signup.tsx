@@ -8,6 +8,9 @@ import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -39,7 +42,7 @@ export default function SignupScreen() {
   const { signUp, verifyOtp } = useAuth();
   const router = useRouter();
 
-  const { top } = useSafeAreaInsets();
+  const { top, bottom } = useSafeAreaInsets();
 
   const canSubmit = useMemo(() => {
     const e = email.trim();
@@ -174,229 +177,252 @@ export default function SignupScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
-        <View style={styles.header}>
-          <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
-            <Ionicons name="heart" size={30} color="white" />
-          </View>
-          <ThemedText type="title" style={styles.appName}>
-            Create Account
-          </ThemedText>
-          <ThemedText style={styles.subtitle}>
-            Sign up with email and password to get started.
-          </ThemedText>
-        </View>
-        {verifying ? (
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: cardBg, borderColor: cardBorder },
-            ]}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 32 + bottom }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <ThemedText
-              type="defaultSemiBold"
-              style={[styles.label, { alignSelf: "center", marginBottom: 14 }]}
-            >
-              Please enter the code sent to your email
-            </ThemedText>
-            <TextInput
-              value={token}
-              onChangeText={setToken}
-              placeholder="Enter 8-digit code"
-              placeholderTextColor={placeholder}
-              keyboardType="number-pad"
-              maxLength={8}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                },
-              ]}
-            />
-            <TouchableOpacity
-              onPress={onVerify}
-              disabled={token.length !== 8}
-              style={[
-                styles.button,
-                token.length !== 8 && styles.buttonDisabled,
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator color={spinnerColor} />
-              ) : (
-                <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-                  Verify
-                </ThemedText>
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: cardBg, borderColor: cardBorder },
-            ]}
-          >
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              First Name
-            </ThemedText>
-            <TextInput
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder="First name"
-              placeholderTextColor={placeholder}
-              autoCapitalize="words"
-              textContentType="givenName"
-              editable={!submitting}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                },
-              ]}
-            />
-
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Last Name
-            </ThemedText>
-            <TextInput
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder="Last name"
-              placeholderTextColor={placeholder}
-              autoCapitalize="words"
-              textContentType="familyName"
-              editable={!submitting}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                },
-              ]}
-            />
-
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Email
-            </ThemedText>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={placeholder}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="username"
-              editable={!submitting}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: inputBorder,
-                },
-              ]}
-            />
-
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Password
-            </ThemedText>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              onBlur={() => setPasswordTouched(true)}
-              placeholder="Create a password (min 6 chars)"
-              placeholderTextColor={placeholder}
-              secureTextEntry
-              textContentType="newPassword"
-              editable={!submitting}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: passwordValid
-                    ? passwordValidBorder
-                    : inputBorder,
-                },
-              ]}
-            />
-            {(passwordTouched || password.length > 0) && !passwordValid ? (
-              <ThemedText style={styles.passwordHint}>
-                Password must be at least 6 characters.
+            <View style={styles.header}>
+              <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+                <Ionicons name="heart" size={30} color="white" />
+              </View>
+              <ThemedText type="title" style={styles.appName}>
+                Create Account
               </ThemedText>
-            ) : null}
-
-            <ThemedText type="defaultSemiBold" style={styles.label}>
-              Confirm Password
-            </ThemedText>
-            <TextInput
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Re-enter your password"
-              placeholderTextColor={placeholder}
-              secureTextEntry
-              textContentType="newPassword"
-              editable={!submitting}
-              returnKeyType="go"
-              onSubmitEditing={() => {
-                if (canSubmit && !submitting) onSubmit();
-              }}
-              style={[
-                styles.input,
-                {
-                  color: inputText,
-                  backgroundColor: inputBg,
-                  borderColor: confirmValid ? passwordValidBorder : inputBorder,
-                },
-              ]}
-            />
-            {error ? (
-              <ThemedText style={styles.errorText}>{error}</ThemedText>
-            ) : null}
-
-            <TouchableOpacity
-              onPress={onSubmit}
-              disabled={!canSubmit || submitting}
-              style={[
-                styles.button,
-                (!canSubmit || submitting) && styles.buttonDisabled,
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator color={spinnerColor} />
-              ) : (
-                <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-                  Sign Up
+              <ThemedText style={styles.subtitle}>
+                Sign up with email and password to get started.
+              </ThemedText>
+            </View>
+            {verifying ? (
+              <View
+                style={[
+                  styles.card,
+                  { backgroundColor: cardBg, borderColor: cardBorder },
+                ]}
+              >
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={[styles.label, { alignSelf: "center", marginBottom: 14 }]}
+                >
+                  Please enter the code sent to your email
                 </ThemedText>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+                <TextInput
+                  value={token}
+                  onChangeText={setToken}
+                  placeholder="Enter 8-digit code"
+                  placeholderTextColor={placeholder}
+                  keyboardType="number-pad"
+                  maxLength={8}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: inputBorder,
+                    },
+                  ]}
+                />
+                <TouchableOpacity
+                  onPress={onVerify}
+                  disabled={token.length !== 8}
+                  style={[
+                    styles.button,
+                    token.length !== 8 && styles.buttonDisabled,
+                  ]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color={spinnerColor} />
+                  ) : (
+                    <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                      Verify
+                    </ThemedText>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.card,
+                  { backgroundColor: cardBg, borderColor: cardBorder },
+                ]}
+              >
+                <ThemedText type="defaultSemiBold" style={styles.label}>
+                  First Name
+                </ThemedText>
+                <TextInput
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First name"
+                  placeholderTextColor={placeholder}
+                  autoCapitalize="words"
+                  textContentType="givenName"
+                  editable={!submitting}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: inputBorder,
+                    },
+                  ]}
+                />
 
-        <View style={styles.footer}>
-          <ThemedText style={styles.footerText}>
-            Already have an account?{" "}
-            <Link href="/login" replace>
-              <ThemedText type="link">Log in</ThemedText>
-            </Link>
-          </ThemedText>
-        </View>
-      </ThemedView>
+                <ThemedText type="defaultSemiBold" style={styles.label}>
+                  Last Name
+                </ThemedText>
+                <TextInput
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last name"
+                  placeholderTextColor={placeholder}
+                  autoCapitalize="words"
+                  textContentType="familyName"
+                  editable={!submitting}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: inputBorder,
+                    },
+                  ]}
+                />
+
+                <ThemedText type="defaultSemiBold" style={styles.label}>
+                  Email
+                </ThemedText>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={placeholder}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="username"
+                  editable={!submitting}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: inputBorder,
+                    },
+                  ]}
+                />
+
+                <ThemedText type="defaultSemiBold" style={styles.label}>
+                  Password
+                </ThemedText>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  onBlur={() => setPasswordTouched(true)}
+                  placeholder="Create a password (min 6 chars)"
+                  placeholderTextColor={placeholder}
+                  secureTextEntry
+                  textContentType="newPassword"
+                  editable={!submitting}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: passwordValid
+                        ? passwordValidBorder
+                        : inputBorder,
+                    },
+                  ]}
+                />
+                {(passwordTouched || password.length > 0) && !passwordValid ? (
+                  <ThemedText style={styles.passwordHint}>
+                    Password must be at least 6 characters.
+                  </ThemedText>
+                ) : null}
+
+                <ThemedText type="defaultSemiBold" style={styles.label}>
+                  Confirm Password
+                </ThemedText>
+                <TextInput
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor={placeholder}
+                  secureTextEntry
+                  textContentType="newPassword"
+                  editable={!submitting}
+                  returnKeyType="go"
+                  onSubmitEditing={() => {
+                    if (canSubmit && !submitting) onSubmit();
+                  }}
+                  style={[
+                    styles.input,
+                    {
+                      color: inputText,
+                      backgroundColor: inputBg,
+                      borderColor: confirmValid ? passwordValidBorder : inputBorder,
+                    },
+                  ]}
+                />
+                {error ? (
+                  <ThemedText style={styles.errorText}>{error}</ThemedText>
+                ) : null}
+
+                <TouchableOpacity
+                  onPress={onSubmit}
+                  disabled={!canSubmit || submitting}
+                  style={[
+                    styles.button,
+                    (!canSubmit || submitting) && styles.buttonDisabled,
+                  ]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color={spinnerColor} />
+                  ) : (
+                    <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                      Sign Up
+                    </ThemedText>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.footer}>
+              <ThemedText style={styles.footerText}>
+                Already have an account?{" "}
+                <Link href="/login" replace>
+                  <ThemedText type="link">Log in</ThemedText>
+                </Link>
+              </ThemedText>
+            </View>
+          </ScrollView>
+        </ThemedView>
+      </KeyboardAvoidingView>
     </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   screen: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
   },
   header: {
     alignItems: "center",
