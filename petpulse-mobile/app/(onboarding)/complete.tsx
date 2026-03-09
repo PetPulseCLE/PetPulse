@@ -82,7 +82,7 @@ export default function CompleteScreen() {
 
           {/* Go Home Button */}
           <Pressable
-            onPress={() => router.push({ pathname: '/(tabs)' })}
+            onPress={() => router.replace({ pathname: '/(tabs)' })}
             className="h-14 rounded-2xl items-center justify-center flex-row gap-2 border"
             style={{ borderColor: cardBorder, backgroundColor: cardBg }}
           >
