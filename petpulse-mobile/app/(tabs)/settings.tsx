@@ -1,4 +1,14 @@
-import { Alert, Modal, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import type { Peripheral } from "react-native-ble-manager";
 
 import {
@@ -21,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icon";
 import { useBle } from "@/context/BleContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import clsx from "clsx";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -54,11 +65,31 @@ export default function Settings() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateProfile } = useAuth();
   const firstName = user?.user_metadata?.first_name ?? "FirstName";
   const lastName = user?.user_metadata?.last_name ?? "LastName";
   const fullName = firstName + " " + lastName;
   const email = user?.email ?? "";
+
+  const [showEditAccountModal, setShowEditAccountModal] = useState(false);
+  const [editFirstName, setEditFirstName] = useState(firstName);
+  const [editLastName, setEditLastName] = useState(lastName);
+  const [accountSaveError, setAccountSaveError] = useState<string | null>(null);
+  const [savingAccount, setSavingAccount] = useState(false);
+
+  const inputText = useThemeColor({}, "text");
+  const placeholder = useThemeColor(
+    { light: "#6B7280", dark: "#9CA3AF" },
+    "text"
+  );
+  const inputBg = useThemeColor(
+    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
+    "background"
+  );
+  const inputBorder = useThemeColor(
+    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
+    "text"
+  );
 
   const handleScan = async () => {
     if (initialized) {
@@ -103,6 +134,46 @@ export default function Settings() {
     }
   };
 
+  const openEditAccountModal = () => {
+    setEditFirstName(firstName);
+    setEditLastName(lastName);
+    setAccountSaveError(null);
+    setShowEditAccountModal(true);
+  };
+
+  const closeEditAccountModal = () => {
+    setShowEditAccountModal(false);
+    setAccountSaveError(null);
+  };
+
+  const onSaveAccount = async () => {
+    const first = editFirstName.trim();
+    const last = editLastName.trim();
+    if (!first || !last) {
+      setAccountSaveError("First and last name are required.");
+      return;
+    }
+    setAccountSaveError(null);
+    setSavingAccount(true);
+    try {
+      const { error } = await updateProfile({
+        firstName: first,
+        lastName: last,
+      });
+      if (error) {
+        setAccountSaveError(error.message);
+      } else {
+        closeEditAccountModal();
+      }
+    } catch (e: unknown) {
+      setAccountSaveError(
+        e instanceof Error ? e.message : "Something went wrong. Please try again."
+      );
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
   useEffect(() => {
     if (modalStateBool) {
       openDeviceModal();
@@ -133,7 +204,7 @@ export default function Settings() {
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full"
-            onPress={() => router.push("/(tabs)/explore")}
+            onPress={openEditAccountModal}
           >
             <View className="flex flex-row items-center gap-4">
               <Icon as={UserPenIcon} className="text-blue-500 size-6" />
@@ -369,6 +440,117 @@ export default function Settings() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Edit Account Modal */}
+      <Modal
+        visible={showEditAccountModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1 bg-background"
+        >
+          <View className="flex flex-row justify-between items-center pl-4 pr-2 pt-5 pb-4 border-b border-border">
+            <Text className="text-foreground text-lg font-bold">
+              Edit account
+            </Text>
+            <Button
+              variant="ghost"
+              className="active:text-foreground"
+              onPress={closeEditAccountModal}
+            >
+              <Icon as={X} className="text-muted-foreground size-6" />
+            </Button>
+          </View>
+          <ScrollView
+            className="flex-1 px-4 pt-6"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text className="text-muted-foreground text-sm font-medium mb-2">
+              First name
+            </Text>
+            <TextInput
+              value={editFirstName}
+              onChangeText={setEditFirstName}
+              placeholder="First name"
+              placeholderTextColor={placeholder}
+              autoCapitalize="words"
+              textContentType="givenName"
+              editable={!savingAccount}
+              style={{
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                color: inputText,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                height: 48,
+                marginBottom: 16,
+              }}
+            />
+            <Text className="text-muted-foreground text-sm font-medium mb-2">
+              Last name
+            </Text>
+            <TextInput
+              value={editLastName}
+              onChangeText={setEditLastName}
+              placeholder="Last name"
+              placeholderTextColor={placeholder}
+              autoCapitalize="words"
+              textContentType="familyName"
+              editable={!savingAccount}
+              style={{
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                color: inputText,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                height: 48,
+                marginBottom: 16,
+              }}
+            />
+            <Text className="text-muted-foreground text-sm font-medium mb-2">
+              Email
+            </Text>
+            <View
+              style={{
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                height: 48,
+                justifyContent: "center",
+                marginBottom: 24,
+              }}
+            >
+              <Text className="text-muted-foreground">{email}</Text>
+            </View>
+            {accountSaveError ? (
+              <Text className="text-destructive text-sm mb-4">
+                {accountSaveError}
+              </Text>
+            ) : null}
+            <Button
+              onPress={onSaveAccount}
+              disabled={savingAccount}
+              className="rounded-xl h-12 bg-primary"
+            >
+              {savingAccount ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-primary-foreground font-medium">
+                  Save changes
+                </Text>
+              )}
+            </Button>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <AlertDialog open={showForgetAlert} onOpenChange={setShowForgetAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
