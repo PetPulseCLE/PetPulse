@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import Svg, { Circle, Ellipse, Path, Line } from "react-native-svg";
+import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
 export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   const [showDog, setShowDog] = useState(true);
@@ -230,6 +232,30 @@ export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   );
 }
 
+const SPLASH_MIN_DURATION_MS = 2000;
+const FADE_OUT_DURATION_MS = 500;
+
 export default function SplashScreenRoute() {
-  return <SplashScreen />;
+  const { loading } = useAuth();
+  const [fadeOut, setFadeOut] = useState(false);
+  const minTimeReached = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      minTimeReached.current = true;
+    }, SPLASH_MIN_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !minTimeReached.current) return;
+
+    setFadeOut(true);
+    const navigateTimer = setTimeout(() => {
+      router.replace("/(auth)");
+    }, FADE_OUT_DURATION_MS);
+    return () => clearTimeout(navigateTimer);
+  }, [loading]);
+
+  return <SplashScreen fadeOut={fadeOut} />;
 }
