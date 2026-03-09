@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "sh2.h"
 #include "esp_log.h"
+#include "ble_driver.hpp"
 
 static constexpr const char *TAG = "IMU_DRIVER";
 volatile bool motion_flag = false;
@@ -174,6 +175,8 @@ bool imu_get_meta_data(sh2_SensorId_t report_id, bno08x_meta_data_t &meta_data) 
     switch (report_id) {
         case SH2_RAW_ACCELEROMETER:
             return imu.rpt.raw_accelerometer.get_meta_data(meta_data);
+        case SH2_ACCELEROMETER:
+            return imu.rpt.accelerometer.get_meta_data(meta_data);
 
         case SH2_GYROSCOPE_CALIBRATED:
             return imu.rpt.cal_gyro.get_meta_data(meta_data);
@@ -547,43 +550,95 @@ void motion_detection_task(void *pvParameters) {
     }
 }
 
-void data_processing_task(void *pvParameters) {
-    imu_report_cfg_t rpts_to_enable[] = {
+// Reporting periods per mode
+static constexpr uint32_t IMU_PERIOD_BACKGROUND_US = 20000000UL; // 20 seconds
+static constexpr uint32_t IMU_PERIOD_LIVE_US       = 10000000UL; // 10 seconds
+static constexpr uint32_t IMU_PERIOD_DEV_US        = 1000000UL; // 1 second
 
-        {SH2_ACCELEROMETER, 100000UL},
-        {SH2_GYROSCOPE_CALIBRATED, 100000UL},
-        {SH2_MAGNETIC_FIELD_CALIBRATED, 100000UL},
-        {SH2_ROTATION_VECTOR, 100000UL},
-        {SH2_PERSONAL_ACTIVITY_CLASSIFIER, 100000UL}, 
+static uint32_t period_for_mode(Mode mode) {
+    switch(mode) {
+        case Background:
+            return IMU_PERIOD_BACKGROUND_US;
+        case Live:
+            return IMU_PERIOD_LIVE_US;
+        case Dev:
+            return IMU_PERIOD_DEV_US;
+        default:
+            return IMU_PERIOD_BACKGROUND_US;
+    }
+}
+
+static void configure_activity_reports(Mode mode) {
+    imu_disable_rpt(SH2_STEP_COUNTER);
+    imu_disable_rpt(SH2_PERSONAL_ACTIVITY_CLASSIFIER);
+    uint32_t period = period_for_mode(mode);
+
+    imu_report_cfg_t rpts[] = {
+        {SH2_STEP_COUNTER, period},
+        {SH2_PERSONAL_ACTIVITY_CLASSIFIER, period},
     };
+    if(!imu_enable_multi_rpts(rpts, sizeof(rpts) / sizeof(rpts[0]))) {
+        ESP_LOGE(TAG, "Failed to enable activity reports for mode=%d", static_cast<int>(mode));
+    }
+    ESP_LOGI(TAG, "Activity reports enabled: mode=%d, period=%lus",
+             static_cast<int>(mode), period / 1'000'000UL);
+}
 
-    imu_enable_multi_rpts(rpts_to_enable, sizeof(rpts_to_enable)/sizeof(rpts_to_enable[0]));
-    
-    imu.register_cb([]()
-    {
-        if(imu_has_new_data(SH2_ACCELEROMETER)) {
-            bno08x_accel_t accel = imu.rpt.accelerometer.get();
-            ESP_LOGI(TAG, "Accel: %.2f, %.2f, %.2f", accel.x, accel.y, accel.z);
+void data_processing_task(void *pvParameters) {
+    // Block until the mobile app has both authenticated AND written the current time.
+    // This prevents epoch-0 timestamps from being sent during the auth→time-sync window.
+    xEventGroupWaitBits(bleEventGroup,
+                        BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT,
+                        pdFALSE,    // do not clear bits on exit
+                        pdTRUE,     // wait for ALL bits
+                        portMAX_DELAY);
+
+    Mode active_mode = bleServer.getMode();
+    configure_activity_reports(active_mode);
+
+    // Step counter ignores long hardware periods — gate forwarding in software
+    static TickType_t last_step_send_ticks = 0;
+
+    bool new_step_data = false;
+    bool new_activity_data = false;
+
+    imu.register_cb([&new_step_data, &new_activity_data]() {
+        if((xEventGroupGetBits(bleEventGroup) & (BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT))
+                != (BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT)) return;
+
+        if(imu_has_new_data(SH2_STEP_COUNTER)) {
+            uint32_t gate_ms = period_for_mode(bleServer.getMode()) / 1000UL;
+            TickType_t now = xTaskGetTickCount();
+            if((now - last_step_send_ticks) >= pdMS_TO_TICKS(gate_ms)) {
+                bno08x_step_counter_t step_counter = imu.rpt.step_counter.get();
+                ESP_LOGI(TAG, "Step Counter: %d", step_counter.steps);
+                bleServer.updateStepCount(step_counter);
+                new_step_data = true;
+                last_step_send_ticks = now;
+            }
         }
-        if(imu_has_new_data(SH2_GYROSCOPE_CALIBRATED)) {
-            bno08x_gyro_t gyro = imu.rpt.cal_gyro.get();
-            ESP_LOGI(TAG, "Gyro: %.2f, %.2f, %.2f", gyro.x, gyro.y, gyro.z);
-        }
-        if(imu_has_new_data(SH2_MAGNETIC_FIELD_CALIBRATED)) {
-            bno08x_magf_t magf = imu.rpt.cal_magnetometer.get();
-            ESP_LOGI(TAG, "Magf: %.2f, %.2f, %.2f", magf.x, magf.y, magf.z);
-        }
-        if(imu_has_new_data(SH2_ROTATION_VECTOR)) {
-            bno08x_quat_t rv = imu.rpt.rv.get_quat();
-            ESP_LOGI(TAG, "RV: %.2f, %.2f, %.2f, %.2f", rv.real, rv.i, rv.j, rv.k);
-        }
+
         if(imu_has_new_data(SH2_PERSONAL_ACTIVITY_CLASSIFIER)) {
             bno08x_activity_classifier_t activity = imu.rpt.activity_classifier.get();
             ESP_LOGI(TAG, "Activity: %d", activity.mostLikelyState);
-            ESP_LOGI(TAG, "Confidence: %d", activity.confidence);
+            bleServer.updateActivityClass(activity);
+            new_activity_data = true;
+        }
+
+        if(new_step_data && new_activity_data) {
+            bleServer.setActivity();
+            new_step_data = false;
+            new_activity_data = false;
         }
     });
-    while (1) {
-        vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Check every 5s whether the mode changed and reconfigure if so
+    while(true) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        Mode current_mode = bleServer.getMode();
+        if(current_mode != active_mode) {
+            active_mode = current_mode;
+            configure_activity_reports(active_mode);
+        }
     }
 }
