@@ -18,9 +18,9 @@ import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
 import clsx from 'clsx';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -44,7 +44,11 @@ export default function Settings() {
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [liveRssi, setLiveRssi] = useState<number | null>(null);
 
+  const onboardHandled = useRef(false);
+
   const { signOut } = useAuth();
+
+  const { onboardScanModal } = useLocalSearchParams();
 
   const handleScan = async () => {
     if (initialized) {
@@ -105,11 +109,13 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    if (showScanModal) {
+    if (!initialized) return;
+    console.log('onboardScanModal: ', onboardScanModal);
+    if (showScanModal || onboardScanModal === '1') {
       openDeviceModal();
       setShowScanModal(false);
     }
-  }, [showScanModal]);
+  }, [showScanModal, initialized]);
 
   return (
     <View className="flex flex-col pt-5 bg-background h-full">

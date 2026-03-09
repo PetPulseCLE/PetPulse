@@ -1,35 +1,29 @@
-import React from "react";
-import { Pressable, ScrollView, View } from "react-native";
-import { router } from "expo-router";
-import { CheckCircle2, Bluetooth, House } from "lucide-react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from 'expo-router';
+import { Bluetooth, CheckCircle2, House } from 'lucide-react-native';
+import React from 'react';
+import { Pressable, ScrollView, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { useThemeColor } from "@/hooks/use-theme-color";
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function CompleteScreen() {
   const insets = useSafeAreaInsets();
 
-  const tint = useThemeColor({}, "tint");
-  const brandBlack = useThemeColor({ light: "#0B0B1A", dark: "#1F2937" }, "text");
-  const cardBg = useThemeColor(
-    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
-    "background"
-  );
-  const cardBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" },
-    "text"
-  );
+  const tint = useThemeColor({}, 'tint');
+  const brandBlack = useThemeColor({ light: '#0B0B1A', dark: '#1F2937' }, 'text');
+  const cardBg = useThemeColor({ light: 'rgba(0,0,0,0.02)', dark: 'rgba(255,255,255,0.06)' }, 'background');
+  const cardBorder = useThemeColor({ light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.18)' }, 'text');
 
   return (
-    <SafeAreaView className="flex-1" edges={["top", "left", "right"]}>
+    <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
       <ThemedView className="flex-1">
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
-            minHeight: "100%",
-            alignItems: "center",
+            minHeight: '100%',
+            alignItems: 'center',
             paddingTop: 48,
             paddingHorizontal: 24,
             paddingBottom: 32,
@@ -58,10 +52,7 @@ export default function CompleteScreen() {
           </View>
 
           {/* Message Card */}
-          <View
-            className="rounded-2xl border p-5 w-full"
-            style={{ backgroundColor: cardBg, borderColor: cardBorder }}
-          >
+          <View className="rounded-2xl border p-5 w-full" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
             <ThemedText className="text-center" style={{ opacity: 0.9 }}>
               You can pair your harness now, or go straight to the app overview and do it later.
             </ThemedText>
@@ -79,19 +70,19 @@ export default function CompleteScreen() {
         >
           {/* Pair Harness Button */}
           <Pressable
-            onPress={() => router.replace("/(tabs)/settings")}
+            onPress={() => router.replace('/(tabs)/settings')}
             className="h-14 rounded-2xl items-center justify-center flex-row gap-2 mb-4"
             style={{ backgroundColor: brandBlack }}
           >
             <Bluetooth size={18} color="white" />
-            <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+            <ThemedText type="defaultSemiBold" style={{ color: 'white' }}>
               Pair Harness
             </ThemedText>
           </Pressable>
 
           {/* Go Home Button */}
           <Pressable
-            onPress={() => router.replace("/(tabs)")}
+            onPress={() => router.push({ pathname: '/(tabs)', params: { onboardScanModal: '1' } })}
             className="h-14 rounded-2xl items-center justify-center flex-row gap-2 border"
             style={{ borderColor: cardBorder, backgroundColor: cardBg }}
           >
