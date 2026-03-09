@@ -11,7 +11,7 @@ static const char *TAG = "MAIN";
 extern "C" void app_main(void) {
 
     ESP_LOGI(TAG, "Starting BLE...");
-    bleServer.init(9);
+    bleServer.init();
     bleServer.startAdvertising();
     ESP_LOGI(TAG, "BLE advertising started");
 

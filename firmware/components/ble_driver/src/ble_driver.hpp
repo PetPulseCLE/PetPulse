@@ -53,7 +53,7 @@
 /* Current Time Service Characteristics */
 #define CUR_TIME_UUID "2A2B"                                       // Bluetooth assigned numbers current time (strip to only send UTC) charcteristic UUID = 0x2A2B
 
-
+#define C_AGGREGATED_UUID "792C45EA-7B95-4A4D-8BC2-6D04809BB406"   // Aggregated service characteristic UUID
 
 struct Timestamp_t {
     uint16_t year = 0x0000;
@@ -74,7 +74,6 @@ enum Mode {
 Timestamp_t getUTCTimestamp();
 
 bool syncSysTime(NimBLEAttValue& value);
-Mode setMode();
 
 class BleServer  {
     private: 
@@ -199,17 +198,6 @@ class BleServer  {
 
         BleRV_t _rv;
 
-        /* Raw Aggregated Struct */ 
-        struct BleRaw_t {
-            BleAccel_t accel;
-            BleGyro_t gyro;
-            BleMagf_t magf;
-            BleRV_t rv;
-            Timestamp_t timestamp;
-        }__attribute__((packed));
-
-        BleRaw_t _raw;
-
         /* Step Count Struct */ 
         struct BleStepCount_t {
             uint32_t latency;
@@ -247,25 +235,7 @@ class BleServer  {
 
         BleActivityClass_t _activityClass;
 
-        /* Activity Aggregated Struct */ 
-        struct BleActivity_t {
-            BleStepCount_t stepCount;
-            BleActivityClass_t activityClass;
-            Timestamp_t timestamp;
-
-        }__attribute__((packed));
-
-        BleActivity_t _activity;
-
-        /* Aggregated Sensor Struct */
-        struct BleAggregatedAll_t {
-            uint8_t presence_bitmask = 0x00;
-            BleRaw_t raw;
-            BleActivity_t activity;
-            BleVitals_t vitals;
-        }__attribute__((packed));
-
-        BleAggregatedAll_t _aggregatedAll;
+  
         
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
@@ -303,6 +273,39 @@ class BleServer  {
 
         BatteryHealth_t _batteryHealth;
 
+    /* ============Aggregated Structs================ */
+
+        /* Activity Aggregated Struct */ 
+        struct BleActivity_t {
+            BleStepCount_t stepCount;
+            BleActivityClass_t activityClass;
+            Timestamp_t timestamp;
+    
+            }__attribute__((packed));
+    
+            BleActivity_t _activity;
+
+        /* Raw IMU Aggregated Struct */ 
+        struct BleRaw_t {
+            BleAccel_t accel;
+            BleGyro_t gyro;
+            BleMagf_t magf;
+            BleRV_t rv;
+            Timestamp_t timestamp;
+        }__attribute__((packed));
+
+        BleRaw_t _raw;
+    
+        /* Aggregated Sensor Struct */
+        struct BleAggregatedAll_t {
+            uint8_t presence_bitmask = 0x00;
+            BleRaw_t raw;
+            BleActivity_t activity;
+            BleVitals_t vitals;
+        }__attribute__((packed));
+    
+        BleAggregatedAll_t _aggregatedAll;
+
         std::atomic<Mode> _mode{Background};
         std::atomic<bool> _authenticated{false};
 
@@ -310,7 +313,7 @@ class BleServer  {
             bool hasSubscriber() { return pServer && pServer->getConnectedCount() > 0; }
             bool isAuthenticated() { return hasSubscriber() && _authenticated; }
             void setAuthenticated(bool auth);
-            bool init(int8_t tx_power);
+            bool init();
             bool deinit();
             bool restart();
             bool startAdvertising();

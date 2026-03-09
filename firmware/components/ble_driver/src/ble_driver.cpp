@@ -16,6 +16,7 @@ ServerCallbacks serverCallbacks;
 CharacteristicCallbacks chrCallbacks;
 EventGroupHandle_t bleEventGroup = nullptr;
 
+
 bool syncSysTime(NimBLEAttValue& value) {
     if(value.size() < 10) return false;
     struct tm timeinfo = {};
@@ -147,11 +148,6 @@ void CharacteristicCallbacks::onWrite(NimBLECharacteristic* pCharacteristic, Nim
         bleServer.setMode(static_cast<Mode>(value[0]));
     }
 
-    if(pCharacteristic->getUUID() == NimBLEUUID(C_AUTH_PING)) {
-        uint8_t ping = bleServer.isAuthenticated() ? 0x01 : 0x00;
-        pCharacteristic->setValue(&ping, 1);
-        return;
-    }
 }
 void CharacteristicCallbacks::onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) {
     if(pCharacteristic->getUUID() == NimBLEUUID(C_AUTH_PING)) {
@@ -162,7 +158,7 @@ void CharacteristicCallbacks::onRead(NimBLECharacteristic* pCharacteristic, NimB
     }
 }
 
-bool BleServer::init(int8_t tx_power) {
+bool BleServer::init() {
 
     if(NimBLEDevice::isInitialized()) {
         ESP_LOGW(TAG, "BLE device already initialized");
@@ -171,6 +167,7 @@ bool BleServer::init(int8_t tx_power) {
 
     NimBLEDevice::init(DEVICE_NAME);
     bleEventGroup = xEventGroupCreate();
+
     if(bleEventGroup == nullptr) {
         ESP_LOGE(TAG, "Failed to create BLE event group");
         NimBLEDevice::deinit();
@@ -180,7 +177,7 @@ bool BleServer::init(int8_t tx_power) {
     /* Request mtu = 512 */
     NimBLEDevice::setMTU(512);
 
-    NimBLEDevice::setPower(tx_power);
+    NimBLEDevice::setPower(9);
 
     /* bonding: true, mitm: false, secure connection: true */ 
     NimBLEDevice::setSecurityAuth(true, false, true);
@@ -209,10 +206,12 @@ bool BleServer::init(int8_t tx_power) {
     pMotionService = pServer->createService(S_MOTION_UUID);
         pRaw = pMotionService->createCharacteristic(C_RAW_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
         pActivity = pMotionService->createCharacteristic(C_ACTIVITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pMode = pMotionService->createCharacteristic(C_MODE_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::WRITE_ENC | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE);
-
+        
+        pMode = pMotionService->createCharacteristic(C_MODE_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::WRITE_ENC);
         pAuthPing = pMotionService->createCharacteristic(C_AUTH_PING, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::READ);
+
         pMode->setCallbacks(&chrCallbacks);
+        pAuthPing->setCallbacks(&chrCallbacks);
 
         /*Start the Activity Service*/
         pMotionService->start();
@@ -242,6 +241,12 @@ bool BleServer::init(int8_t tx_power) {
         /*Start the current time service*/
         pCurTimeService->start();
 
+    pAggregatedService = pServer->createService(S_AGGREGATED_UUID);
+        pAggregated = pAggregatedService->createCharacteristic(C_AGGREGATED_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+
+        /*Start the aggregated service*/
+        pAggregatedService->start();
+
     NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->setName(DEVICE_NAME);
     pAdvertising->addServiceUUID(S_BATTERY_UUID);
@@ -255,6 +260,12 @@ bool BleServer::deinit() {
     if(!NimBLEDevice::isInitialized()) {
         return false;
     } 
+
+    if(bleEventGroup != nullptr) {
+        vEventGroupDelete(bleEventGroup);
+        bleEventGroup = nullptr;
+    }
+
     NimBLEDevice::deinit();
     return true;
 }
@@ -311,8 +322,11 @@ void BleServer::setRaw(bool notify) {
         .rv = _rv,
         .timestamp = getUTCTimestamp(),
     };
+
+    pRaw->setValue(_raw);
+
     if(notify) {
-        pRaw->setValue(_raw);
+
         pRaw->notify();
     }
 }
@@ -323,8 +337,10 @@ void BleServer::setActivity(bool notify) {
         .activityClass = _activityClass,
         .timestamp = getUTCTimestamp(),
     };
+
+    pActivity->setValue(_activity);
+
     if(notify) {
-        pActivity->setValue(_activity);
         pActivity->notify();
     }
 }
@@ -343,47 +359,43 @@ Mode BleServer::getMode() {
 
 /* Battery Level Characteristic Value Setters */
 void BleServer::setBattLevelValue(bool notify, bool indicate) {
+    pBatteryLevel->setValue(_batteryLevel);
     if(indicate) {
-        pBatteryLevel->setValue(_batteryLevel);
         pBatteryLevel->indicate();
     }
     if(notify) {
-        pBatteryLevel->setValue(_batteryLevel);
         pBatteryLevel->notify();
     }
 }
 
 void BleServer::setBattEnergyValue(bool notify, bool indicate) {
+    pBatteryEnergy->setValue(_batteryEnergy);
     if(indicate) {
-        pBatteryEnergy->setValue(_batteryEnergy);
         pBatteryEnergy->indicate();
     }
     if(notify) {
-        pBatteryEnergy->setValue(_batteryEnergy);
         pBatteryEnergy->notify();
     }
 }
 
 
 void BleServer::setBattTimeValue(bool notify, bool indicate) {
+    pBatteryTime->setValue(_batteryTime);
     if(indicate) {
-        pBatteryTime->setValue(_batteryTime);
         pBatteryTime->indicate();
     }
     if(notify) {
-        pBatteryTime->setValue(_batteryTime);
         pBatteryTime->notify();
     }
 }
 
 
 void BleServer::setBattHealthValue(bool notify, bool indicate) {
+    pBatteryHealth->setValue(_batteryHealth);
     if(indicate) {
-        pBatteryHealth->setValue(_batteryHealth);
         pBatteryHealth->indicate();
     }
     if(notify) {
-        pBatteryHealth->setValue(_batteryHealth);
         pBatteryHealth->notify();
     }
 }

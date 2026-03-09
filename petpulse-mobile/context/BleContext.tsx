@@ -1,3 +1,4 @@
+import { useBleMode } from '@/hooks/ble/useBleMode';
 import { createContext, useContext } from 'react';
 import type { Peripheral } from 'react-native-ble-manager';
 import { useBleConn } from '../hooks/ble/useBleConn-v2';
@@ -24,12 +25,13 @@ const BleContext = createContext<BleContextType>({} as BleContextType);
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const connection = useBleConn();
   const data = useBleTime(connection.connected, connection.bonded);
-
+  const mode = useBleMode(connection.connected, connection.bonded);
   return (
     <BleContext.Provider
       value={{
         ...connection,
         ...data,
+        ...mode,
       }}
     >
       {children}
