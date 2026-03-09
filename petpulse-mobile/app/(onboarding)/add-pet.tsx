@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -180,6 +181,8 @@ export default function AddPetScreen() {
   }
 
   async function onContinue() {
+    if (isSubmitting) return;
+
     setError(null);
 
     if (!petName.trim()) return setError("Please enter your pet’s name.");
@@ -196,27 +199,28 @@ export default function AddPetScreen() {
     }
 
     setIsSubmitting(true);
-    const { error: insertError } = await supabase.from("pets").insert({
-      user_id: user.id,
-      name: petName.trim(),
-      pet_type: species,
-      breed_primary: breed,
-      is_mixed_breed: isMixed,
-      breed_secondary: isMixed ? secondaryBreed : null,
-      birth_date: formatDob(dob)!,
-      weight_lbs: weightNumber,
-    });
+    try {
+      const { error: insertError } = await supabase.from("pets").insert({
+        user_id: user.id,
+        name: petName.trim(),
+        pet_type: species,
+        breed_primary: breed,
+        is_mixed_breed: isMixed,
+        breed_secondary: isMixed ? secondaryBreed : null,
+        birth_date: formatDob(dob)!,
+        weight_lbs: weightNumber,
+      });
 
-    setIsSubmitting(false);
+      if (insertError) {
+        setError(insertError.message ?? "Failed to save pet.");
+        return;
+      }
 
-    if (insertError) {
-      setError(insertError.message ?? "Failed to save pet.");
-      return;
+      // Next step -> go to permissions
+      router.replace("./permissions");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Next step -> go to permissions
-    router.replace("./permissions");
-
   }
 
   return (
@@ -448,12 +452,20 @@ export default function AddPetScreen() {
           {!isKeyboardOpen ? (
             <Pressable
               onPress={onContinue}
+              disabled={isSubmitting}
               className="mt-6 h-14 w-full rounded-2xl items-center justify-center"
-              style={{ backgroundColor: brandBlack, opacity: canContinue ? 1 : 0.55 }}
+              style={{
+                backgroundColor: brandBlack,
+                opacity: isSubmitting || !canContinue ? 0.55 : 1,
+              }}
             >
-              <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
-                Continue
-              </ThemedText>
+              {isSubmitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
+                  Continue
+                </ThemedText>
+              )}
             </Pressable>
           ) : null}
 
