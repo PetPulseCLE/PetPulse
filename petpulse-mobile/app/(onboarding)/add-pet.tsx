@@ -212,7 +212,8 @@ export default function AddPetScreen() {
       });
 
       if (insertError) {
-        setError(insertError.message ?? "Failed to save pet.");
+        console.error("Failed to save pet", insertError);
+        setError("We couldn't save your pet right now. Please try again.");
         return;
       }
 
