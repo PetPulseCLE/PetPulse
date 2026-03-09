@@ -70,7 +70,7 @@ export default function CompleteScreen() {
         >
           {/* Pair Harness Button */}
           <Pressable
-            onPress={() => router.replace('/(tabs)/settings')}
+            onPress={() => router.replace({ pathname: '/(tabs)/settings', params: { onboardScanModal: '1' } })}
             className="h-14 rounded-2xl items-center justify-center flex-row gap-2 mb-4"
             style={{ backgroundColor: brandBlack }}
           >
@@ -82,7 +82,7 @@ export default function CompleteScreen() {
 
           {/* Go Home Button */}
           <Pressable
-            onPress={() => router.push({ pathname: '/(tabs)', params: { onboardScanModal: '1' } })}
+            onPress={() => router.push({ pathname: '/(tabs)' })}
             className="h-14 rounded-2xl items-center justify-center flex-row gap-2 border"
             style={{ borderColor: cardBorder, backgroundColor: cardBg }}
           >

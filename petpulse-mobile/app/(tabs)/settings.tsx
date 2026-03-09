@@ -20,7 +20,7 @@ import { useBle } from '@/context/BleContext';
 import clsx from 'clsx';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -43,8 +43,6 @@ export default function Settings() {
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const [liveRssi, setLiveRssi] = useState<number | null>(null);
-
-  const onboardHandled = useRef(false);
 
   const { signOut } = useAuth();
 
