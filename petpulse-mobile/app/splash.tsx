@@ -224,7 +224,7 @@ export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
 
         {/* App Name */}
         <View className="space-y-2 items-center">
-          <Text className="text-4xl text-foreground">Pet Pulse</Text>
+          <Text className="text-4xl text-foreground">PetPulse</Text>
           <Text className="text-muted-foreground">Care Beyond the Collar</Text>
         </View>
       </View>
