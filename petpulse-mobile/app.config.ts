@@ -15,7 +15,26 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: process.env.BUNDLE_IDENTIFIER ?? "com.anonymous.petpulsemobile",
+const bundleIdentifier = process.env.BUNDLE_IDENTIFIER;
+const isLocalDev = process.env.APP_VARIANT === "local";
+
+if (!bundleIdentifier && !isLocalDev) {
+  throw new Error("BUNDLE_IDENTIFIER must be set for non-local builds.");
+}
+
+export default {
+  expo: {
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: bundleIdentifier ?? "com.anonymous.petpulsemobile",
+      appleTeamId: process.env.APPLE_TEAM_ID,
+    },
+    android: {
+      package: bundleIdentifier ?? "com.anonymous.petpulsemobile",
+    },
+    // ... rest of config
+  },
+};
       appleTeamId: process.env.APPLE_TEAM_ID,
       infoPlist: {
         UIBackgroundModes: ["location"],
