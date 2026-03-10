@@ -92,6 +92,8 @@ export default function Settings() {
     "text"
   );
 
+  const { onboardScanModal } = useLocalSearchParams();
+
   const handleScan = async () => {
     if (initialized) {
       try {
@@ -176,11 +178,13 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    if (showScanModal) {
+    if (!initialized) return;
+    console.log('onboardScanModal: ', onboardScanModal);
+    if (showScanModal || onboardScanModal === '1') {
       openDeviceModal();
       setShowScanModal(false);
     }
-  }, [showScanModal]);
+  }, [showScanModal, initialized]);
 
   return (
     <View className="flex flex-col pt-5 bg-background h-full">
