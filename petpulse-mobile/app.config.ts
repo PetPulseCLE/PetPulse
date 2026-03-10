@@ -15,7 +15,7 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: process.env.BUNDLE_IDENTIFIER,
+      bundleIdentifier: process.env.BUNDLE_IDENTIFIER ?? "com.anonymous.petpulsemobile",
       appleTeamId: process.env.APPLE_TEAM_ID,
       infoPlist: {
         UIBackgroundModes: ["location"],

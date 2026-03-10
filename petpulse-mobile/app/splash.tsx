@@ -238,24 +238,26 @@ const FADE_OUT_DURATION_MS = 500;
 export default function SplashScreenRoute() {
   const { loading } = useAuth();
   const [fadeOut, setFadeOut] = useState(false);
-  const minTimeReached = useRef(false);
+  const [minTimeReached, setMinTimeReached] = useState(false);
+  const transitionStarted = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      minTimeReached.current = true;
+      setMinTimeReached(true);
     }, SPLASH_MIN_DURATION_MS);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (loading || !minTimeReached.current) return;
+    if (loading || !minTimeReached || transitionStarted.current) return;
 
+    transitionStarted.current = true;
     setFadeOut(true);
     const navigateTimer = setTimeout(() => {
       router.replace("/(auth)");
     }, FADE_OUT_DURATION_MS);
     return () => clearTimeout(navigateTimer);
-  }, [loading]);
+  }, [loading, minTimeReached]);
 
   return <SplashScreen fadeOut={fadeOut} />;
 }
