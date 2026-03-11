@@ -7,28 +7,29 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, ActivityIndicator } from "react-native";
-import "react-native-reanimated";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 import { PortalHost } from "@rn-primitives/portal";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 function StackWithStatusBar() {
-  const { loading } = useAuth();
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
   return (
     <>
-      <Stack>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="splash" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="auth/callback" />
+        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
