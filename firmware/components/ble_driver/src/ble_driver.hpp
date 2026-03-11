@@ -235,8 +235,14 @@ class BleServer  {
 
         BleActivityClass_t _activityClass;
 
-  
-        
+        struct BleEnv_t {
+            float temperature;
+            float humidity;
+            Timestamp_t timestamp;
+        }__attribute__((packed));
+
+        BleEnv_t _env;
+
         /* Battery Level Status Struct */
         struct BatteryLevel_t {
             uint8_t flags = 0x06; //Battery Level and Additional Status bits set
@@ -302,6 +308,7 @@ class BleServer  {
             BleRaw_t raw;
             BleActivity_t activity;
             BleVitals_t vitals;
+            BleEnv_t env;
         }__attribute__((packed));
     
         BleAggregatedAll_t _aggregatedAll;
