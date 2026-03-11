@@ -22,7 +22,7 @@ export interface Vitals {
   timestamp: Date;
 }
 
-const parseVitals = (data: Uint8Array): Vitals => {
+export const parseVitals = (data: Uint8Array): Vitals => {
   const vitalsBuffer = new Uint8Array(data);
   const vitalsView = new DataView(vitalsBuffer.buffer);
   const breathRate = vitalsView.getUint8(0);
@@ -31,6 +31,7 @@ const parseVitals = (data: Uint8Array): Vitals => {
   const timestamp = UTCFromBytes(vitalsBuffer.slice(3, 12));
   return { breathRate, heartRate, hr_confidence, timestamp } as Vitals;
 };
+
 export const useBleVitals = (connected: Peripheral | null) => {
   const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
     const chr = data.characteristic.toLowerCase();
@@ -41,6 +42,7 @@ export const useBleVitals = (connected: Peripheral | null) => {
       console.log('vitals: ', vitals);
     }
   };
+
   const subscribeToVitals = async (peripheral: Peripheral) => {
     try {
       await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals);
@@ -49,6 +51,7 @@ export const useBleVitals = (connected: Peripheral | null) => {
       console.log('subscribeToVitals: ', error);
     }
   };
+
   useEffect(() => {
     if (!connected) return;
     subscribeToVitals(connected);

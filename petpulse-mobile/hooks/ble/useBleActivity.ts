@@ -71,7 +71,7 @@ export interface Activity {
   utcTimestamp: Date;
 }
 
-const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
+export const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const x = view.getFloat32(0, true);
   const y = view.getFloat32(4, true);
@@ -80,7 +80,7 @@ const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
   return { x, y, z, accuracy } as Accel | Gyro | Magf;
 };
 
-const parseQuat = (data: Uint8Array): Quat => {
+export const parseQuat = (data: Uint8Array): Quat => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const real = view.getFloat32(0, true);
   const x = view.getFloat32(4, true);
@@ -91,7 +91,7 @@ const parseQuat = (data: Uint8Array): Quat => {
   return { real, x, y, z, rad_accuracy, accuracy } as Quat;
 };
 
-const parseRaw = (data: Uint8Array): Raw => {
+export const parseRaw = (data: Uint8Array): Raw => {
   const accel = parseMajorAxes(data.slice(0, 13));
   const gyro = parseMajorAxes(data.slice(13, 26));
   const magf = parseMajorAxes(data.slice(26, 39));
@@ -100,7 +100,7 @@ const parseRaw = (data: Uint8Array): Raw => {
   return { accel, gyro, magf, rv, utcTimestamp } as Raw;
 };
 
-const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
+export const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
   const activityClassBuffer = new Uint8Array(data);
   const activityClassView = new DataView(activityClassBuffer.buffer);
   const confidenceArray = new Uint8Array(10);
@@ -112,7 +112,7 @@ const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
   // TODO: Read activityClass into database
   return { confidenceArray, activityClass, accuracy } as ActivityClass;
 };
-const parseStepCount = (data: Uint8Array): StepCount => {
+export const parseStepCount = (data: Uint8Array): StepCount => {
   const stepCountBuffer = new Uint8Array(data);
   const stepCountView = new DataView(stepCountBuffer.buffer);
   const latency = stepCountView.getUint32(0, true);
@@ -122,7 +122,7 @@ const parseStepCount = (data: Uint8Array): StepCount => {
   return { latency, steps, accuracy } as StepCount;
 };
 
-const parseActivity = (data: Uint8Array): Activity => {
+export const parseActivity = (data: Uint8Array): Activity => {
   const stepCount = parseStepCount(data.slice(0, 7));
   const classifier = parseActivityClassifier(data.slice(7, 19));
   const utcTimestamp = UTCFromBytes(data.slice(19, 28));
