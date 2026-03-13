@@ -217,8 +217,7 @@ bool BleServer::init() {
         pMotionService->start();
 
     pEnviroService = pServer->createService(S_ENVIRO_UUID);
-        pTemp = pEnviroService->createCharacteristic(C_TEMP_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
-        pHumidity = pEnviroService->createCharacteristic(C_HUMIDITY_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
+        pEnv = pEnviroService->createCharacteristic(C_ENV_UUID, NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::NOTIFY);
 
         /* Start the environmental sensors service */
         pEnviroService->start();
@@ -284,6 +283,29 @@ bool BleServer::startAdvertising() {
 bool BleServer::isAdvertising() {
     return NimBLEDevice::getAdvertising()->isAdvertising();
 }
+
+void BleServer::setAuthenticated(bool auth) {
+    _authenticated = auth;
+    if (!pAuthPing) return;
+    uint8_t val = _authenticated ? 0x01 : 0x00;
+    pAuthPing->setValue(&val, 1);
+}
+
+void BleServer::updateHR(uint8_t hr, uint8_t hr_acc) {
+    _vitals.heart_rate = hr;
+    _vitals.hr_confidence = hr_acc;
+}
+
+void BleServer::updateBR(uint8_t br) {
+    _vitals.breath_rate = br;
+}
+
+void BleServer::setVitals(bool notify) {
+    pVitals->setValue(_vitals);
+    if(notify) {
+        pVitals->notify();
+    }
+}
  
 void BleServer::updateAccel(const bno08x_accel_t& accel) {
     _accel = accel;
@@ -307,12 +329,6 @@ void BleServer::updateActivityClass(const bno08x_activity_classifier_t& activity
     _activityClass = activity_class;
 }
 
-void BleServer::setAuthenticated(bool auth) {
-    _authenticated = auth;
-    if (!pAuthPing) return;
-    uint8_t val = _authenticated ? 0x01 : 0x00;
-    pAuthPing->setValue(&val, 1);
-}
 
 void BleServer::setRaw(bool notify) {
     _raw = {
@@ -342,6 +358,19 @@ void BleServer::setActivity(bool notify) {
 
     if(notify) {
         pActivity->notify();
+    }
+}
+
+void BleServer::updateTemp(float temperature) {
+    _env.temperature = temperature;
+}
+void BleServer::updateHumidity(float humidity) {
+    _env.humidity = humidity;
+}
+void BleServer::setEnv(bool notify) {
+    pEnv->setValue(_env);
+    if(notify) {
+        pEnv->notify();
     }
 }
 

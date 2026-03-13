@@ -10,13 +10,16 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 }
 
 import { Platform } from 'react-native';
+import { Peripheral } from 'react-native-ble-manager';
 import { parseActivity, parseRaw, type Activity, type Raw } from './useBleActivity';
+import { parseEnv, type Env } from './useBleEnv';
 import { parseVitals, type Vitals } from './useBleVitals';
 
 export interface Aggregated {
   raw?: Raw;
   activity?: Activity;
   vitals?: Vitals;
+  env?: Env;
 }
 
 export const parseAggregated = (data: Uint8Array): Aggregated => {
@@ -25,9 +28,13 @@ export const parseAggregated = (data: Uint8Array): Aggregated => {
   const bitmask = aggregatedView.getUint8(0);
   /* prettier-ignore */
   return {
-    raw:      (bitmask & 0x01) ? parseRaw(aggregatedBuffer.slice(2, 70)) : undefined,
+    raw:      (bitmask & 0x01) ? parseRaw(aggregatedBuffer.slice(1, 70)) : undefined,
     activity: (bitmask & 0x02)  ? parseActivity(aggregatedBuffer.slice(70, 98)) : undefined,
     vitals:   (bitmask & 0x04) ? parseVitals(aggregatedBuffer.slice(98, 110)) : undefined,
-    // Implement env parsing --  const env = data.slice(110, 127);
+    env:      (bitmask & 0x08) ? parseEnv(aggregatedBuffer.slice(110, 127)) : undefined,
   } as Aggregated;
+};
+
+export const useBleAggregated = (connected: Peripheral | null) => {
+  return {};
 };

@@ -5,3 +5,5 @@ managed_components/
 .claude/
 components/imu_driver/docs/
 components/ble_driver/docs/GATT_Specification_Supplement.pdf
+.clangd
+.vscode/

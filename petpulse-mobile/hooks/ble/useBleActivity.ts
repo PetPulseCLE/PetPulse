@@ -12,6 +12,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
+import { supabase } from '../../lib/supabase';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 import { UTCFromBytes } from './useBleTime';
 
@@ -129,19 +130,30 @@ export const parseActivity = (data: Uint8Array): Activity => {
   return { classifier, stepCount, utcTimestamp } as Activity;
 };
 
-export const useBleActivity = (connected: Peripheral | null) => {
+export const useBleActivity = (connected: Peripheral | null, petId: string) => {
   const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
+    if (!petId) return;
     const chr = data.characteristic.toLowerCase();
     if (chr === CHR_UUIDS.raw) {
       const rawArray = new Uint8Array(data.value);
       const raw = parseRaw(rawArray);
-      // TODO: Read accel into database
+      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+        pet_id: petId,
+        metric_type: 'raw_motion',
+        data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
+        timestamp: raw.utcTimestamp,
+      });
       console.log('raw: ', raw);
     }
     if (chr === CHR_UUIDS.activity) {
       const activityBuffer = new Uint8Array(data.value);
       const activity = parseActivity(activityBuffer);
-      // TODO: Read activity into database
+      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+        pet_id: petId,
+        metric_type: 'activity',
+        data: { classifier: activity.classifier, stepCount: activity.stepCount },
+        timestamp: activity.utcTimestamp,
+      });
       console.log('activity: ', activity);
     }
   };
@@ -157,7 +169,7 @@ export const useBleActivity = (connected: Peripheral | null) => {
   };
 
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || !petId) return;
     subscribeToActivity(connected);
     const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
 
@@ -166,7 +178,7 @@ export const useBleActivity = (connected: Peripheral | null) => {
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw).catch(() => {});
     };
-  }, [connected]);
+  }, [connected, petId]);
 
   return {};
 };

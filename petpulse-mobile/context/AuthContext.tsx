@@ -1,16 +1,16 @@
-import { Session, User } from "@supabase/supabase-js";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
-import { supabase } from "../lib/supabase";
+import { Session, User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 function getEmailRedirectTo(): string {
-  if (Platform.OS === "web") {
+  if (Platform.OS === 'web') {
     const origin =
-      (typeof window !== "undefined" && window.location?.origin) ||
-      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? "http://localhost:3000");
+      (typeof window !== 'undefined' && window.location?.origin) ||
+      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
     return `${origin}/auth/callback`;
   }
-  return "petpulse://auth/callback";
+  return 'petpulse://auth/callback';
 }
 
 type AuthContextType = {
@@ -21,6 +21,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
+  petId: string | null;
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -29,6 +30,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [petId, setPetId] = useState<string | null>(null);
+
+  const fetchPetId = async () => {
+    const { data } = await supabase.from('pets').select('id').eq('user_id', session?.user.id).single();
+    setPetId(data?.id);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -47,6 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setSession(session);
       setUser(session.user);
+      fetchPetId();
     };
 
     supabase.auth
@@ -56,7 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         applySession(initialSession);
       })
       .catch((err) => {
-        if (__DEV__) console.error("[AuthContext] getSession failed:", err);
+        if (__DEV__) console.error('[AuthContext] getSession failed:', err);
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -94,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       return {
         data: null,
-        error: { message: "Email not confirmed" },
+        error: { message: 'Email not confirmed' },
       };
     }
     return { data, error };
@@ -108,14 +116,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return await supabase.auth.verifyOtp({
       email,
       token,
-      type: "signup",
+      type: 'signup',
     });
   };
 
   return (
-    <AuthContext.Provider
-      value={{ user, session, loading, signUp, signIn, signOut, verifyOtp }}
-    >
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, verifyOtp, petId }}>
       {children}
     </AuthContext.Provider>
   );
