@@ -10,7 +10,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 }
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
@@ -37,6 +37,10 @@ export const useBleConn = () => {
   const [bonded, setBonded] = useState(false);
 
   const { session } = useAuth();
+
+  const segments = useSegments();
+
+  const isSettingsPage = segments[0] === '(tabs)' && segments[1] === 'settings';
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -345,15 +349,13 @@ export const useBleConn = () => {
   /* Initialize Ble Manager and reconnect to previously connected device */
   useEffect(() => {
     if (!session) return;
-
     const init = async () => {
       const bleReady = await initBleManager();
       if (!bleReady) return;
-
       const savedId = await getSavedPrphId();
       if (savedId) {
         await reconnect();
-      } else if (!noDeviceAlertShown.current) {
+      } else if (!noDeviceAlertShown.current && !isSettingsPage) {
         noDeviceAlertShown.current = true;
         Alert.alert('No Harness Connected', 'Please connect a harness', [
           {

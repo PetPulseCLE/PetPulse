@@ -38,8 +38,11 @@
 #define C_AUTH_PING  "792C45E7-7B95-4A4D-8BC2-6D04809BB406" 
 
 
-#define C_ENV_UUID  "792C45E8-7B95-4A4D-8BC2-6D04809BB406"          // Environmental sensor service characteristic UUID (Temperature, Humidity)
+#define C_ENV_UUID  "792C45E8-7B95-4A4D-8BC2-6D04809BB406" 
 
+/* Environmental Sensor Service Characteristics */
+#define C_TEMP_UUID "2A6E"                                           // Bluetooth assigned numbers temperature charcteristic UUID = 0x2A6E
+#define C_HUMIDITY_UUID "2A6F"                                       // Bluetooth assigned numbers humidity charcteristic UUID = 0x2A6F
 
 /* Battery Service Characteristics UUIDS */
 #define BATTERY_LEVEL_STAT_UUID "2BED"                             // Bluetooth assigned numbers battery level status (charge state bits, wired external power source fields) charcteristic UUID = 0x2BED
@@ -90,7 +93,8 @@ class BleServer  {
 
         /* Environmental Sensors Service */
         NimBLEService *pEnviroService = nullptr;
-            NimBLECharacteristic *pEnv = nullptr;
+            NimBLECharacteristic *pTemp = nullptr;
+            NimBLECharacteristic *pHumidity = nullptr;
 
 
         /* Battery Service Pointer and Characteristics */
@@ -324,9 +328,8 @@ class BleServer  {
             void setTXPower(int8_t tx_power);
 
             /* Vitals Characteristic Setters */
-            void updateHR(uint8_t hr, uint8_t hr_acc);
-            void updateBR(uint8_t br);
-            void setVitals(bool notify = true);
+            void setHR(bool notify = true);
+            void setBR(bool notify = true);
 
             /* Activity Characteristic Setters */
             void updateAccel(const bno08x_accel_t& accel);
@@ -342,9 +345,8 @@ class BleServer  {
             Mode getMode();
 
             /* Environmental Sensor Characteristic Setters */
-            void updateTemp(float temperature);
-            void updateHumidity(float humidity);
-            void setEnv(bool notify = true);
+            void setTemp(bool notify = true); //sint16_t temperature resolution: 0.1°C
+            void setHumidity(bool notify = true); //uint16_t humidity resolution: 0.01%
 
             /** 
             Battery Characteristic Value Setters

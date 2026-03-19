@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['get_5fangle_5fcorrection_751',['get_angle_correction',['../example__surface__velocity_8c.html#aaa32a4afb8c3213dce64561cb132636b',1,'example_surface_velocity.c']]],
+  ['get_5fdata_5fpadded_5ff32_5fcomplex_752',['get_data_padded_f32_complex',['../acc__algorithm_8c.html#a41d6441726e4fa4509e4890112348631',1,'acc_algorithm.c']]],
+  ['get_5fdata_5fpadded_5ff32_5fto_5ff32_5fcomplex_753',['get_data_padded_f32_to_f32_complex',['../acc__algorithm_8c.html#ad14947f2e5409fc0e75d96f6c6e031b3',1,'acc_algorithm.c']]],
+  ['get_5fdetection_754',['get_detection',['../ref__app__touchless__button_8c.html#ac6c1a5571e3d0ce2602b7e6c2e64e2e7',1,'ref_app_touchless_button.c']]],
+  ['get_5fdetector_5fend_5fm_755',['get_detector_end_m',['../ref__app__tank__level_8c.html#a32ece3426c783ff6dd948b181801b2ae',1,'ref_app_tank_level.c']]],
+  ['get_5fdetector_5fstart_5fm_756',['get_detector_start_m',['../ref__app__tank__level_8c.html#a803d4f5d520c2888a7813d092ba9d1a2',1,'ref_app_tank_level.c']]],
+  ['get_5fmax_5fbuffer_5fsize_757',['get_max_buffer_size',['../ref__app__smart__presence_8c.html#a8de3831840646c32f4ed36c1be29cab1',1,'ref_app_smart_presence.c']]],
+  ['get_5fmax_5fnum_5fpoints_758',['get_max_num_points',['../ref__app__smart__presence_8c.html#a2f61249880c1809bc9fb9c24882923df',1,'ref_app_smart_presence.c']]],
+  ['get_5fmax_5fnum_5fzones_759',['get_max_num_zones',['../ref__app__smart__presence_8c.html#aa1db57e22ed8dcf5484172209c1fa089',1,'ref_app_smart_presence.c']]],
+  ['get_5fmeasure_5ftimeout_5fms_760',['get_measure_timeout_ms',['../ref__app__parking_8c.html#a6b517a6c6a920677eb406ee5fd03d246',1,'ref_app_parking.c']]],
+  ['get_5fnext_5fempty_5fcache_5findex_761',['get_next_empty_cache_index',['../example__detector__distance__calibration__caching_8c.html#aadc28ccb3720661951da13f175de45b2',1,'get_next_empty_cache_index(uint16_t *cache_index):&#160;example_detector_distance_calibration_caching.c'],['../example__service__calibration__caching_8c.html#aadc28ccb3720661951da13f175de45b2',1,'get_next_empty_cache_index(uint16_t *cache_index):&#160;example_service_calibration_caching.c']]],
+  ['get_5fperceived_5fwavelength_762',['get_perceived_wavelength',['../example__surface__velocity_8c.html#a43ee2583129a3b66b6c31d51fbad28ff',1,'example_surface_velocity.c']]],
+  ['get_5fprofile_763',['get_profile',['../acc__algorithm_8c.html#a6aef8d191ecf0464f1be18ca5783c7f7',1,'acc_algorithm.c']]],
+  ['get_5fthreshold_764',['get_threshold',['../ref__app__touchless__button_8c.html#a3497dc7f2ba4f5be0b68ca6d3a23b08a',1,'ref_app_touchless_button.c']]],
+  ['get_5fvelocity_5festimate_765',['get_velocity_estimate',['../example__surface__velocity_8c.html#a2d5813a855cbd8c6a5493ed734e97378',1,'example_surface_velocity.c']]],
+  ['get_5fzero_5fmean_5ftime_5fseries_766',['get_zero_mean_time_series',['../example__vibration_8c.html#aca409387ddc69f4922966becdea2bdb4',1,'example_vibration.c']]],
+  ['gpio_5fcs_767',['GPIO_CS',['../acc__hal__integration__espidf__xe121_8c.html#aa2011f1ae5d02cb739ccd18587e6f05c',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fenable_768',['GPIO_ENABLE',['../acc__hal__integration__espidf__xe121_8c.html#a5a502812d9313243ea770a8d15c235d0',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5finterrupt_769',['GPIO_INTERRUPT',['../acc__hal__integration__espidf__xe121_8c.html#aadf030a44a1d7ed6103eeb99b04e374d',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fmiso_770',['GPIO_MISO',['../acc__hal__integration__espidf__xe121_8c.html#a14d12628af2eee332a6ccf846a24284c',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fmosi_771',['GPIO_MOSI',['../acc__hal__integration__espidf__xe121_8c.html#a3fafb85cdd4d5e2acf404b75d59fd03e',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fsclk_772',['GPIO_SCLK',['../acc__hal__integration__espidf__xe121_8c.html#ab4dda01da32f89346dc14fee1db61746',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fsel0_773',['GPIO_SEL0',['../acc__hal__integration__espidf__xe121_8c.html#a6437741c7698bc3e3df66a05cec91695',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fsel1_774',['GPIO_SEL1',['../acc__hal__integration__espidf__xe121_8c.html#a7f8f48668e663a54c2b60c8bcf636ac7',1,'acc_hal_integration_espidf_xe121.c']]],
+  ['gpio_5fsel2_775',['GPIO_SEL2',['../acc__hal__integration__espidf__xe121_8c.html#a0f99ec2c0ca4483381927feef00841a1',1,'acc_hal_integration_espidf_xe121.c']]]
+];

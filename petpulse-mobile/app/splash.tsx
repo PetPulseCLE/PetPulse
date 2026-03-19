@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import Svg, { Circle, Ellipse, Path, Line } from "react-native-svg";
+import { router } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
 export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   const [showDog, setShowDog] = useState(true);
@@ -222,7 +224,7 @@ export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
 
         {/* App Name */}
         <View className="space-y-2 items-center">
-          <Text className="text-4xl text-foreground">Pet Pulse</Text>
+          <Text className="text-4xl text-foreground">PetPulse</Text>
           <Text className="text-muted-foreground">Care Beyond the Collar</Text>
         </View>
       </View>
@@ -230,6 +232,45 @@ export function SplashScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   );
 }
 
+const SPLASH_MIN_DURATION_MS = 2000;
+const FADE_OUT_DURATION_MS = 500;
+const MAX_LOADING_WAIT_MS = 8000;
+
 export default function SplashScreenRoute() {
-  return <SplashScreen />;
+  const { loading } = useAuth();
+  const [fadeOut, setFadeOut] = useState(false);
+  const [minTimeReached, setMinTimeReached] = useState(false);
+  const transitionStarted = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinTimeReached(true);
+    }, SPLASH_MIN_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      if (transitionStarted.current) return;
+      transitionStarted.current = true;
+      setFadeOut(true);
+      setTimeout(() => router.replace("/(auth)"), FADE_OUT_DURATION_MS);
+    }, MAX_LOADING_WAIT_MS);
+
+    if (loading || !minTimeReached || transitionStarted.current) {
+      return () => clearTimeout(fallbackTimer);
+    }
+
+    transitionStarted.current = true;
+    setFadeOut(true);
+    const navigateTimer = setTimeout(() => {
+      router.replace("/(auth)");
+    }, FADE_OUT_DURATION_MS);
+    return () => {
+      clearTimeout(fallbackTimer);
+      clearTimeout(navigateTimer);
+    };
+  }, [loading, minTimeReached]);
+
+  return <SplashScreen fadeOut={fadeOut} />;
 }
