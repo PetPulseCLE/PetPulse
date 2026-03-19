@@ -8,8 +8,8 @@ import {
   Text,
   TextInput,
   View,
-} from "react-native";
-import type { Peripheral } from "react-native-ble-manager";
+} from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
 
 import {
   AlertDialog,
@@ -20,31 +20,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Icon } from "@/components/ui/icon";
-import { useBle } from "@/context/BleContext";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import clsx from "clsx";
-import { router, useLocalSearchParams } from "expo-router";
-import {
-  ChevronRight,
-  CircleEllipsis,
-  Loader,
-  LogOut,
-  PawPrint,
-  UserPenIcon,
-  X,
-} from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Icon } from '@/components/ui/icon';
+import { useBle } from '@/context/BleContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import clsx from 'clsx';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -67,10 +54,10 @@ export default function Settings() {
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
   const { user, signOut, updateProfile } = useAuth();
-  const firstName = user?.user_metadata?.first_name ?? "FirstName";
-  const lastName = user?.user_metadata?.last_name ?? "LastName";
-  const fullName = firstName + " " + lastName;
-  const email = user?.email ?? "";
+  const firstName = user?.user_metadata?.first_name ?? 'FirstName';
+  const lastName = user?.user_metadata?.last_name ?? 'LastName';
+  const fullName = firstName + ' ' + lastName;
+  const email = user?.email ?? '';
 
   const [showEditAccountModal, setShowEditAccountModal] = useState(false);
   const [editFirstName, setEditFirstName] = useState(firstName);
@@ -78,19 +65,10 @@ export default function Settings() {
   const [accountSaveError, setAccountSaveError] = useState<string | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
 
-  const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor(
-    { light: "#6B7280", dark: "#9CA3AF" },
-    "text"
-  );
-  const inputBg = useThemeColor(
-    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
-    "background"
-  );
-  const inputBorder = useThemeColor(
-    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
-    "text"
-  );
+  const inputText = useThemeColor({}, 'text');
+  const placeholder = useThemeColor({ light: '#6B7280', dark: '#9CA3AF' }, 'text');
+  const inputBg = useThemeColor({ light: 'rgba(0,0,0,0.03)', dark: 'rgba(255,255,255,0.08)' }, 'background');
+  const inputBorder = useThemeColor({ light: '#0B0B1A', dark: 'rgba(255,255,255,0.22)' }, 'text');
 
   const { onboardScanModal } = useLocalSearchParams();
 
@@ -153,7 +131,7 @@ export default function Settings() {
     const first = editFirstName.trim();
     const last = editLastName.trim();
     if (!first || !last) {
-      setAccountSaveError("First and last name are required.");
+      setAccountSaveError('First and last name are required.');
       return;
     }
     setAccountSaveError(null);
@@ -169,9 +147,7 @@ export default function Settings() {
         closeEditAccountModal();
       }
     } catch (e: unknown) {
-      setAccountSaveError(
-        e instanceof Error ? e.message : "Something went wrong. Please try again."
-      );
+      setAccountSaveError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
     } finally {
       setSavingAccount(false);
     }
@@ -187,16 +163,15 @@ export default function Settings() {
   }, [showScanModal, initialized]);
 
   return (
-    <View className="flex flex-col pt-5 bg-background h-full">
+    <View className="flex flex-col pt-5 h-full">
       {/* ============================= USER ACCOUNT SETTINGS ============================= */}
-      <View className="flex flex-row mb-12 px-4 justify-evenly items-center">
+      <View className="flex flex-row mb-12 px-4 justify-evenly items-center ">
         {/* TODO: Allow Users to change their profile picture */}
-        <Avatar alt={fullName} className="size-24">
-          <AvatarImage source={{ uri: "" }} />
-          <AvatarFallback>
-            <Text className="text-4xl">
-              {firstName.charAt(0).toUpperCase() +
-                lastName.charAt(0).toUpperCase()}
+        <Avatar alt={fullName} className="size-24 bg-secondary">
+          <AvatarImage source={{ uri: '' }} />
+          <AvatarFallback className="bg-tab-bar">
+            <Text className="text-4xl text-secondary-foreground">
+              {firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}
             </Text>
           </AvatarFallback>
         </Avatar>
@@ -206,25 +181,25 @@ export default function Settings() {
         </View>
       </View>
       <View className="rounded-full mx-3 overflow-hidden mb-6">
-        <View className="flex flex-row bg-card w-full align-center">
+        <View className="flex flex-row w-full align-center bg-tab-bar">
           <Button
             variant="ghost"
-            className="flex flex-row justify-between items-center w-full"
+            className="flex flex-row w-full items-center justify-between active:bg-card-active"
             onPress={openEditAccountModal}
           >
             <View className="flex flex-row items-center gap-4">
-              <Icon as={UserPenIcon} className="text-blue-500 size-6" />
+              <Icon as={UserPenIcon} className="size-6 text-blue-500" />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">My Profile</Text>
+                <Text className="font-medium text-secondary-foreground">My Profile</Text>
               </View>
             </View>
-            <Icon as={ChevronRight} className="text-muted-foreground size-4" />
+            <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
           </Button>
         </View>
       </View>
       {/* ============================= HARNESS SETTINGS ============================= */}
       <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
-        <View className="flex flex-row bg-card w-full align-center">
+        <View className="flex flex-row bg-tab-bar w-full align-center">
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full active:bg-card-active"
@@ -242,8 +217,8 @@ export default function Settings() {
       </View>
 
       {/* ============================= LOG OUT ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
-        <View className="flex flex-row bg-card w-full align-center">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6 ">
+        <View className="flex flex-row bg-tab-bar w-full align-center">
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full"
@@ -378,24 +353,11 @@ export default function Settings() {
       </Modal>
 
       {/* Edit Account Modal */}
-      <Modal
-        visible={showEditAccountModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1 bg-background"
-        >
+      <Modal visible={showEditAccountModal} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-background">
           <View className="flex flex-row justify-between items-center pl-4 pr-2 pt-5 pb-4 border-b border-border">
-            <Text className="text-foreground text-lg font-bold">
-              Edit account
-            </Text>
-            <Button
-              variant="ghost"
-              className="active:text-foreground"
-              onPress={closeEditAccountModal}
-            >
+            <Text className="text-foreground text-lg font-bold">Edit account</Text>
+            <Button variant="ghost" className="active:text-foreground" onPress={closeEditAccountModal}>
               <Icon as={X} className="text-muted-foreground size-6" />
             </Button>
           </View>
@@ -404,9 +366,7 @@ export default function Settings() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              First name
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">First name</Text>
             <TextInput
               value={editFirstName}
               onChangeText={setEditFirstName}
@@ -426,9 +386,7 @@ export default function Settings() {
                 marginBottom: 16,
               }}
             />
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              Last name
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">Last name</Text>
             <TextInput
               value={editLastName}
               onChangeText={setEditLastName}
@@ -448,9 +406,7 @@ export default function Settings() {
                 marginBottom: 16,
               }}
             />
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              Email
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">Email</Text>
             <View
               style={{
                 backgroundColor: inputBg,
@@ -459,28 +415,18 @@ export default function Settings() {
                 borderRadius: 12,
                 paddingHorizontal: 14,
                 height: 48,
-                justifyContent: "center",
+                justifyContent: 'center',
                 marginBottom: 24,
               }}
             >
               <Text className="text-muted-foreground">{email}</Text>
             </View>
-            {accountSaveError ? (
-              <Text className="text-destructive text-sm mb-4">
-                {accountSaveError}
-              </Text>
-            ) : null}
-            <Button
-              onPress={onSaveAccount}
-              disabled={savingAccount}
-              className="rounded-xl h-12 bg-primary"
-            >
+            {accountSaveError ? <Text className="text-destructive text-sm mb-4">{accountSaveError}</Text> : null}
+            <Button onPress={onSaveAccount} disabled={savingAccount} className="rounded-xl h-12 bg-primary">
               {savingAccount ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-primary-foreground font-medium">
-                  Save changes
-                </Text>
+                <Text className="text-primary-foreground font-medium">Save changes</Text>
               )}
             </Button>
           </ScrollView>

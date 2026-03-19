@@ -10,6 +10,7 @@ export const THEME = {
   dark: Colors.dark,
 };
 
+/** Nav theme `card` is translucent; actual tab bar fill uses `Colors.*.tabBar` + `tabBarStyle` in (tabs)/_layout. */
 export const NAV_THEME: Record<"light" | "dark", Theme> = {
   light: {
     ...DefaultTheme,

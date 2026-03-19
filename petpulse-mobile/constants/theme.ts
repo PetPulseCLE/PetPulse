@@ -1,6 +1,8 @@
 /**
- * Centralized semantic color tokens mirrored from `petpulse-web/app/globals.css`.
- * Values are expressed as React Native-friendly hex/rgba strings.
+ * Semantic colors for StyleSheet, useThemeColor, and React Navigation (tab tint, headers).
+ * Tailwind/NativeWind `primary` etc. come from `global.css` — keep these hex values in sync
+ * with the HSL tokens there or tabs / hooks will not match `className="bg-primary"`.
+ * Tab bar: `Colors.*.tabBar` ↔ `global.css` `--tab-bar` ↔ `bg-tab-bar` (and optional `tabBarStyle`).
  */
 
 import { Platform } from 'react-native';
@@ -57,6 +59,8 @@ type ThemeColors = {
   errorText: string;
   tabIconDefault: string;
   tabIconSelected: string;
+  /** Opaque tab bar / matching strips — sync with global.css `--tab-bar` */
+  tabBar: string;
 };
 
 export const Colors: Record<'light' | 'dark', ThemeColors> = {
@@ -69,14 +73,15 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     cardForeground: '#1F2937',
     popover: '#FFFFFF',
     popoverForeground: '#1F2937',
-    primary: '#30455C',
-    primaryForeground: '#F5F7FA',
+    // Matches global.css :root --primary / --primary-foreground (hsl 199 70% 17% / 212 49% 97%)
+    primary: '#0d364a',
+    primaryForeground: '#f4f7fb',
     secondary: '#EAEEF4',
-    secondaryForeground: '#30455C',
+    secondaryForeground: '#0d364a',
     muted: '#EAEEF4',
     mutedForeground: '#557CA2',
     accent: '#D0DBE7',
-    accentForeground: '#30455C',
+    accentForeground: '#0d364a',
     destructive: '#DC2626',
     border: '#D0DBE7',
     input: '#D0DBE7',
@@ -88,10 +93,10 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     chart5: 'hsl(61 67% 53%)',
     sidebar: '#F5F7FA',
     sidebarForeground: '#1F2937',
-    sidebarPrimary: '#30455C',
-    sidebarPrimaryForeground: '#F5F7FA',
+    sidebarPrimary: '#0d364a',
+    sidebarPrimaryForeground: '#f4f7fb',
     sidebarAccent: '#D0DBE7',
-    sidebarAccentForeground: '#30455C',
+    sidebarAccentForeground: '#0d364a',
     sidebarBorder: '#D0DBE7',
     sidebarRing: '#7799B9',
     themeText: '#37506D',
@@ -112,6 +117,7 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     errorText: '#B42318',
     tabIconDefault: '#426287',
     tabIconSelected: '#557CA2',
+    tabBar: '#F1F5F9',
   },
   dark: {
     text: '#F5F7FA',
@@ -122,17 +128,18 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     cardForeground: '#F5F7FA',
     popover: '#2C3C4E',
     popoverForeground: '#F5F7FA',
-    primary: '#D0DBE7',
-    primaryForeground: '#1F2937',
+    // Matches global.css .dark:root --primary / --primary-foreground (hsl 208 38% 85% / 209 63% 10%)
+    primary: '#cadae7',
+    primaryForeground: '#091a2a',
     secondary: '#2C3C4E',
-    secondaryForeground: '#F5F7FA',
+    secondaryForeground: '#f4f7fb',
     muted: '#2C3C4E',
     mutedForeground: '#A6BCD3',
-    accent: '#30455C',
-    accentForeground: '#F5F7FA',
+    accent: '#0d364a',
+    accentForeground: '#f4f7fb',
     destructive: '#DC2626',
     border: 'rgba(255, 255, 255, 0.10)',
-    input: '#30455C',
+    input: '#0d364a',
     ring: '#7799B9',
     chart1: 'hsl(281 62% 54%)',
     chart2: 'hsl(162 42% 52%)',
@@ -141,16 +148,16 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     chart5: 'hsl(22 91% 50%)',
     sidebar: '#2C3C4E',
     sidebarForeground: '#F5F7FA',
-    sidebarPrimary: '#A6BCD3',
-    sidebarPrimaryForeground: '#1F2937',
-    sidebarAccent: '#30455C',
-    sidebarAccentForeground: '#F5F7FA',
+    sidebarPrimary: '#96bbcf',
+    sidebarPrimaryForeground: '#091a2a',
+    sidebarAccent: '#0d364a',
+    sidebarAccentForeground: '#f4f7fb',
     sidebarBorder: 'rgba(255, 255, 255, 0.10)',
     sidebarRing: '#7799B9',
     themeText: '#EAEEF4',
     tint: '#7799B9',
     icon: '#A6BCD3',
-    brandBlack: '#30455C',
+    brandBlack: '#0d364a',
     onboardingBtnBg: '#2C3C4E',
     modalBg: '#EAEEF4',
     cardBgAlpha: 'rgba(255, 255, 255, 0.06)',
@@ -165,6 +172,7 @@ export const Colors: Record<'light' | 'dark', ThemeColors> = {
     errorText: '#B42318',
     tabIconDefault: '#A6BCD3',
     tabIconSelected: '#7799B9',
+    tabBar: '#2C3643',
   },
 };
 
