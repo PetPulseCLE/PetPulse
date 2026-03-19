@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
      - for production remove dynamic import and chaining ops for BleManager
@@ -8,9 +11,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
 import { UTCFromBytes } from './useBleTime';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -24,9 +24,9 @@ export interface Env {
 
 export const parseEnv = (data: Uint8Array): Env => {
   const envView = new DataView(data.buffer);
-  const temperature = envView.getUint8(0);
-  const humidity = envView.getUint8(1);
-  const utcTimestamp = UTCFromBytes(data.slice(2, 11));
+  const temperature = envView.getFloat32(0, true);
+  const humidity = envView.getFloat32(4, true);
+  const utcTimestamp = UTCFromBytes(data.slice(8, 17));
   return { temperature, humidity, utcTimestamp } as Env;
 };
 
@@ -43,6 +43,7 @@ export const useBleEnv = (connected: Peripheral | null, petId: string | null) =>
         data: { temp: env.temperature, humidity: env.humidity },
         timestamp: env.utcTimestamp,
       });
+
       console.log('raw: ', env);
     }
   };
@@ -57,7 +58,7 @@ export const useBleEnv = (connected: Peripheral | null, petId: string | null) =>
   };
 
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || !petId) return;
     subscribeToEnv(connected);
     const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
 
@@ -65,6 +66,6 @@ export const useBleEnv = (connected: Peripheral | null, petId: string | null) =>
       listener?.remove();
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env).catch(() => {});
     };
-  }, [connected]);
+  }, [connected, petId]);
   return {};
 };

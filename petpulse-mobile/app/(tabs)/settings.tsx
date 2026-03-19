@@ -65,9 +65,8 @@ export default function Settings() {
   } = useBle();
 
   const { modalState } = useLocalSearchParams();
-  const modalStateBool = modalState === 'true' ? true : false;
 
-  const [showDeviceModal, setShowDeviceModal] = useState(modalStateBool);
+  const [showDeviceModal, setShowDeviceModal] = useState(modalState === 'true');
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);

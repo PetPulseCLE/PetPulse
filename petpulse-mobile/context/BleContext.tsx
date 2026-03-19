@@ -35,6 +35,8 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
   const connection = useBleConn();
   const data = useBleTime(connection.connected, connection.bonded);
   const mode = useBleMode(connection.connected, connection.bonded);
+  /* Live metrics: per-characteristic BLE notify. Aggregated payloads are SD-only on-device and
+   * synced back separately — firmware does not push both paths over BLE, so no duplicate rows. */
   const activity = useBleActivity(connection.connected, petId);
   const vitals = useBleVitals(connection.connected, petId);
   const env = useBleEnv(connection.connected, petId);

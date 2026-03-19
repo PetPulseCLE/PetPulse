@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
      - for production remove dynamic import and chaining ops for BleManager
@@ -8,9 +11,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
 import { supabase } from '../../lib/supabase';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -135,24 +135,22 @@ export const useBleActivity = (connected: Peripheral | null, petId: string | nul
     if (chr === CHR_UUIDS.raw) {
       const rawArray = new Uint8Array(data.value);
       const raw = parseRaw(rawArray);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+      await supabase.from('sensor_readings').insert({
         pet_id: petId,
         metric_type: 'raw_motion',
         data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
         timestamp: raw.utcTimestamp,
       });
-      console.log('raw: ', raw);
     }
     if (chr === CHR_UUIDS.activity) {
       const activityBuffer = new Uint8Array(data.value);
       const activity = parseActivity(activityBuffer);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+      await supabase.from('sensor_readings').insert({
         pet_id: petId,
         metric_type: 'activity',
         data: { classifier: activity.classifier, stepCount: activity.stepCount },
         timestamp: activity.utcTimestamp,
       });
-      console.log('activity: ', activity);
     }
   };
 

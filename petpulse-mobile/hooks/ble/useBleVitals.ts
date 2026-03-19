@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
      - for production remove dynamic import and chaining ops for BleManager
@@ -8,9 +11,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
 import { UTCFromBytes } from './useBleTime';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
@@ -39,13 +39,12 @@ export const useBleVitals = (connected: Peripheral | null, petId: string | null)
     if (chr === CHR_UUIDS.vitals) {
       const vitalsBuffer = new Uint8Array(data.value);
       const vitals = parseVitals(vitalsBuffer);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+      await supabase.from('sensor_readings').insert({
         pet_id: petId,
         metric_type: 'vitals',
         data: { HR: vitals.heartRate, BR: vitals.breathRate, HR_Confidence: vitals.hr_confidence },
         timestamp: vitals.utcTimestamp,
       });
-      console.log('vitals: ', vitals);
     }
   };
 
@@ -59,12 +58,13 @@ export const useBleVitals = (connected: Peripheral | null, petId: string | null)
   };
 
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || !petId) return;
     subscribeToVitals(connected);
     const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
     return () => {
+      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals).catch(() => {});
       listener?.remove();
     };
-  }, [connected]);
+  }, [connected, petId]);
   return {};
 };

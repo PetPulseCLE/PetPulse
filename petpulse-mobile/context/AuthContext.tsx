@@ -34,8 +34,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [petId, setPetId] = useState<string | null>(null);
 
   const fetchPetId = async (user: User) => {
-    const { data } = await supabase.from('pets').select('id').eq('user_id', user.id).single();
-    setPetId(data?.id);
+    const { data, error } = await supabase.from('pets').select('id').eq('user_id', user.id).maybeSingle();
+    if (error) {
+      if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
+      setPetId(null);
+      return;
+    }
+    setPetId(data?.id ?? null);
   };
 
   useEffect(() => {
