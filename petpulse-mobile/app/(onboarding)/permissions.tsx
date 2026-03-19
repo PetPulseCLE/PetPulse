@@ -116,7 +116,7 @@ export default function PermissionsScreen() {
 
   function onContinue() {
     // For now, go wherever you want (tabs is fine)
-    router.replace("/(tabs)");
+    router.replace("/(onboarding)/complete");
   }
 
   const locBadge = badgeStyle(locationState);
