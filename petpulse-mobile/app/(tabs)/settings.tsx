@@ -8,8 +8,8 @@ import {
   Text,
   TextInput,
   View,
-} from "react-native";
-import type { Peripheral } from "react-native-ble-manager";
+} from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
 
 import {
   AlertDialog,
@@ -20,20 +20,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Icon } from "@/components/ui/icon";
-import { useBle } from "@/context/BleContext";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import clsx from "clsx";
-import { router, useLocalSearchParams } from "expo-router";
+} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Icon } from '@/components/ui/icon';
+import { useBle } from '@/context/BleContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import clsx from 'clsx';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   ChevronRight,
   CircleEllipsis,
@@ -42,11 +37,16 @@ import {
   PawPrint,
   UserPenIcon,
   X,
-} from "lucide-react-native";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+  RocketIcon,
+  ClockArrowDown,
+} from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { DeviceMode } from '@/hooks/ble/UUIDS';
 
 export default function Settings() {
+  /* Use ble connection manager functions from ble context */
+
   /* Use ble connection manager functions from ble context */
   const {
     initialized,
@@ -56,21 +56,28 @@ export default function Settings() {
     stopScan,
     connectToPeripheral,
     forgetDevice,
-    mtu,
-    getRSSI,
     showScanModal,
     setShowScanModal,
+    mtu,
+    getRSSI,
+    mode,
+    updateMode,
   } = useBle();
 
-  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const { modalState } = useLocalSearchParams();
+  const modalStateBool = modalState === 'true' ? true : false;
+
+  const [showDeviceModal, setShowDeviceModal] = useState(modalStateBool);
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [liveRssi, setLiveRssi] = useState<number | null>(null);
+
   const { user, signOut, updateProfile } = useAuth();
-  const firstName = user?.user_metadata?.first_name ?? "FirstName";
-  const lastName = user?.user_metadata?.last_name ?? "LastName";
-  const fullName = firstName + " " + lastName;
-  const email = user?.email ?? "";
+  const firstName = user?.user_metadata?.first_name ?? 'FirstName';
+  const lastName = user?.user_metadata?.last_name ?? 'LastName';
+  const fullName = firstName + ' ' + lastName;
+  const email = user?.email ?? '';
 
   const [showEditAccountModal, setShowEditAccountModal] = useState(false);
   const [editFirstName, setEditFirstName] = useState(firstName);
@@ -78,19 +85,10 @@ export default function Settings() {
   const [accountSaveError, setAccountSaveError] = useState<string | null>(null);
   const [savingAccount, setSavingAccount] = useState(false);
 
-  const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor(
-    { light: "#6B7280", dark: "#9CA3AF" },
-    "text"
-  );
-  const inputBg = useThemeColor(
-    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
-    "background"
-  );
-  const inputBorder = useThemeColor(
-    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
-    "text"
-  );
+  const inputText = useThemeColor({}, 'text');
+  const placeholder = useThemeColor({ light: '#6B7280', dark: '#9CA3AF' }, 'text');
+  const inputBg = useThemeColor({ light: 'rgba(0,0,0,0.03)', dark: 'rgba(255,255,255,0.08)' }, 'background');
+  const inputBorder = useThemeColor({ light: '#0B0B1A', dark: 'rgba(255,255,255,0.22)' }, 'text');
 
   const { onboardScanModal } = useLocalSearchParams();
 
@@ -137,6 +135,21 @@ export default function Settings() {
     }
   };
 
+  const onDeviceInfoOpen = async () => {
+    if (connected) {
+      try {
+        const rssi = await getRSSI(connected);
+        setLiveRssi(rssi);
+      } catch (error) {
+        console.error('onDeviceInfoOpen: ', error);
+      }
+    }
+  };
+
+  const onToggleDevMode = () => {
+    updateMode(mode === DeviceMode.Dev ? DeviceMode.Background : DeviceMode.Dev);
+  };
+
   const openEditAccountModal = () => {
     setEditFirstName(firstName);
     setEditLastName(lastName);
@@ -153,7 +166,7 @@ export default function Settings() {
     const first = editFirstName.trim();
     const last = editLastName.trim();
     if (!first || !last) {
-      setAccountSaveError("First and last name are required.");
+      setAccountSaveError('First and last name are required.');
       return;
     }
     setAccountSaveError(null);
@@ -169,9 +182,7 @@ export default function Settings() {
         closeEditAccountModal();
       }
     } catch (e: unknown) {
-      setAccountSaveError(
-        e instanceof Error ? e.message : "Something went wrong. Please try again."
-      );
+      setAccountSaveError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
     } finally {
       setSavingAccount(false);
     }
@@ -192,12 +203,9 @@ export default function Settings() {
       <View className="flex flex-row mb-12 px-4 justify-evenly items-center">
         {/* TODO: Allow Users to change their profile picture */}
         <Avatar alt={fullName} className="size-24">
-          <AvatarImage source={{ uri: "" }} />
+          <AvatarImage source={{ uri: '' }} />
           <AvatarFallback>
-            <Text className="text-4xl">
-              {firstName.charAt(0).toUpperCase() +
-                lastName.charAt(0).toUpperCase()}
-            </Text>
+            <Text className="text-4xl">{firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}</Text>
           </AvatarFallback>
         </Avatar>
         <View className="flex flex-col">
@@ -315,7 +323,17 @@ export default function Settings() {
                       <Text className="text-secondary-foreground">
                         Service UUIDs: {'[' + (connected?.advertising?.serviceUUIDs?.join(', ') ?? '') + ']'}
                       </Text>
-                      <View className="flex flex-row gap-2 items-center"></View>
+                      <View className="flex flex-row gap-2 items-center">
+                        <Button variant="outline" className="rounded-md w-full" onPress={onToggleDevMode}>
+                          <Icon
+                            as={mode === DeviceMode.Dev ? RocketIcon : ClockArrowDown}
+                            className={clsx('size-4', mode === DeviceMode.Dev ? 'text-green-500' : 'text-red-500')}
+                          />
+                          <Text className="text-secondary-foreground">
+                            Mode: {mode === DeviceMode.Dev ? 'Dev' : 'Background'}
+                          </Text>
+                        </Button>
+                      </View>
                       <DialogClose asChild>
                         <Button variant="destructive" className="rounded-md" onPress={() => onForget()}>
                           <Text className="text-secondary-foreground">Forget This Device</Text>
@@ -378,24 +396,11 @@ export default function Settings() {
       </Modal>
 
       {/* Edit Account Modal */}
-      <Modal
-        visible={showEditAccountModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1 bg-background"
-        >
+      <Modal visible={showEditAccountModal} animationType="slide" presentationStyle="pageSheet">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-background">
           <View className="flex flex-row justify-between items-center pl-4 pr-2 pt-5 pb-4 border-b border-border">
-            <Text className="text-foreground text-lg font-bold">
-              Edit account
-            </Text>
-            <Button
-              variant="ghost"
-              className="active:text-foreground"
-              onPress={closeEditAccountModal}
-            >
+            <Text className="text-foreground text-lg font-bold">Edit account</Text>
+            <Button variant="ghost" className="active:text-foreground" onPress={closeEditAccountModal}>
               <Icon as={X} className="text-muted-foreground size-6" />
             </Button>
           </View>
@@ -404,9 +409,7 @@ export default function Settings() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              First name
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">First name</Text>
             <TextInput
               value={editFirstName}
               onChangeText={setEditFirstName}
@@ -426,9 +429,7 @@ export default function Settings() {
                 marginBottom: 16,
               }}
             />
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              Last name
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">Last name</Text>
             <TextInput
               value={editLastName}
               onChangeText={setEditLastName}
@@ -448,9 +449,7 @@ export default function Settings() {
                 marginBottom: 16,
               }}
             />
-            <Text className="text-muted-foreground text-sm font-medium mb-2">
-              Email
-            </Text>
+            <Text className="text-muted-foreground text-sm font-medium mb-2">Email</Text>
             <View
               style={{
                 backgroundColor: inputBg,
@@ -459,28 +458,18 @@ export default function Settings() {
                 borderRadius: 12,
                 paddingHorizontal: 14,
                 height: 48,
-                justifyContent: "center",
+                justifyContent: 'center',
                 marginBottom: 24,
               }}
             >
               <Text className="text-muted-foreground">{email}</Text>
             </View>
-            {accountSaveError ? (
-              <Text className="text-destructive text-sm mb-4">
-                {accountSaveError}
-              </Text>
-            ) : null}
-            <Button
-              onPress={onSaveAccount}
-              disabled={savingAccount}
-              className="rounded-xl h-12 bg-primary"
-            >
+            {accountSaveError ? <Text className="text-destructive text-sm mb-4">{accountSaveError}</Text> : null}
+            <Button onPress={onSaveAccount} disabled={savingAccount} className="rounded-xl h-12 bg-primary">
               {savingAccount ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-primary-foreground font-medium">
-                  Save changes
-                </Text>
+                <Text className="text-primary-foreground font-medium">Save changes</Text>
               )}
             </Button>
           </ScrollView>
