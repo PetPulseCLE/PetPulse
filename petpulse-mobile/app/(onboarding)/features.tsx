@@ -44,21 +44,11 @@ function FeatureCard({
 
 export default function FeaturesScreen() {
   /* ------------------------------- Theme ------------------------------- */
-  const screenBg = useThemeColor({ light: "#FFFFFF", dark: "#151718" }, "background");
+  const screenBg = useThemeColor({}, "background");
   const tint = useThemeColor({}, "tint");
-
-  // Card styling (light + dark)
-  const cardBg = useThemeColor(
-    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
-    "background"
-  );
-  const cardBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" },
-    "text"
-  );
-
-  // Button styling
-  const buttonBg = useThemeColor({ light: "#000000", dark: "#0B0B1A" }, "background");
+  const cardBg = useThemeColor({}, "cardBgAlpha");
+  const cardBorder = useThemeColor({}, "cardBorderAlpha");
+  const buttonBg = useThemeColor({}, "onboardingBtnBg");
 
   return (
     <ThemedView className="flex-1 px-8 pt-28 pb-14" style={{ backgroundColor: screenBg }}>

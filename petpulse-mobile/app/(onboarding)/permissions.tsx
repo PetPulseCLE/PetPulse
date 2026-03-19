@@ -19,7 +19,9 @@ type ActionRequiredState = Extract<PermState, "denied" | "blocked">;
 
 export default function PermissionsScreen() {
   const tint = useThemeColor({}, "tint");
-  const brandBlack = useThemeColor({ light: "#0B0B1A", dark: "#1F2937" }, "text");
+  const brandBlack = useThemeColor({}, "brandBlack");
+  const cardBg = useThemeColor({}, "cardBgAlpha");
+  const cardBorder = useThemeColor({}, "cardBorderAlpha");
 
   const [locationState, setLocationState] = useState<PermState>("pending");
   const [notifState, setNotifState] = useState<PermState>("pending");
@@ -109,7 +111,7 @@ export default function PermissionsScreen() {
       };
     }
     return {
-      bg: "bg-black",
+      bg: "",
       text: "Allow",
     };
   }
@@ -133,7 +135,7 @@ export default function PermissionsScreen() {
       </View>
 
       {/* Location Card */}
-      <View className="rounded-2xl border p-4 mb-4 bg-card">
+      <View className="rounded-2xl border p-4 mb-4" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
             <MapPin size={20} color={tint} />
@@ -143,6 +145,7 @@ export default function PermissionsScreen() {
           <Pressable
             onPress={requestLocation}
             className={`h-10 px-4 rounded-xl items-center justify-center ${locBadge.bg}`}
+            style={locBadge.bg ? undefined : { backgroundColor: brandBlack }}
           >
             <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
               {locBadge.text}
@@ -156,7 +159,7 @@ export default function PermissionsScreen() {
       </View>
 
       {/* Notifications Card */}
-      <View className="rounded-2xl border p-4 bg-card">
+      <View className="rounded-2xl border p-4" style={{ backgroundColor: cardBg, borderColor: cardBorder }}>
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
             <Bell size={20} color={tint} />
@@ -166,6 +169,7 @@ export default function PermissionsScreen() {
           <Pressable
             onPress={requestAppNotifications}
             className={`h-10 px-4 rounded-xl items-center justify-center ${notBadge.bg}`}
+            style={notBadge.bg ? undefined : { backgroundColor: brandBlack }}
           >
             <ThemedText type="defaultSemiBold" style={{ color: "white" }}>
               {notBadge.text}

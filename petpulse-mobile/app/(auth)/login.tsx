@@ -62,33 +62,14 @@ export default function LoginScreen() {
   }, [email, password]);
 
   const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor(
-    { light: "#6B7280", dark: "#9CA3AF" },
-    "text",
-  );
-
-  const cardBg = useThemeColor(
-    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
-    "background",
-  );
-  const cardBorder = useThemeColor(
-    { light: "#0B0B1A", dark: "rgba(255,255,255,0.18)" },
-    "text",
-  );
-
-  const inputBg = useThemeColor(
-    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
-    "background",
-  );
-  const inputBorder = useThemeColor(
-    { light: "#0B0B1A", dark: "rgba(255,255,255,0.22)" },
-    "text",
-  );
-
-  const brandBlack = useThemeColor(
-    { light: "#0B0B1A", dark: "#1F2937" }, // slightly lighter in dark mode
-    "text",
-  );
+  const placeholder = useThemeColor({}, "placeholder");
+  const cardBg = useThemeColor({}, "cardBgAlpha");
+  const cardBorder = useThemeColor({}, "cardBorderAlpha");
+  const inputBg = useThemeColor({}, "inputBgAlpha");
+  const inputBorder = useThemeColor({}, "inputBorderAlpha");
+  const brandBlack = useThemeColor({}, "brandBlack");
+  const errorText = useThemeColor({}, "errorText");
+  const onboardingBtnBg = useThemeColor({}, "onboardingBtnBg");
 
   async function onSubmit() {
     setError(null);
@@ -213,7 +194,9 @@ export default function LoginScreen() {
           />
 
           {error ? (
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: errorText }]}>
+              {error}
+            </ThemedText>
           ) : null}
 
           <TouchableOpacity
@@ -221,6 +204,7 @@ export default function LoginScreen() {
             disabled={!canSubmit || submitting || failedAttempts >= 5}
             style={[
               styles.button,
+              { backgroundColor: onboardingBtnBg },
               (!canSubmit || submitting || failedAttempts >= 5) &&
                 styles.buttonDisabled,
             ]}
@@ -308,7 +292,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   errorText: {
-    color: "#B00020",
     marginBottom: 10,
   },
   button: {
@@ -316,7 +299,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0B0B1A",
     marginTop: 4,
   },
   buttonDisabled: {
