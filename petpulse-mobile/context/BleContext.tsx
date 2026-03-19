@@ -8,7 +8,6 @@ import { createContext, useContext } from 'react';
 import type { Peripheral } from 'react-native-ble-manager';
 import { useBleConn } from '../hooks/ble/useBleConn-v2';
 import { useBleTime } from '../hooks/ble/useBleTime';
-import { useAuth } from './AuthContext';
 
 type BleContextType = {
   initialized: boolean;
@@ -31,7 +30,7 @@ type BleContextType = {
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
-  const { petId } = useAuth();
+  const petId = '01756a26-029c-4e00-9955-2726c586d094';
   const connection = useBleConn();
   const data = useBleTime(connection.connected, connection.bonded);
   const mode = useBleMode(connection.connected, connection.bonded);

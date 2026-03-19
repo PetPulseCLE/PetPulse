@@ -2,58 +2,132 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/*
+  Big Stone palette reference (hex → HSL):
+  50  #f5f7fa → hsl(215 32% 97%)
+  100 #eaeef4 → hsl(217 31% 94%)
+  200 #d0dbe7 → hsl(211 32% 86%)
+  300 #a6bcd3 → hsl(211 34% 74%)
+  400 #7799b9 → hsl(209 32% 60%)
+  500 #557ca2 → hsl(210 31% 48%)
+  600 #426287 → hsl(212 34% 39%)
+  700 #37506d → hsl(212 33% 32%)
+  800 #30455c → hsl(212 32% 27%)
+  900 #2c3c4e → hsl(212 28% 24%)
+  950 #1f2937 → hsl(215 28% 17%)
+*/
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 96.1%;
-    --card-active: 0 0% 90%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 80%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 63%;
     --radius: 0.625rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+
+    /* ── Base ──────────────────────────────────────────────────────────────── */
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;             /* 950 */
+    --card: 215 32% 97%;                   /* 50  */
+    --card-active: 217 31% 94%;            /* 100 */
+    --card-foreground: 215 28% 17%;        /* 950 */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;     /* 950 */
+    --primary: 212 32% 27%;                /* 800 */
+    --primary-foreground: 215 32% 97%;     /* 50  */
+    --secondary: 217 31% 94%;              /* 100 */
+    --secondary-foreground: 212 32% 27%;   /* 800 */
+    --muted: 217 31% 94%;                  /* 100 */
+    --muted-foreground: 210 31% 48%;       /* 500 */
+    --accent: 211 32% 86%;                 /* 200 */
+    --accent-foreground: 212 32% 27%;      /* 800 */
+    --destructive: 14 84% 55%;
+    --border: 211 32% 86%;                 /* 200 */
+    --input: 211 32% 86%;                  /* 200 */
+    --ring: 209 32% 60%;                   /* 400 */
+
+    /* ── Chart ─────────────────────────────────────────────────────────────── */
+    --chart-1: 16 75% 55%;
+    --chart-2: 173 42% 43%;
+    --chart-3: 212 25% 32%;
+    --chart-4: 74 53% 63%;
+    --chart-5: 42 70% 62%;
+
+    /* ── Sidebar ───────────────────────────────────────────────────────────── */
+    --sidebar: 215 32% 97%;                /* 50  */
+    --sidebar-foreground: 215 28% 17%;     /* 950 */
+    --sidebar-primary: 212 32% 27%;        /* 800 */
+    --sidebar-primary-foreground: 215 32% 97%; /* 50 */
+    --sidebar-accent: 211 32% 86%;         /* 200 */
+    --sidebar-accent-foreground: 212 32% 27%; /* 800 */
+    --sidebar-border: 211 32% 86%;         /* 200 */
+    --sidebar-ring: 209 32% 60%;           /* 400 */
+
+    /* ── App theme ─────────────────────────────────────────────────────────── */
+    --tint: 210 31% 48%;                   /* 500 */
+    --brand-black: 215 28% 17%;            /* 950 */
+
+    /* ── Onboarding surfaces ───────────────────────────────────────────────── */
+    --card-bg-alpha: rgba(0, 0, 0, 0.02);
+    --card-border-alpha: rgba(0, 0, 0, 0.12);
+    --input-bg-alpha: rgba(0, 0, 0, 0.03);
+    --input-border-alpha: rgba(0, 0, 0, 0.15);
+    --select-border-alpha: rgba(0, 0, 0, 0.15);
+
+    /* ── Form ──────────────────────────────────────────────────────────────── */
+    --placeholder: 209 32% 60%;            /* 400 */
+
+    /* ── Semantic ──────────────────────────────────────────────────────────── */
+    --error-text: 12 65% 37%;
   }
+
   .dark:root {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 15%;
-    --card-active: 0 0% 25%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 100% 50%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 300 0% 45%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* ── Base ──────────────────────────────────────────────────────────────── */
+    --background: 215 28% 17%;             /* 950 */
+    --foreground: 215 32% 97%;             /* 50  */
+    --card: 212 28% 24%;                   /* 900 */
+    --card-active: 212 33% 32%;            /* 700 */
+    --card-foreground: 215 32% 97%;        /* 50  */
+    --popover: 212 28% 24%;                /* 900 */
+    --popover-foreground: 215 32% 97%;     /* 50  */
+    --primary: 211 32% 86%;                /* 200 */
+    --primary-foreground: 215 28% 17%;     /* 950 */
+    --secondary: 212 28% 24%;              /* 900 */
+    --secondary-foreground: 215 32% 97%;   /* 50  */
+    --muted: 212 28% 24%;                  /* 900 */
+    --muted-foreground: 211 34% 74%;       /* 300 */
+    --accent: 212 32% 27%;                 /* 800 */
+    --accent-foreground: 215 32% 97%;      /* 50  */
+    --destructive: 14 84% 55%;
+    --border: 212 33% 27%;                 /* ~800 */
+    --input: 212 32% 27%;                  /* 800 */
+    --ring: 209 32% 60%;                   /* 400 */
+
+    /* ── Chart ─────────────────────────────────────────────────────────────── */
+    --chart-1: 248 60% 48%;
+    --chart-2: 157 47% 50%;
+    --chart-3: 40 62% 57%;
+    --chart-4: 285 62% 55%;
+    --chart-5: 5 65% 52%;
+
+    /* ── Sidebar ───────────────────────────────────────────────────────────── */
+    --sidebar: 212 28% 24%;                /* 900 */
+    --sidebar-foreground: 215 32% 97%;     /* 50  */
+    --sidebar-primary: 211 34% 74%;        /* 300 */
+    --sidebar-primary-foreground: 215 28% 17%; /* 950 */
+    --sidebar-accent: 212 32% 27%;         /* 800 */
+    --sidebar-accent-foreground: 215 32% 97%; /* 50 */
+    --sidebar-border: 212 33% 27%;         /* ~800 */
+    --sidebar-ring: 209 32% 60%;           /* 400 */
+
+    /* ── App theme ─────────────────────────────────────────────────────────── */
+    --tint: 209 32% 60%;                   /* 400 */
+    --brand-black: 212 32% 27%;            /* 800 */
+
+    /* ── Onboarding surfaces ───────────────────────────────────────────────── */
+    --card-bg-alpha: rgba(255, 255, 255, 0.06);
+    --card-border-alpha: rgba(255, 255, 255, 0.18);
+    --input-bg-alpha: rgba(255, 255, 255, 0.08);
+    --input-border-alpha: rgba(255, 255, 255, 0.22);
+    --select-border-alpha: rgba(255, 255, 255, 0.45);
+
+    /* ── Form ──────────────────────────────────────────────────────────────── */
+    --placeholder: 209 32% 60%;            /* 400 */
   }
 }

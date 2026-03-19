@@ -1,3 +1,13 @@
 {
-    "cmake.configureOnOpen": false
+  "cmake.configureOnOpen": false,
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "driver": "PostgreSQL",
+      "connectString": "postgresql://postgres.khhmfpxgkwqqmithakqy:!RBc0nfu$e$@K26@aws-0-us-west-2.pooler.supabase.com:5432/postgres",
+      "name": "Petpulse-Supabase"
+    }
+  ]
 }

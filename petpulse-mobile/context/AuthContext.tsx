@@ -17,10 +17,11 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, metadata?: { firstName?: string; lastName?: string }) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
+  updateProfile: (updates: { firstName?: string; lastName?: string }) => Promise<{ error: { message: string } | null }>;
   petId: string | null;
 };
 
@@ -83,11 +84,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: { firstName?: string; lastName?: string }) => {
     return await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: getEmailRedirectTo() },
+      options: {
+        emailRedirectTo: getEmailRedirectTo(),
+        data: metadata
+          ? {
+              first_name: metadata.firstName,
+              last_name: metadata.lastName,
+            }
+          : undefined,
+      },
     });
   };
 
@@ -120,8 +129,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  const updateProfile = async (updates: { firstName?: string; lastName?: string }) => {
+    const data: Record<string, string> = {};
+    if (updates.firstName !== undefined) data.first_name = updates.firstName;
+    if (updates.lastName !== undefined) data.last_name = updates.lastName;
+    const { error } = await supabase.auth.updateUser({ data });
+    return { error: error ? { message: error.message } : null };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, verifyOtp, petId }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, verifyOtp, updateProfile, petId }}>
       {children}
     </AuthContext.Provider>
   );

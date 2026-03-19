@@ -2,19 +2,18 @@
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
      - for production remove dynamic import and chaining ops for BleManager
 */
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
+import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
+import { UTCFromBytes } from './useBleTime';
+
 let BleManager: typeof import('react-native-ble-manager').default | null = null;
 
 if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
-import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { supabase } from '../../lib/supabase';
-import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
-import { UTCFromBytes } from './useBleTime';
 
 export interface Accel {
   x: number;
@@ -61,7 +60,7 @@ export interface StepCount {
 }
 
 export interface ActivityClass {
-  confidenceArray: Uint8Array;
+  confidenceArray: number[];
   activityClass: number;
   accuracy: number;
 }
@@ -104,14 +103,14 @@ export const parseRaw = (data: Uint8Array): Raw => {
 export const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
   const activityClassBuffer = new Uint8Array(data);
   const activityClassView = new DataView(activityClassBuffer.buffer);
-  const confidenceArray = new Uint8Array(10);
+  const confidenceArray: number[] = [];
   for (let i = 0; i < 10; i++) {
-    confidenceArray.set([activityClassView.getUint8(i)], i);
+    confidenceArray.push(activityClassView.getUint8(i));
   }
   const activityClass = activityClassView.getUint8(10);
   const accuracy = activityClassView.getUint8(11);
   // TODO: Read activityClass into database
-  return { confidenceArray, activityClass, accuracy } as ActivityClass;
+  return { confidenceArray, activityClass, accuracy };
 };
 export const parseStepCount = (data: Uint8Array): StepCount => {
   const stepCountBuffer = new Uint8Array(data);
@@ -133,27 +132,33 @@ export const parseActivity = (data: Uint8Array): Activity => {
 export const useBleActivity = (connected: Peripheral | null, petId: string) => {
   const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
     if (!petId) return;
+    console.log('data: ', petId);
     const chr = data.characteristic.toLowerCase();
     if (chr === CHR_UUIDS.raw) {
       const rawArray = new Uint8Array(data.value);
       const raw = parseRaw(rawArray);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'raw_motion',
-        data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
-        timestamp: raw.utcTimestamp,
-      });
+      // const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+      //   pet_id: petId,
+      //   metric_type: 'raw_motion',
+      //   data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
+      //   timestamp: raw.utcTimestamp,
+      // });
+      // console.log('sensorReading: ', sensorReading);
+      // console.log('error: ', error);
       console.log('raw: ', raw);
     }
     if (chr === CHR_UUIDS.activity) {
       const activityBuffer = new Uint8Array(data.value);
       const activity = parseActivity(activityBuffer);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'activity',
-        data: { classifier: activity.classifier, stepCount: activity.stepCount },
-        timestamp: activity.utcTimestamp,
-      });
+      // const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+      //   pet_id: petId,
+      //   metric_type: 'activity',
+      //   data: { classifier: activity.classifier, stepCount: activity.stepCount },
+      //   recorded_at: activity.utcTimestamp,
+      // });
+      // console.log('sensorReading: ', sensorReading);
+      // console.log('error: ', error);
+
       console.log('activity: ', activity);
     }
   };

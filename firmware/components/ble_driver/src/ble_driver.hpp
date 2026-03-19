@@ -23,19 +23,19 @@
 #define S_MOTION_UUID "792C45E1-7B95-4A4D-8BC2-6D04809BB406"        // Motion/Activity Service (Accel,Gyro,Magf,StepCount,ActivityClassfier)
 #define S_BATTERY_UUID "180F"                                       // Bluetooth assigned numbers battery service UUID = 0x180F
 #define S_CUR_TIME_SERVICE_UUID "1805"                              // Bluetooth assigned numbers current time service UUID = 0x1805
-#define S_ENVIRO_UUID "792C45E2-7B95-4A4D-8BC2-6D04809BB406" 
-#define S_AGGREGATED_UUID "792C45E9-7B95-4A4D-8BC2-6D04809BB406" 
+#define S_ENVIRO_UUID "792C45E2-7B95-4A4D-8BC2-6D04809BB406"
+#define S_AGGREGATED_UUID "792C45E9-7B95-4A4D-8BC2-6D04809BB406"
 
 /* Vital Signs Service Characteristics UUIDS*/
-#define C_VITALS_UUID "792C45E3-7B95-4A4D-8BC2-6D04809BB406"            // Breath Rate 
+#define C_VITALS_UUID "792C45E3-7B95-4A4D-8BC2-6D04809BB406"            // Breath Rate
 
 /* Activity Service Characteristics UUIDS */
-#define C_RAW_UUID "792C45E4-7B95-4A4D-8BC2-6D04809BB406"            //Accel,Gyro,Magf,RV           
+#define C_RAW_UUID "792C45E4-7B95-4A4D-8BC2-6D04809BB406"            //Accel,Gyro,Magf,RV
 #define C_ACTIVITY_UUID "792C45E5-7B95-4A4D-8BC2-6D04809BB406"       // Step Counter, Activity Classifier
 
 /* Utility Charcteristics */
 #define C_MODE_UUID "792C45E6-7B95-4A4D-8BC2-6D04809BB406"           // Mode
-#define C_AUTH_PING  "792C45E7-7B95-4A4D-8BC2-6D04809BB406" 
+#define C_AUTH_PING  "792C45E7-7B95-4A4D-8BC2-6D04809BB406"
 
 
 #define C_ENV_UUID  "792C45E8-7B95-4A4D-8BC2-6D04809BB406"          // Environmental sensor service characteristic UUID (Temperature, Humidity)
@@ -52,6 +52,105 @@
 
 #define C_AGGREGATED_UUID "792C45EA-7B95-4A4D-8BC2-6D04809BB406"   // Aggregated service characteristic UUID
 
+/* ============ File-scope BLE data structs ============ */
+
+/* Accel Struct */
+struct BleAccel_t {
+    float x;
+    float y;
+    float z;
+    uint8_t accuracy;
+
+    BleAccel_t& operator=(const bno08x_accel_t& accel) {
+        x = accel.x;
+        y = accel.y;
+        z = accel.z;
+        accuracy = static_cast<uint8_t>(accel.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
+/* Gyro Struct */
+struct BleGyro_t {
+    float x;
+    float y;
+    float z;
+    uint8_t accuracy;
+
+    BleGyro_t& operator=(const bno08x_gyro_t& gyro) {
+        x = gyro.x;
+        y = gyro.y;
+        z = gyro.z;
+        accuracy = static_cast<uint8_t>(gyro.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
+/* Magf Struct */
+struct BleMagf_t {
+    float x;
+    float y;
+    float z;
+    uint8_t accuracy;
+
+    BleMagf_t& operator=(const bno08x_magf_t& magf) {
+        x = magf.x;
+        y = magf.y;
+        z = magf.z;
+        accuracy = static_cast<uint8_t>(magf.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
+struct BleRV_t {
+    float real;
+    float x;
+    float y;
+    float z;
+    float rad_accuracy;
+    uint8_t accuracy;
+
+    BleRV_t& operator=(const bno08x_quat_t& rv) {
+        real = rv.real;
+        x = rv.i;
+        y = rv.j;
+        z = rv.k;
+        rad_accuracy = rv.rad_accuracy;
+        accuracy = static_cast<uint8_t>(rv.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
+/* Step Count Struct */
+struct BleStepCount_t {
+    uint32_t latency;
+    uint16_t steps;
+    uint8_t accuracy;
+
+    BleStepCount_t& operator=(const bno08x_step_counter_t& stepCount) {
+        latency = stepCount.latency;
+        steps = stepCount.steps;
+        accuracy = static_cast<uint8_t>(stepCount.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
+/* Activity Classifier Struct */
+struct BleActivityClass_t {
+    uint8_t confidence[10];
+    uint8_t mostLikelyState;
+    uint8_t accuracy;
+
+    BleActivityClass_t& operator=(const bno08x_activity_classifier_t& activity_class) {
+        for(int i = 0; i < 10; i++) {
+            confidence[i] = activity_class.confidence[i];
+        };
+        mostLikelyState = static_cast<uint8_t>(activity_class.mostLikelyState);
+        accuracy = static_cast<uint8_t>(activity_class.accuracy);
+        return *this;
+    }
+}__attribute__((packed));
+
 struct Timestamp_t {
     uint16_t year = 0x0000;
     uint8_t month = 0x00;
@@ -61,6 +160,49 @@ struct Timestamp_t {
     uint8_t seconds = 0x00;
     uint16_t m_seconds = 0x00;
 }__attribute__((packed));
+
+struct BleVitals_t {
+    uint8_t breath_rate;
+    uint8_t heart_rate;
+    uint8_t hr_confidence;
+    Timestamp_t timestamp;
+}__attribute__((packed));
+
+struct BleEnv_t {
+    float temperature;
+    float humidity;
+    Timestamp_t timestamp;
+}__attribute__((packed));
+
+/* Activity Aggregated Struct */
+struct BleActivity_t {
+    BleStepCount_t stepCount;
+    BleActivityClass_t activityClass;
+    Timestamp_t timestamp;
+}__attribute__((packed));
+
+/* Raw IMU Aggregated Struct */
+struct BleRaw_t {
+    BleAccel_t accel;
+    BleGyro_t gyro;
+    BleMagf_t magf;
+    BleRV_t rv;
+    Timestamp_t timestamp;
+}__attribute__((packed));
+
+/* Aggregated Sensor Struct */
+struct BleAggregatedAll_t {
+    uint8_t presence_bitmask = 0x00;
+    BleRaw_t raw;
+    BleActivity_t activity;
+    BleVitals_t vitals;
+    BleEnv_t env;
+}__attribute__((packed));
+
+#define AGG_RAW_PRESENT_BIT  (1 << 0)
+#define AGG_ACTIVITY_PRESENT_BIT  (1 << 1)
+#define AGG_VITALS_PRESENT_BIT  (1 << 2)
+#define AGG_ENV_PRESENT_BIT  (1 << 3)
 
 enum Mode {
     Background = 0,
@@ -73,14 +215,14 @@ Timestamp_t getUTCTimestamp();
 bool syncSysTime(NimBLEAttValue& value);
 
 class BleServer  {
-    private: 
+    private:
 
         /* BLE Server Pointer */
         NimBLEServer *pServer = nullptr;
        /* Vital Signs Service Pointer and Characteristics */
         NimBLEService *pVitalsService = nullptr;
             NimBLECharacteristic *pVitals = nullptr;
-    
+
         /* IMUService Pointer and Characteristics */
         NimBLEService *pMotionService = nullptr;
             NimBLECharacteristic *pRaw = nullptr;
@@ -108,138 +250,20 @@ class BleServer  {
         NimBLEService *pAggregatedService = nullptr;
             NimBLECharacteristic *pAggregated = nullptr;
 
-
-
-        struct BleVitals_t {
-            uint8_t breath_rate;
-            uint8_t heart_rate;
-            uint8_t hr_confidence;
-            Timestamp_t timestamp;
-        }__attribute__((packed));
-
-        BleVitals_t _vitals;
-
-        /* Accel Struct */ 
-        struct BleAccel_t {
-            float x;
-            float y;
-            float z;
-            uint8_t accuracy;
-
-            BleAccel_t& operator=(const bno08x_accel_t& accel) {
-                x = accel.x;
-                y = accel.y;
-                z = accel.z;
-                accuracy = static_cast<uint8_t>(accel.accuracy);
-                return *this;
-            }
-        }__attribute__((packed));
-
-        BleAccel_t _accel;
-
-        /* Gyro Struct */ 
-        struct BleGyro_t {
-            float x;
-            float y;
-            float z;
-            uint8_t accuracy;
-
-            BleGyro_t& operator=(const bno08x_gyro_t& gyro) {
-                x = gyro.x;
-                y = gyro.y;
-                z = gyro.z;
-                accuracy = static_cast<uint8_t>(gyro.accuracy);
-                return *this;
-            }
-        }__attribute__((packed));
-
-        BleGyro_t _gyro;
-
-        /* Magf Struct */ 
-        struct BleMagf_t {
-            float x;
-            float y;
-            float z;
-            uint8_t accuracy;
-
-            BleMagf_t& operator=(const bno08x_magf_t& magf) {
-                x = magf.x;
-                y = magf.y;
-                z = magf.z;
-                accuracy = static_cast<uint8_t>(magf.accuracy);
-                return *this;
-            }
-        }__attribute__((packed));
-
-        BleMagf_t _magf;
-
-        struct BleRV_t {
-            float real;
-            float x;
-            float y;
-            float z ;
-            float rad_accuracy;
-            uint8_t accuracy;
-
-            BleRV_t& operator=(const bno08x_quat_t& rv) {
-                real = rv.real;
-                x = rv.i;
-                y = rv.j;
-                z = rv.k;
-                rad_accuracy = rv.rad_accuracy;
-                accuracy = static_cast<uint8_t>(rv.accuracy);
-                return *this;
-            }
-        }__attribute__((packed));
-
-        BleRV_t _rv;
-
-        /* Step Count Struct */ 
-        struct BleStepCount_t {
-            uint32_t latency;
-            uint16_t steps;
-            uint8_t accuracy;
-            
-
-            BleStepCount_t& operator=(const bno08x_step_counter_t& stepCount) {
-                latency = stepCount.latency;
-                steps = stepCount.steps;
-                accuracy = static_cast<uint8_t>(stepCount.accuracy);
-                return *this;
-            }
-        }__attribute__((packed));
-
-        BleStepCount_t _stepCount;
-
-        /* Activity Classifier Struct TODO.... */ 
-        struct BleActivityClass_t {
-            uint8_t confidence[10];
-            uint8_t mostLikelyState;
-            uint8_t accuracy;
-            
-
-            BleActivityClass_t& operator=(const bno08x_activity_classifier_t& activity_class) {
-                for(int i = 0; i < 10; i++) {
-                    confidence[i] = activity_class.confidence[i];
-                };
-                mostLikelyState = static_cast<uint8_t> (activity_class.mostLikelyState);
-                accuracy = static_cast<uint8_t>(activity_class.accuracy);
-                return *this;
-            }
-
-        }__attribute__((packed));
-
+        /* member vars (structs now file-scope above) */
+        BleAccel_t         _accel;
+        BleGyro_t          _gyro;
+        BleMagf_t          _magf;
+        BleRV_t            _rv;
+        BleStepCount_t     _stepCount;
         BleActivityClass_t _activityClass;
+        BleVitals_t        _vitals;
+        BleEnv_t           _env;
+        BleRaw_t           _raw;
+        BleActivity_t      _activity;
+        BleAggregatedAll_t _aggregatedAll;
 
-        struct BleEnv_t {
-            float temperature;
-            float humidity;
-            Timestamp_t timestamp;
-        }__attribute__((packed));
-
-        BleEnv_t _env;
-
-        /* Battery Level Status Struct */
+        /* Battery structs stay private (not needed externally) */
         struct BatteryLevel_t {
             uint8_t flags = 0x06; //Battery Level and Additional Status bits set
             uint16_t power_state = 0x0001; //Default 1: Battery Present
@@ -275,40 +299,6 @@ class BleServer  {
 
         BatteryHealth_t _batteryHealth;
 
-    /* ============Aggregated Structs================ */
-
-        /* Activity Aggregated Struct */ 
-        struct BleActivity_t {
-            BleStepCount_t stepCount;
-            BleActivityClass_t activityClass;
-            Timestamp_t timestamp;
-    
-            }__attribute__((packed));
-    
-            BleActivity_t _activity;
-
-        /* Raw IMU Aggregated Struct */ 
-        struct BleRaw_t {
-            BleAccel_t accel;
-            BleGyro_t gyro;
-            BleMagf_t magf;
-            BleRV_t rv;
-            Timestamp_t timestamp;
-        }__attribute__((packed));
-
-        BleRaw_t _raw;
-    
-        /* Aggregated Sensor Struct */
-        struct BleAggregatedAll_t {
-            uint8_t presence_bitmask = 0x00;
-            BleRaw_t raw;
-            BleActivity_t activity;
-            BleVitals_t vitals;
-            BleEnv_t env;
-        }__attribute__((packed));
-    
-        BleAggregatedAll_t _aggregatedAll;
-
         std::atomic<Mode> _mode{Background};
         std::atomic<bool> _authenticated{false};
 
@@ -322,6 +312,8 @@ class BleServer  {
             bool startAdvertising();
             bool isAdvertising();
             void setTXPower(int8_t tx_power);
+            int8_t getRSSI();
+
 
             /* Vitals Characteristic Setters */
             void updateHR(uint8_t hr, uint8_t hr_acc);
@@ -337,7 +329,7 @@ class BleServer  {
             void updateActivityClass(const bno08x_activity_classifier_t& activity_class);
             void setRaw(bool notify = true);
             void setActivity(bool notify = true);
-            
+
             void setMode(Mode mode);
             Mode getMode();
 
@@ -346,7 +338,7 @@ class BleServer  {
             void updateHumidity(float humidity);
             void setEnv(bool notify = true);
 
-            /** 
+            /**
             Battery Characteristic Value Setters
             @param  notify - Set NimBLE to notify on this charcteristic
             @param indicate - Set NimBLE to indicate on this charcteristic

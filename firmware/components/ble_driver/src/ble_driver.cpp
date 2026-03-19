@@ -291,6 +291,15 @@ void BleServer::setAuthenticated(bool auth) {
     pAuthPing->setValue(&val, 1);
 }
 
+int8_t BleServer::getRSSI() {
+    if (!hasSubscriber()) return -127;
+    NimBLEConnInfo connInfo = NimBLEDevice::getServer()->getPeerInfo(0);
+    int8_t rssi = 0;
+    int rc = ble_gap_conn_rssi(connInfo.getConnHandle(), &rssi);
+    if (rc != 0) return -127;
+    return rssi;
+}
+
 void BleServer::updateHR(uint8_t hr, uint8_t hr_acc) {
     _vitals.heart_rate = hr;
     _vitals.hr_confidence = hr_acc;
