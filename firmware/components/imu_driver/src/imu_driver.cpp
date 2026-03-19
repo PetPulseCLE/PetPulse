@@ -2,14 +2,22 @@
 #include "BNO08xGlobalTypes.hpp"
 #include "imu_driver.hpp"
 #include "freertos/task.h"
+#include "portmacro.h"
 #include "sh2.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "ble_driver.hpp"
+
 
 static constexpr const char *TAG = "IMU_DRIVER";
 volatile bool motion_flag = false;
 
 static BNO08x imu;
+
+EventGroupHandle_t imuEventGroup = nullptr;
+
+static int8_t cached_rssi = -127;
+
 
 bool imu_init() {
     if (!imu.initialize()) {
@@ -17,7 +25,8 @@ bool imu_init() {
         ESP_LOGE(TAG, "Init failure, returning from imu_driver.");
         return false;
     }
-
+    // Set init bits to indicate down stream tasks
+    xEventGroupSetBits(imuEventGroup, IMU_EVT_INIT_BIT);
     ESP_LOGI(TAG, "IMU - INITIALIZED");
     return true;
 }
@@ -402,20 +411,6 @@ bool imu_disable_rpts(imu_report_cfg_t *rpts, size_t count) {
     return all_enabled;
 }
 
-bool imu_rearm_sig_motion(uint32_t period_us, sh2_SensorConfig_t config) {
-    if(!imu.rpt.significant_motion.disable()) {
-        ESP_LOGE(TAG, "IMU - FAILED TO DISABLE SIGNIFICANT MOTION REPORT");
-        return false;
-    }
-
-    if(!imu.rpt.significant_motion.enable(period_us, config)) {
-        ESP_LOGE(TAG, "IMU - FAILED TO ENABLE SIGNIFICANT MOTION REPORT");
-        return false;
-    }
-
-    ESP_LOGI(TAG, "IMU - SIGNIFICANT MOTION REPORT REARMED");
-    return true;
-}
 
 bool imu_has_new_data(sh2_SensorId_t report_id) {
     switch (report_id) {
@@ -512,133 +507,342 @@ bno08x_step_counter_t imu_get_step_counter() { return imu.rpt.step_counter.get()
 bno08x_significant_motion_t imu_get_significant_motion() { return imu.rpt.significant_motion.get();}
 
 
-//TESTING FUNCTIONS
-void motion_detection_task(void *pvParameters) {
 
-    imu_enable_rpt(SH2_SIGNIFICANT_MOTION, 100000UL);
+// ============================================================================
+// IMU data task — constants, helpers, statics
+// ============================================================================
 
-    //Register once to start 
-    imu.rpt.significant_motion.register_cb([]()
-    {
-        if(imu.rpt.significant_motion.has_new_data()) {
-            motion_flag = true;
-        }
-    });
+#define IMU_HW_PERIOD_US  100000UL   // 10Hz hardware rate
+
+bool imu_events_init(void) {
+    imuEventGroup = xEventGroupCreate();
+    if(!imuEventGroup) {
+        ESP_LOGE(TAG, "Failed to create event group");
+        return false;
+    }
+    return true;
+}
+
+static uint64_t mode_to_period_us(Mode m) {
+    switch (m) {
+        case Background: return 10000000UL;  // 10s
+        case Live:       return  5000000UL;  //  5s
+        case Dev:        return  1000000UL;  //  1s
+        default:         return 10000000UL;
+    }
+}
+
+#define IMU_BLE_FEASIBLE() (bleServer.isAuthenticated() && cached_rssi >= -80)
+
+// TODO: replace with real sd_driver implementation
+// NOTE: requires BleAggregatedAll_t at file scope (ble_driver Task 1)
+static esp_err_t sd_write_aggregated_record(const BleAggregatedAll_t &record) {
+    (void)record;
+    return ESP_OK;
+}
+
+
+// ============================================================================
+// Per-sensor callbacks
+// ============================================================================
+
+static void motion_cb() {
+    ESP_LOGI("IMU_SIG_MOTION", "Motion detected! Setting MOTION_BIT");
+    xEventGroupSetBits(imuEventGroup, IMU_EVT_MOTION_BIT);
+}
+
+static uint64_t last_accel_us = 0;
+
+static void imu_accel_cb() {
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_accel_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_accel_us = now;
+
+    bno08x_accel_t data = imu.rpt.accelerometer.get();
+    if (data.accuracy < BNO08xAccuracy::MED || data.accuracy == BNO08xAccuracy::UNDEFINED) return;
+
+    Timestamp_t ts = getUTCTimestamp();
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateAccel(data);
+        bleServer.setRaw();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_RAW_PRESENT_BIT;
+        rec.raw.accel = data;
+        rec.raw.timestamp = ts;
+        sd_write_aggregated_record(rec);
+    }
+}
+
+static uint64_t last_gyro_us     = 0;
+
+static void imu_gyro_cb() {
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_gyro_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_gyro_us = now;
+
+    bno08x_gyro_t data = imu.rpt.cal_gyro.get();
+    if (data.accuracy < BNO08xAccuracy::MED || data.accuracy == BNO08xAccuracy::UNDEFINED) return;
+
+    Timestamp_t ts = getUTCTimestamp();
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateGyro(data);
+        bleServer.setRaw();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_RAW_PRESENT_BIT;
+        rec.raw.gyro = data;
+        rec.raw.timestamp = ts;
+        sd_write_aggregated_record(rec);
+    }
+}
+
+static uint64_t last_magf_us     = 0;
+
+static void imu_magf_cb() {
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_magf_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_magf_us = now;
+
+    bno08x_magf_t data = imu.rpt.cal_magnetometer.get();
+    if (data.accuracy < BNO08xAccuracy::MED || data.accuracy == BNO08xAccuracy::UNDEFINED) return;
+
+    Timestamp_t ts = getUTCTimestamp();
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateMagf(data);
+        bleServer.setRaw();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_RAW_PRESENT_BIT;
+        rec.raw.magf = data;
+        rec.raw.timestamp = ts;
+        sd_write_aggregated_record(rec);
+    }
+}
+
+static uint64_t last_rv_us       = 0;
+
+static void imu_rv_cb() {
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_rv_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_rv_us = now;
+
+    bno08x_quat_t data = imu.rpt.rv.get_quat();
+    if (data.accuracy < BNO08xAccuracy::MED || data.accuracy == BNO08xAccuracy::UNDEFINED) return;
+
+    Timestamp_t ts = getUTCTimestamp();
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateRV(data);
+        bleServer.setRaw();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_RAW_PRESENT_BIT;
+        rec.raw.rv = data;
+        rec.raw.timestamp = ts;
+        sd_write_aggregated_record(rec);
+    }
+}
+
+static uint64_t last_step_us     = 0;
+
+static void imu_step_cb() {
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_step_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_step_us = now;
+
+    bno08x_step_counter_t data = imu.rpt.step_counter.get();
+    Timestamp_t ts = getUTCTimestamp();
+
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateStepCount(data);
+        bleServer.setActivity();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_ACTIVITY_PRESENT_BIT;
+        rec.activity.stepCount = data;
+        rec.activity.timestamp = ts;
+        sd_write_aggregated_record(rec);
+    }
+}
+
+static uint64_t last_activity_us = 0;
+
+static void imu_activity_cb() {
+    /* Gate sending data based on mode */
+    uint64_t now = esp_timer_get_time();
+    if ((now - last_activity_us) < mode_to_period_us(bleServer.getMode())) return;
+    last_activity_us = now;
     
-    BaseType_t xCoreID = xPortGetCoreID();
-    ESP_LOGI(TAG, "IMU task running on core: %d", xCoreID);
+    bno08x_activity_classifier_t data = imu.rpt.activity_classifier.get();
+    Timestamp_t ts = getUTCTimestamp();
 
-    while (1)
-    {
-
-        vTaskDelay(pdMS_TO_TICKS(50));
-        if(motion_flag) {
-            ESP_LOGI(TAG, "WOKE UP, MOTION DETECTED");
-            motion_flag = false;
-            // One-shot sensor auto-disables, but we need to explicitly disable to clear state
-            imu_rearm_sig_motion();
-            // Re-register callback after re-arming (disable/enable clears the callback)
-            imu.rpt.significant_motion.register_cb([]()
-            {
-                if(imu.rpt.significant_motion.has_new_data()) {
-                    motion_flag = true;
-                }
-            });
-        }
-
-        vTaskDelay(10UL / portTICK_PERIOD_MS);
+    if (IMU_BLE_FEASIBLE()) {
+        bleServer.updateActivityClass(data);
+        bleServer.setActivity();
+    } else {
+        BleAggregatedAll_t rec = {};
+        rec.presence_bitmask = AGG_ACTIVITY_PRESENT_BIT;
+        rec.activity.activityClass = data;
+        rec.activity.timestamp = ts;
+        sd_write_aggregated_record(rec);
     }
 }
 
-// Reporting periods per mode
-static constexpr uint32_t IMU_PERIOD_BACKGROUND_US = 20000000UL; // 20 seconds
-static constexpr uint32_t IMU_PERIOD_LIVE_US       = 10000000UL; // 10 seconds
-static constexpr uint32_t IMU_PERIOD_DEV_US        = 1000000UL; // 1 second
+bool imu_rearm_sig_motion(uint32_t period_us, sh2_SensorConfig_t config) {
 
-static uint32_t period_for_mode(Mode mode) {
-    switch(mode) {
-        case Background:
-            return IMU_PERIOD_BACKGROUND_US;
-        case Live:
-            return IMU_PERIOD_LIVE_US;
-        case Dev:
-            return IMU_PERIOD_DEV_US;
-        default:
-            return IMU_PERIOD_BACKGROUND_US;
+    if(imu.rpt.significant_motion.has_new_data()) {
+        imu.rpt.significant_motion.flush();
+    }
+
+    if(!imu.rpt.significant_motion.disable()) {
+        ESP_LOGE(TAG, "IMU - FAILED TO DISABLE SIGNIFICANT MOTION REPORT");
+        return false;
+    }
+
+    if(!imu.rpt.significant_motion.enable(period_us, config)) {
+        ESP_LOGE(TAG, "IMU - FAILED TO ENABLE SIGNIFICANT MOTION REPORT");
+        return false;
+    }
+
+    ESP_LOGI(TAG, "IMU - SIGNIFICANT MOTION REPORT REARMED");
+    return true;
+}
+
+
+
+// ============================================================================
+// Callback registration helper
+// ============================================================================
+
+static void imu_register_callbacks(Mode m) {
+    
+    imu.rpt.step_counter.enable(IMU_HW_PERIOD_US);
+    imu.rpt.step_counter.register_cb(imu_step_cb);
+
+    imu.rpt.activity_classifier.enable(IMU_HW_PERIOD_US);
+    imu.rpt.activity_classifier.register_cb(imu_activity_cb);
+
+    if (m == Dev) {
+        imu.rpt.accelerometer.enable(IMU_HW_PERIOD_US);
+        imu.rpt.accelerometer.register_cb(imu_accel_cb);
+
+        imu.rpt.cal_gyro.enable(IMU_HW_PERIOD_US);
+        imu.rpt.cal_gyro.register_cb(imu_gyro_cb);
+
+        imu.rpt.cal_magnetometer.enable(IMU_HW_PERIOD_US);
+        imu.rpt.cal_magnetometer.register_cb(imu_magf_cb);
+
+        imu.rpt.rv.enable(IMU_HW_PERIOD_US);
+        imu.rpt.rv.register_cb(imu_rv_cb);
     }
 }
 
-static void configure_activity_reports(Mode mode) {
-    imu_disable_rpt(SH2_STEP_COUNTER);
-    imu_disable_rpt(SH2_PERSONAL_ACTIVITY_CLASSIFIER);
-    uint32_t period = period_for_mode(mode);
+// ============================================================================
+// IMU data task
+// ============================================================================
 
-    imu_report_cfg_t rpts[] = {
-        {SH2_STEP_COUNTER, period},
-        {SH2_PERSONAL_ACTIVITY_CLASSIFIER, period},
-    };
-    if(!imu_enable_multi_rpts(rpts, sizeof(rpts) / sizeof(rpts[0]))) {
-        ESP_LOGE(TAG, "Failed to enable activity reports for mode=%d", static_cast<int>(mode));
+static int64_t last_static_us = 0;
+
+void imu_data_task(void *pv) {
+    static const char *TAG_DATA = "IMU_Data";
+
+    if (!imu_init()) {
+        ESP_LOGE(TAG_DATA, "imu_init() failed");
+        vTaskDelete(NULL);
+        return;
     }
-    ESP_LOGI(TAG, "Activity reports enabled: mode=%d, period=%lus",
-             static_cast<int>(mode), period / 1'000'000UL);
-}
 
-void data_processing_task(void *pvParameters) {
-    // Block until the mobile app has both authenticated AND written the current time.
-    // This prevents epoch-0 timestamps from being sent during the auth→time-sync window.
+    /* Enable when ble connected and time sync was sent*/
+    ESP_LOGI(TAG_DATA, "Waiting for BLE auth + time sync...");
     xEventGroupWaitBits(bleEventGroup,
-                        BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT,
-                        pdFALSE,    // do not clear bits on exit
-                        pdTRUE,     // wait for ALL bits
-                        portMAX_DELAY);
+        BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT,
+        pdFALSE,
+        pdTRUE,
+        portMAX_DELAY);
+    ESP_LOGI(TAG_DATA, "BLE ready — starting IMU data collection");
 
-    Mode active_mode = bleServer.getMode();
-    configure_activity_reports(active_mode);
 
-    // Step counter ignores long hardware periods — gate forwarding in software
-    static TickType_t last_step_send_ticks = 0;
+    /* Wait till we detect sig motion */
+    ESP_LOGI(TAG_DATA, "Waiting for motion");
+    xEventGroupWaitBits(imuEventGroup, IMU_EVT_MOTION_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
+    ESP_LOGI(TAG_DATA, "Motion detected");
 
-    bool new_step_data = false;
-    bool new_activity_data = false;
+    Mode current_mode = bleServer.getMode();
+    imu_register_callbacks(current_mode);
+    last_static_us = esp_timer_get_time();
 
-    imu.register_cb([&new_step_data, &new_activity_data]() {
-        if((xEventGroupGetBits(bleEventGroup) & (BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT))
-                != (BLE_AUTHENTICATED_BIT | BLE_TIME_SYNCED_BIT)) return;
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        cached_rssi = bleServer.getRSSI();
 
-        if(imu_has_new_data(SH2_STEP_COUNTER)) {
-            uint32_t gate_ms = period_for_mode(bleServer.getMode()) / 1000UL;
-            TickType_t now = xTaskGetTickCount();
-            if((now - last_step_send_ticks) >= pdMS_TO_TICKS(gate_ms)) {
-                bno08x_step_counter_t step_counter = imu.rpt.step_counter.get();
-                ESP_LOGI(TAG, "Step Counter: %d", step_counter.steps);
-                bleServer.updateStepCount(step_counter);
-                new_step_data = true;
-                last_step_send_ticks = now;
+        Mode new_mode = bleServer.getMode();
+        if (new_mode != current_mode) {
+            ESP_LOGI(TAG_DATA, "Mode change: %d -> %d", (int)current_mode, (int)new_mode);
+            if (new_mode == Dev) {
+                imu.rpt.accelerometer.enable(IMU_HW_PERIOD_US);
+                imu.rpt.accelerometer.register_cb(imu_accel_cb);
+                imu.rpt.cal_gyro.enable(IMU_HW_PERIOD_US);
+                imu.rpt.cal_gyro.register_cb(imu_gyro_cb);
+                imu.rpt.cal_magnetometer.enable(IMU_HW_PERIOD_US);
+                imu.rpt.cal_magnetometer.register_cb(imu_magf_cb);
+                imu.rpt.rv.enable(IMU_HW_PERIOD_US);
+                imu.rpt.rv.register_cb(imu_rv_cb);
+            } else {
+                imu.rpt.accelerometer.disable();
+                imu.rpt.cal_gyro.disable();
+                imu.rpt.cal_magnetometer.disable();
+                imu.rpt.rv.disable();
             }
+            current_mode = new_mode;
         }
 
-        if(imu_has_new_data(SH2_PERSONAL_ACTIVITY_CLASSIFIER)) {
-            bno08x_activity_classifier_t activity = imu.rpt.activity_classifier.get();
-            ESP_LOGI(TAG, "Activity: %d", activity.mostLikelyState);
-            bleServer.updateActivityClass(activity);
-            new_activity_data = true;
-        }
+        if(imu.rpt.activity_classifier.get().mostLikelyState == BNO08xActivity::STILL) {
+            if(esp_timer_get_time() - last_static_us > 300000000UL) { // 5 minutes
+                ESP_LOGI(TAG_DATA, "Static state detected, suspending data collection");
+                
+                imu_disable_all_rpts();
 
-        if(new_step_data && new_activity_data) {
-            bleServer.setActivity();
-            new_step_data = false;
-            new_activity_data = false;
+                xEventGroupSetBits(imuEventGroup, IMU_EVT_STATIC_BIT);
+                xEventGroupClearBits(imuEventGroup, IMU_EVT_MOTION_BIT);
+                
+                ESP_LOGI(TAG_DATA, "Waiting for motion");
+                xEventGroupWaitBits(imuEventGroup, IMU_EVT_MOTION_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+                ESP_LOGI(TAG_DATA, "Motion detected, resuming data collection");
+                
+                last_static_us = esp_timer_get_time();
+                imu_register_callbacks(current_mode);
+            }
+        } else {
+            last_static_us = esp_timer_get_time();
         }
-    });
+    }
+}
 
-    // Check every 5s whether the mode changed and reconfigure if so
-    while(true) {
-        vTaskDelay(pdMS_TO_TICKS(5000));
-        Mode current_mode = bleServer.getMode();
-        if(current_mode != active_mode) {
-            active_mode = current_mode;
-            configure_activity_reports(active_mode);
-        }
+void imu_motion_task(void *pv) {
+    static const char *TAG_MOTION = "IMU_Motion";
+
+    xEventGroupWaitBits(imuEventGroup, IMU_EVT_INIT_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+
+    int retries = 3;
+    while (!imu.rpt.significant_motion.enable(IMU_HW_PERIOD_US)) {
+        ESP_LOGE(TAG_MOTION, "Failed to enable significant motion, retrying (%d left)", retries);
+        if (--retries == 0) {
+            ESP_LOGE(TAG_MOTION, "Significant motion enable failed, restarting...");     
+            esp_restart();                                                               
+        }                                                                                
+        vTaskDelay(pdMS_TO_TICKS(500));                                                  
+    }                                                            
+    imu.rpt.significant_motion.register_cb(motion_cb);
+    ESP_LOGI(TAG_MOTION, "Significant motion armed");
+
+    imu.rpt.significant_motion.register_cb(motion_cb);
+    ESP_LOGI(TAG_MOTION, "Significant motion armed");
+
+    while (true) {
+        // Wait for static bit to rearm significant motion
+        xEventGroupWaitBits(imuEventGroup, IMU_EVT_STATIC_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
+        ESP_LOGI(TAG_MOTION, "Static state detected, rearming significant motion");
+        imu_rearm_sig_motion();
+        imu.rpt.significant_motion.register_cb(motion_cb);
     }
 }

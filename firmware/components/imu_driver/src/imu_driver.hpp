@@ -4,12 +4,16 @@
 
 #include "BNO08xGlobalTypes.hpp"
 #include "BNO08xPrivateTypes.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "ble_driver.hpp"
 
-/**
- * IMU Driver - Thin wrapper around BNO08x library
- */
 
-// TODO: Replace with FreeRTOS event group bits for cross-core synchronization
+#define IMU_EVT_MOTION_BIT   (1 << 0)
+#define IMU_EVT_STATIC_BIT   (1 << 1)
+#define IMU_EVT_INIT_BIT     (1 << 2)
+
+extern EventGroupHandle_t imuEventGroup;
 
 /**
  * @brief Configuration for an IMU report, used to enable/disablemultiple reports
@@ -299,11 +303,9 @@ bool imu_set_sig_motion_config(const imu_sig_motion_config_t &config);
 void imu_print_sig_motion_config(const imu_sig_motion_config_t &config);
 
 
-
-//TESTING FUNCTIONS
-
-void motion_detection_task(void *pvParameters);
-void data_processing_task(void *pvParameters);
+bool imu_events_init(void);
+void imu_motion_task(void *pvParameters);
+void imu_data_task(void *pvParameters);
 
 
 

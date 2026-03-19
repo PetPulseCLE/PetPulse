@@ -1,34 +1,28 @@
-import { Session, User } from "@supabase/supabase-js";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
-import { supabase } from "../lib/supabase";
+import { Session, User } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 function getEmailRedirectTo(): string {
-  if (Platform.OS === "web") {
+  if (Platform.OS === 'web') {
     const origin =
-      (typeof window !== "undefined" && window.location?.origin) ||
-      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? "http://localhost:3000");
+      (typeof window !== 'undefined' && window.location?.origin) ||
+      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
     return `${origin}/auth/callback`;
   }
-  return "petpulse://auth/callback";
+  return 'petpulse://auth/callback';
 }
 
 type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (
-    email: string,
-    password: string,
-    metadata?: { firstName?: string; lastName?: string }
-  ) => Promise<any>;
+  signUp: (email: string, password: string, metadata?: { firstName?: string; lastName?: string }) => Promise<any>;
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
-  updateProfile: (updates: {
-    firstName?: string;
-    lastName?: string;
-  }) => Promise<{ error: { message: string } | null }>;
+  petId: string | null;
+  updateProfile: (updates: { firstName?: string; lastName?: string }) => Promise<{ error: { message: string } | null }>;
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -37,6 +31,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [petId, setPetId] = useState<string | null>(null);
+
+  const fetchPetId = async (user: User) => {
+    const { data } = await supabase.from('pets').select('id').eq('user_id', user.id).single();
+    setPetId(data?.id);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setSession(session);
       setUser(session.user);
+      fetchPetId(session.user);
     };
 
     supabase.auth
@@ -64,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         applySession(initialSession);
       })
       .catch((err) => {
-        if (__DEV__) console.error("[AuthContext] getSession failed:", err);
+        if (__DEV__) console.error('[AuthContext] getSession failed:', err);
       })
       .finally(() => {
         if (mounted) setLoading(false);
@@ -83,11 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    metadata?: { firstName?: string; lastName?: string }
-  ) => {
+  const signUp = async (email: string, password: string, metadata?: { firstName?: string; lastName?: string }) => {
     return await supabase.auth.signUp({
       email,
       password,
@@ -114,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
       return {
         data: null,
-        error: { message: "Email not confirmed" },
+        error: { message: 'Email not confirmed' },
       };
     }
     return { data, error };
@@ -128,14 +125,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return await supabase.auth.verifyOtp({
       email,
       token,
-      type: "signup",
+      type: 'signup',
     });
   };
 
-  const updateProfile = async (updates: {
-    firstName?: string;
-    lastName?: string;
-  }) => {
+  const updateProfile = async (updates: { firstName?: string; lastName?: string }) => {
     const data: Record<string, string> = {};
     if (updates.firstName !== undefined) data.first_name = updates.firstName;
     if (updates.lastName !== undefined) data.last_name = updates.lastName;
@@ -154,6 +148,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signOut,
         verifyOtp,
         updateProfile,
+        petId,
       }}
     >
       {children}
