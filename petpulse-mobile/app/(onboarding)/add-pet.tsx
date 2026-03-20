@@ -9,7 +9,6 @@ import {
   View,
   Keyboard,
   TouchableWithoutFeedback,
-  useColorScheme,
 } from "react-native";
 import { router } from "expo-router";
 import DateTimePicker, { type DateType } from "@amjed-bouhouch/react-native-ui-datepicker";
@@ -85,38 +84,25 @@ function toSafeDate(value: DateType): Date | null {
 }
 
 export default function AddPetScreen() {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === "dark";
   const tint = useThemeColor({}, "tint");
-  const brandBlack = useThemeColor({ light: "#0B0B1A", dark: "#1F2937" }, "text");
+  const brandBlack = useThemeColor({}, "brandBlack");
 
   const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor({ light: "#6B7280", dark: "#9CA3AF" }, "text");
+  const placeholder = useThemeColor({}, "placeholder");
   const { user } = useAuth();
 
-  const cardBg = useThemeColor(
-    { light: "rgba(0,0,0,0.02)", dark: "rgba(255,255,255,0.06)" },
-    "background"
-  );
-  const cardBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.12)", dark: "rgba(255,255,255,0.18)" },
-    "text"
-  );
+  const cardBg = useThemeColor({}, "cardBgAlpha");
+  const cardBorder = useThemeColor({}, "cardBorderAlpha");
 
-  const inputBg = useThemeColor(
-    { light: "rgba(0,0,0,0.03)", dark: "rgba(255,255,255,0.08)" },
-    "background"
-  );
-  const inputBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.22)" },
-    "text"
-  );
-  const selectBorder = useThemeColor(
-    { light: "rgba(0,0,0,0.15)", dark: "rgba(255,255,255,0.45)" },
-    "text"
-  );
-
-  const modalBg = useThemeColor({ light: "#FFFFFF", dark: "#F3F4F6" }, "background");
+  const inputBg = useThemeColor({}, "inputBgAlpha");
+  const inputBorder = useThemeColor({}, "inputBorderAlpha");
+  const selectBorder = useThemeColor({}, "selectBorderAlpha");
+  const modalBg = useThemeColor({}, "background");
+  const modalOverlay = useThemeColor({}, "modalOverlay");
+  const errorText = useThemeColor({}, "errorText");
+  const datepickerText = useThemeColor({}, "foreground");
+  const datepickerMuted = useThemeColor({}, "mutedForeground");
+  const selectedDateText = "#FFFFFF";
 
 
   // ---- form state ----
@@ -287,9 +273,19 @@ export default function AddPetScreen() {
             <SelectTrigger
               onPressIn={() => Keyboard.dismiss()}
               className="mb-4 w-full"
-              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+              style={{
+                backgroundColor: inputBg,
+                borderColor: selectBorder,
+                borderWidth: 1,
+                minHeight: 48,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+              }}
             >
-              <SelectValue placeholder="Choose Dog or Cat" />
+              <SelectValue
+                placeholder="Choose Dog or Cat"
+                style={{ color: species ? inputText : placeholder }}
+              />
             </SelectTrigger>
 
             <SelectContent>
@@ -324,9 +320,19 @@ export default function AddPetScreen() {
             <SelectTrigger
               onPressIn={() => Keyboard.dismiss()}
               className="mb-3 w-full"
-              style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+              style={{
+                backgroundColor: inputBg,
+                borderColor: selectBorder,
+                borderWidth: 1,
+                minHeight: 48,
+                borderRadius: 12,
+                paddingHorizontal: 14,
+              }}
             >
-              <SelectValue placeholder={species ? "Select a breed" : "Select species first"} />
+              <SelectValue
+                placeholder={species ? "Select a breed" : "Select species first"}
+                style={{ color: breed ? inputText : placeholder }}
+              />
             </SelectTrigger>
 
             <SelectContent>
@@ -380,10 +386,18 @@ export default function AddPetScreen() {
                 <SelectTrigger
                   onPressIn={() => Keyboard.dismiss()}
                   className="mb-4 w-full"
-                  style={{ borderColor: selectBorder, borderWidth: isDarkMode ? 1.5 : 1 }}
+                  style={{
+                    backgroundColor: inputBg,
+                    borderColor: selectBorder,
+                    borderWidth: 1,
+                    minHeight: 48,
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                  }}
                 >
                   <SelectValue
                     placeholder={breed ? "Select secondary breed" : "Select primary breed first"}
+                    style={{ color: secondaryBreed ? inputText : placeholder }}
                   />
                 </SelectTrigger>
 
@@ -441,7 +455,7 @@ export default function AddPetScreen() {
 
           {/* Error */}
           {error ? (
-            <ThemedText className="mt-3" style={{ color: "#B00020" }}>
+            <ThemedText className="mt-3" style={{ color: errorText }}>
               {error}
             </ThemedText>
           ) : null}
@@ -475,7 +489,7 @@ export default function AddPetScreen() {
             <Pressable
               className="flex-1 items-center justify-center px-6"
               onPress={() => setDobOpen(false)}
-              style={{ backgroundColor: "rgba(0,0,0,0.35)" }}
+              style={{ backgroundColor: modalOverlay }}
             >
               <Pressable
                 onPress={() => {}}
@@ -485,7 +499,7 @@ export default function AddPetScreen() {
                 <ThemedText
                   type="defaultSemiBold"
                   className="mb-3"
-                  style={isDarkMode ? { color: "#111827" } : undefined}
+                  style={{ color: datepickerText }}
                 >
                   Select Date of Birth
                 </ThemedText>
@@ -494,11 +508,18 @@ export default function AddPetScreen() {
                   mode="single"
                   date={dob ?? new Date()}
                   maxDate={new Date()}
-                  headerTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  weekDaysTextStyle={isDarkMode ? { color: "#4B5563" } : undefined}
-                  calendarTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  todayTextStyle={isDarkMode ? { color: "#111827" } : undefined}
-                  selectedTextStyle={isDarkMode ? { color: "#FFFFFF" } : undefined}
+                  headerButtonColor={datepickerText}
+                  selectedItemColor={tint}
+                  headerContainerStyle={{ backgroundColor: modalBg }}
+                  weekDaysContainerStyle={{ backgroundColor: modalBg }}
+                  dayContainerStyle={{ backgroundColor: modalBg }}
+                  monthContainerStyle={{ backgroundColor: modalBg }}
+                  yearContainerStyle={{ backgroundColor: modalBg }}
+                  headerTextStyle={{ color: datepickerText }}
+                  weekDaysTextStyle={{ color: datepickerMuted }}
+                  calendarTextStyle={{ color: datepickerText }}
+                  todayTextStyle={{ color: datepickerText }}
+                  selectedTextStyle={{ color: selectedDateText }}
                   onChange={(params) => setDob(toSafeDate(params.date))}
                 />
 
@@ -518,4 +539,3 @@ export default function AddPetScreen() {
     </TouchableWithoutFeedback>
   );
 }
-
