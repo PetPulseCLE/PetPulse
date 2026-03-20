@@ -823,17 +823,9 @@ void imu_motion_task(void *pv) {
 
     xEventGroupWaitBits(imuEventGroup, IMU_EVT_INIT_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
 
-    int retries = 3;
-    while (!imu.rpt.significant_motion.enable(IMU_HW_PERIOD_US)) {
-        ESP_LOGE(TAG_MOTION, "Failed to enable significant motion, retrying (%d left)", retries);
-        if (--retries == 0) {
-            ESP_LOGE(TAG_MOTION, "Significant motion enable failed, restarting...");     
-            esp_restart();                                                               
-        }                                                                                
-        vTaskDelay(pdMS_TO_TICKS(500));                                                  
-    }                                                            
-    imu.rpt.significant_motion.register_cb(motion_cb);
-    ESP_LOGI(TAG_MOTION, "Significant motion armed");
+    if(!imu.rpt.significant_motion.enable(IMU_HW_PERIOD_US)) {
+        ESP_LOGE(TAG_MOTION, "Failed to enable significant motion");
+    }
 
     imu.rpt.significant_motion.register_cb(motion_cb);
     ESP_LOGI(TAG_MOTION, "Significant motion armed");
@@ -842,7 +834,7 @@ void imu_motion_task(void *pv) {
         // Wait for static bit to rearm significant motion
         xEventGroupWaitBits(imuEventGroup, IMU_EVT_STATIC_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
         ESP_LOGI(TAG_MOTION, "Static state detected, rearming significant motion");
-        imu_rearm_sig_motion();
+        imu_rearm_sig_motion(IMU_HW_PERIOD_US);
         imu.rpt.significant_motion.register_cb(motion_cb);
     }
 }
