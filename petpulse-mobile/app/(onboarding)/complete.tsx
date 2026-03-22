@@ -10,9 +10,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CompleteScreen() {
   const tint = useThemeColor({}, 'tint');
-  const brandBlack = useThemeColor({ light: '#0B0B1A', dark: '#1F2937' }, 'text');
-  const cardBg = useThemeColor({ light: 'rgba(0,0,0,0.02)', dark: 'rgba(255,255,255,0.06)' }, 'background');
-  const cardBorder = useThemeColor({ light: 'rgba(0,0,0,0.12)', dark: 'rgba(255,255,255,0.18)' }, 'text');
+  const brandBlack = useThemeColor({}, 'brandBlack');
+  const cardBg = useThemeColor({}, 'cardBgAlpha');
+  const cardBorder = useThemeColor({}, 'cardBorderAlpha');
 
   const insets = useSafeAreaInsets();
 

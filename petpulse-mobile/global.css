@@ -1,59 +1,144 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 96.1%;
-    --card-active: 0 0% 90%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 80%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 63%;
     --radius: 0.625rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Base */
+    --background: 0 0% 100%; /* hsl(0 0% 100%) */
+    --foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --card: 0 0% 0% / 2%; /* hsl(0 0% 0% / 2%) */
+    /* Opaque tab-bar strip (NativeWind bg-tab-bar). Sync hex in constants/theme.ts `tabBar`. */
+    --tab-bar: 210 40% 96%; /* #F1F5F9 — slightly darker than slate-50 */
+    --card-active: 212 45% 94%; /* hsl(212 45% 94%) */
+    --card-foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --popover: 0 0% 100%; /* hsl(0 0% 100%) */
+    --popover-foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --primary: 199 70% 17%; /* hsl(199 70% 17%) */
+    --primary-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --secondary: 212 45% 94%; /* hsl(212 45% 94%) */
+    --secondary-foreground: 199 70% 17%; /* hsl(199 70% 17%) */
+    --muted: 212 45% 94%; /* hsl(212 45% 94%) */
+    --muted-foreground: 194 60% 37%; /* hsl(194 60% 37%) */
+    --accent: 208 38% 85%; /* hsl(208 38% 85%) */
+    --accent-foreground: 199 70% 17%; /* hsl(199 70% 17%) */
+    --destructive: 0 100% 50%; /* hsl(0 100% 50%) */
+    --border: 208 38% 85%; /* hsl(208 38% 85%) */
+    --input: 208 38% 85%; /* hsl(208 38% 85%) */
+    --ring: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* Chart */
+    --chart-1: 9 92% 56%; /* hsl(9 92% 56%) */
+    --chart-2: 172 100% 25%; /* hsl(172 100% 25%) */
+    --chart-3: 191 60% 20%; /* hsl(191 60% 20%) */
+    --chart-4: 43 100% 45%; /* hsl(43 100% 45%) */
+    --chart-5: 32 100% 50%; /* hsl(32 100% 50%) */
+
+    /* Sidebar */
+    --sidebar: 212 49% 97%; /* hsl(212 49% 97%) */
+    --sidebar-foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --sidebar-primary: 199 70% 17%; /* hsl(199 70% 17%) */
+    --sidebar-primary-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --sidebar-accent: 208 38% 85%; /* hsl(208 38% 85%) */
+    --sidebar-accent-foreground: 199 70% 17%; /* hsl(199 70% 17%) */
+    --sidebar-border: 208 38% 85%; /* hsl(208 38% 85%) */
+    --sidebar-ring: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* App theme */
+    --theme-text: 197 78% 20%; /* hsl(197 78% 20%) */
+    --tint: 194 60% 37%; /* hsl(194 60% 37%) */
+    --icon: 194 93% 24%; /* hsl(194 93% 24%) */
+
+    /* Onboarding surfaces */
+    --brand-black: 209 63% 10%; /* hsl(209 63% 10%) */
+    --onboarding-btn-bg: 209 63% 10%; /* hsl(209 63% 10%) */
+    --modal-bg: 0 0% 100%; /* hsl(0 0% 100%) */
+    --card-bg-alpha: 0 0% 0% / 2%; /* hsl(0 0% 0% / 2%) */
+    --card-border-alpha: 0 0% 0% / 12%; /* hsl(0 0% 0% / 12%) */
+    --input-bg-alpha: 0 0% 0% / 3%; /* hsl(0 0% 0% / 3%) */
+    --input-border-alpha: 0 0% 0% / 15%; /* hsl(0 0% 0% / 15%) */
+    --select-border-alpha: 0 0% 0% / 15%; /* hsl(0 0% 0% / 15%) */
+    --modal-overlay: 0 0% 0% / 35%; /* hsl(0 0% 0% / 35%) */
+
+    /* Form */
+    --placeholder: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* Date picker */
+    --datepicker-text: 203 60% 15%; /* hsl(203 60% 15%) */
+    --datepicker-muted: 194 93% 24%; /* hsl(194 93% 24%) */
+
+    /* Semantic */
+    --error-text: 349 100% 32%; /* hsl(349 100% 32%) */
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
   }
+
   .dark:root {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 15%;
-    --card-active: 0 0% 25%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 100% 50%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 300 0% 45%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Base */
+    --background: 215 28% 17%; /* hsl(215 28% 17%) */
+    --foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --card: 0 0% 100% / 6%; /* hsl(0 0% 100% / 6%) */
+    --tab-bar: 216 21% 22%; /* #2C3643 — was ~6% white on app bg */
+    --card-active: 197 78% 20%; /* hsl(197 78% 20%) */
+    --card-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --popover: 203 60% 15%; /* hsl(203 60% 15%) */
+    --popover-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --primary: 208 38% 85%; /* hsl(208 38% 85%) */
+    --primary-foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --secondary: 203 60% 15%; /* hsl(203 60% 15%) */
+    --secondary-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --muted: 203 60% 15%; /* hsl(203 60% 15%) */
+    --muted-foreground: 201 37% 70%; /* hsl(201 37% 70%) */
+    --accent: 199 70% 17%; /* hsl(199 70% 17%) */
+    --accent-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --destructive: 0 100% 50%; /* hsl(0 100% 50%) */
+    --border: 0 0% 100% / 10%; /* hsl(0 0% 100% / 10%) */
+    --input: 199 70% 17%; /* hsl(199 70% 17%) */
+    --ring: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* Chart */
+    --chart-1: 224 73% 49%; /* hsl(224 73% 49%) */
+    --chart-2: 160 100% 30%; /* hsl(160 100% 30%) */
+    --chart-3: 28 100% 46%; /* hsl(28 100% 46%) */
+    --chart-4: 264 81% 61%; /* hsl(264 81% 61%) */
+    --chart-5: 334 87% 47%; /* hsl(334 87% 47%) */
+
+    /* Sidebar */
+    --sidebar: 203 60% 15%; /* hsl(203 60% 15%) */
+    --sidebar-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --sidebar-primary: 201 37% 70%; /* hsl(201 37% 70%) */
+    --sidebar-primary-foreground: 209 63% 10%; /* hsl(209 63% 10%) */
+    --sidebar-accent: 199 70% 17%; /* hsl(199 70% 17%) */
+    --sidebar-accent-foreground: 212 49% 97%; /* hsl(212 49% 97%) */
+    --sidebar-border: 0 0% 100% / 10%; /* hsl(0 0% 100% / 10%) */
+    --sidebar-ring: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* App theme */
+    --theme-text: 212 45% 94%; /* hsl(212 45% 94%) */
+    --tint: 197 35% 52%; /* hsl(197 35% 52%) */
+    --icon: 201 37% 70%; /* hsl(201 37% 70%) */
+
+    /* Onboarding surfaces */
+    --brand-black: 199 70% 17%; /* hsl(199 70% 17%) */
+    --onboarding-btn-bg: 203 60% 15%; /* hsl(203 60% 15%) */
+    --modal-bg: 212 45% 94%; /* hsl(212 45% 94%) */
+    --card-bg-alpha: 0 0% 100% / 6%; /* hsl(0 0% 100% / 6%) */
+    --card-border-alpha: 0 0% 100% / 18%; /* hsl(0 0% 100% / 18%) */
+    --input-bg-alpha: 0 0% 100% / 8%; /* hsl(0 0% 100% / 8%) */
+    --input-border-alpha: 0 0% 100% / 22%; /* hsl(0 0% 100% / 22%) */
+    --select-border-alpha: 0 0% 100% / 45%; /* hsl(0 0% 100% / 45%) */
+
+    /* Form */
+    --placeholder: 197 35% 52%; /* hsl(197 35% 52%) */
+
+    /* Semantic */
+    --error-text: 349 100% 32%; /* hsl(349 100% 32%) */
   }
 }

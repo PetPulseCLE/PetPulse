@@ -1,6 +1,7 @@
 import { Icon } from '@/components/ui/icon';
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view';
 import { TextClassContext } from '@/components/ui/text';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { cn } from '@/lib/utils';
 import * as SelectPrimitive from '@rn-primitives/select';
 import { Check, ChevronDown, ChevronDownIcon, ChevronUpIcon } from 'lucide-react-native';
@@ -18,12 +19,16 @@ const SelectGroup = SelectPrimitive.Group;
 function SelectValue({
   ref,
   className,
+  style,
   ...props
 }: SelectPrimitive.ValueProps &
   React.RefAttributes<SelectPrimitive.ValueRef> & {
     className?: string;
+    style?: SelectPrimitive.ValueProps['style'];
   }) {
   const { value } = SelectPrimitive.useRootContext();
+  const foreground = useThemeColor({}, 'foreground');
+  const mutedForeground = useThemeColor({}, 'mutedForeground');
   return (
     <SelectPrimitive.Value
       ref={ref}
@@ -32,6 +37,7 @@ function SelectValue({
         !value && 'text-muted-foreground',
         className
       )}
+      style={[{ color: value ? foreground : mutedForeground }, style]}
       {...props}
     />
   );
@@ -74,12 +80,16 @@ function SelectContent({
   children,
   position = 'popper',
   portalHost,
+  style,
   ...props
 }: SelectPrimitive.ContentProps &
   React.RefAttributes<SelectPrimitive.ContentRef> & {
     className?: string;
     portalHost?: string;
+    style?: SelectPrimitive.ContentProps['style'];
   }) {
+  const popover = useThemeColor({}, 'popover');
+  const border = useThemeColor({}, 'border');
   return (
     <SelectPrimitive.Portal hostName={portalHost}>
       <FullWindowOverlay>
@@ -88,14 +98,14 @@ function SelectContent({
             <NativeOnlyAnimatedView className="z-50" entering={FadeIn} exiting={FadeOut}>
               <SelectPrimitive.Content
                 className={cn(
-                  'bg-popover border-border relative z-50 min-w-[8rem] rounded-md border shadow-md shadow-black/5',
+                  'bg-popover border-border relative z-50 min-w-[12rem] rounded-xl border shadow-md shadow-black/15',
                   Platform.select({
                     web: cn(
-                      'animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden',
+                      'animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-64 overflow-y-auto overflow-x-hidden',
                       props.side === 'bottom' && 'slide-in-from-top-2',
                       props.side === 'top' && 'slide-in-from-bottom-2'
                     ),
-                    native: 'p-1',
+                    native: 'p-2',
                   }),
                   position === 'popper' &&
                     Platform.select({
@@ -106,6 +116,7 @@ function SelectContent({
                     }),
                   className
                 )}
+                style={[{ backgroundColor: popover, borderColor: border }, style]}
                 position={position}
                 {...props}>
                 <SelectScrollUpButton />
@@ -134,11 +145,14 @@ function SelectContent({
 
 function SelectLabel({
   className,
+  style,
   ...props
 }: SelectPrimitive.LabelProps & React.RefAttributes<SelectPrimitive.LabelRef>) {
+  const mutedForeground = useThemeColor({}, 'mutedForeground');
   return (
     <SelectPrimitive.Label
       className={cn('text-muted-foreground px-2 py-2 text-xs sm:py-1.5', className)}
+      style={[{ color: mutedForeground }, style]}
       {...props}
     />
   );
@@ -147,25 +161,32 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  style,
   ...props
 }: SelectPrimitive.ItemProps & React.RefAttributes<SelectPrimitive.ItemRef>) {
+  const foreground = useThemeColor({}, 'foreground');
+  const mutedForeground = useThemeColor({}, 'mutedForeground');
   return (
     <SelectPrimitive.Item
       className={cn(
-        'active:bg-accent group relative flex w-full flex-row items-center gap-2 rounded-sm py-2 pl-2 pr-8 sm:py-1.5',
+        'active:bg-accent group relative flex w-full flex-row items-center gap-2 rounded-md py-3 pl-3 pr-8',
         Platform.select({
           web: 'focus:bg-accent focus:text-accent-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-default outline-none data-[disabled]:pointer-events-none [&_svg]:pointer-events-none',
         }),
         props.disabled && 'opacity-50',
         className
       )}
+      style={[{ borderRadius: 10 }, style]}
       {...props}>
       <View className="absolute right-2 flex size-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Icon as={Check} className="text-muted-foreground size-4 shrink-0" />
+          <Icon as={Check} className="text-muted-foreground size-4 shrink-0" color={mutedForeground} />
         </SelectPrimitive.ItemIndicator>
       </View>
-      <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground select-none text-sm" />
+      <SelectPrimitive.ItemText
+        className="text-foreground group-active:text-accent-foreground select-none text-sm"
+        style={{ color: foreground }}
+      />
     </SelectPrimitive.Item>
   );
 }

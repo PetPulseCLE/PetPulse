@@ -25,24 +25,24 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
+import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
+import { DeviceMode } from '@/hooks/ble/UUIDS';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import clsx from 'clsx';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   ChevronRight,
   CircleEllipsis,
+  ClockArrowDown,
   Loader,
   LogOut,
   PawPrint,
+  RocketIcon,
   UserPenIcon,
   X,
-  RocketIcon,
-  ClockArrowDown,
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { DeviceMode } from '@/hooks/ble/UUIDS';
 
 export default function Settings() {
   /* Use ble connection manager functions from ble context */
@@ -197,14 +197,16 @@ export default function Settings() {
   }, [showScanModal, initialized]);
 
   return (
-    <View className="flex flex-col pt-5 bg-background h-full">
+    <View className="flex flex-col pt-5 h-full">
       {/* ============================= USER ACCOUNT SETTINGS ============================= */}
-      <View className="flex flex-row mb-12 px-4 justify-evenly items-center">
+      <View className="flex flex-row mb-12 px-4 justify-evenly items-center ">
         {/* TODO: Allow Users to change their profile picture */}
-        <Avatar alt={fullName} className="size-24">
+        <Avatar alt={fullName} className="size-24 bg-secondary">
           <AvatarImage source={{ uri: '' }} />
-          <AvatarFallback>
-            <Text className="text-4xl">{firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}</Text>
+          <AvatarFallback className="bg-tab-bar">
+            <Text className="text-4xl text-secondary-foreground">
+              {firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}
+            </Text>
           </AvatarFallback>
         </Avatar>
         <View className="flex flex-col">
@@ -213,25 +215,25 @@ export default function Settings() {
         </View>
       </View>
       <View className="rounded-full mx-3 overflow-hidden mb-6">
-        <View className="flex flex-row bg-card w-full align-center">
+        <View className="flex flex-row w-full align-center bg-tab-bar">
           <Button
             variant="ghost"
-            className="flex flex-row justify-between items-center w-full"
+            className="flex flex-row w-full items-center justify-between active:bg-card-active"
             onPress={openEditAccountModal}
           >
             <View className="flex flex-row items-center gap-4">
-              <Icon as={UserPenIcon} className="text-blue-500 size-6" />
+              <Icon as={UserPenIcon} className="size-6 text-blue-500" />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">My Profile</Text>
+                <Text className="font-medium text-secondary-foreground">My Profile</Text>
               </View>
             </View>
-            <Icon as={ChevronRight} className="text-muted-foreground size-4" />
+            <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
           </Button>
         </View>
       </View>
       {/* ============================= HARNESS SETTINGS ============================= */}
       <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
-        <View className="flex flex-row bg-card w-full align-center">
+        <View className="flex flex-row bg-tab-bar w-full align-center">
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full active:bg-card-active"
@@ -249,8 +251,8 @@ export default function Settings() {
       </View>
 
       {/* ============================= LOG OUT ============================= */}
-      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6">
-        <View className="flex flex-row bg-card w-full align-center">
+      <View className="rounded-full mx-3 overflow-hidden mb-6 mt-6 ">
+        <View className="flex flex-row bg-tab-bar w-full align-center">
           <Button
             variant="ghost"
             className="flex flex-row justify-between items-center w-full"

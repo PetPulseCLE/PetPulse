@@ -1,17 +1,18 @@
-import 'react-native-get-random-values';
-import '../global.css';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { AuthProvider } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { NAV_THEME } from '@/lib/theme';
+import { ThemeProvider } from '@react-navigation/native';
+import { PortalHost } from '@rn-primitives/portal';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import 'react-native-get-random-values';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import '../global.css';
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
 });
-import { PortalHost } from '@rn-primitives/portal';
-import { AuthProvider } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 function StackWithStatusBar() {
   return (
@@ -32,10 +33,11 @@ function StackWithStatusBar() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const resolvedScheme = colorScheme === 'dark' ? 'dark' : 'light';
 
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={NAV_THEME[resolvedScheme]}>
         <StackWithStatusBar />
         <PortalHost />
       </ThemeProvider>
