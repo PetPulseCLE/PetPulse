@@ -810,6 +810,7 @@ void imu_data_task(void *pv) {
                 ESP_LOGI(TAG_DATA, "Motion detected, resuming data collection");
                 
                 last_static_us = esp_timer_get_time();
+                last_accel_us = last_gyro_us = last_magf_us = last_rv_us = last_step_us = last_activity_us = 0;
                 imu_register_callbacks(current_mode);
             }
         } else {
