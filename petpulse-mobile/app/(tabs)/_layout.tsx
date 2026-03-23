@@ -1,8 +1,8 @@
+import { Colors } from '@/constants/theme';
 import { BleProvider, useBle } from '@/context/BleContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Tabs } from 'expo-router';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { House, PawPrint } from 'lucide-react-native';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,7 +30,7 @@ function TabsWithHeader() {
           tabBarIcon: ({ color }) => <House size={22} color={color} />,
         }}
       />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="metrics" options={{ title: 'Metrics' }} />
       <Tabs.Screen
         name="settings"
         options={{
