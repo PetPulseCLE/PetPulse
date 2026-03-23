@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
+import { UTCFromBytes } from './useBleTime';
+import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
@@ -11,10 +14,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { UTCFromBytes } from './useBleTime';
-import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
-import { supabase } from '../../lib/supabase';
 
 export interface Env {
   temperature: number;
@@ -31,39 +30,10 @@ export const parseEnv = (data: Uint8Array): Env => {
 };
 
 export const useBleEnv = (connected: Peripheral | null, petId: string | null) => {
-  const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
-    if (!petId) return;
-    const chr = data.characteristic.toLowerCase();
-    if (chr === CHR_UUIDS.env) {
-      const envArray = new Uint8Array(data.value);
-      const env = parseEnv(envArray);
-      const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'env',
-        data: { temp: env.temperature, humidity: env.humidity },
-        timestamp: env.utcTimestamp,
-      });
-
-      console.log('raw: ', env);
-    }
-  };
-
-  const subscribeToEnv = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env);
-      console.log('Subscribed to env sensor notifications');
-    } catch (error) {
-      console.log('subscribeToEnv: ', error);
-    }
-  };
-
   useEffect(() => {
     if (!connected || !petId) return;
-    subscribeToEnv(connected);
-    const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
 
     return () => {
-      listener?.remove();
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env).catch(() => {});
     };
   }, [connected, petId]);

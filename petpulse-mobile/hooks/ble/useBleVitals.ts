@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
+import { UTCFromBytes } from './useBleTime';
+import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
@@ -11,10 +14,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { UTCFromBytes } from './useBleTime';
-import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
-import { supabase } from '../../lib/supabase';
 
 export interface Vitals {
   breathRate: number;
@@ -33,37 +32,10 @@ export const parseVitals = (data: Uint8Array): Vitals => {
 };
 
 export const useBleVitals = (connected: Peripheral | null, petId: string | null) => {
-  const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
-    if (!petId) return;
-    const chr = data.characteristic.toLowerCase();
-    if (chr === CHR_UUIDS.vitals) {
-      const vitalsBuffer = new Uint8Array(data.value);
-      const vitals = parseVitals(vitalsBuffer);
-      await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'vitals',
-        data: { HR: vitals.heartRate, BR: vitals.breathRate, HR_Confidence: vitals.hr_confidence },
-        timestamp: vitals.utcTimestamp,
-      });
-    }
-  };
-
-  const subscribeToVitals = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals);
-      console.log('Subscribed to vitals notifications');
-    } catch (error) {
-      console.log('subscribeToVitals: ', error);
-    }
-  };
-
   useEffect(() => {
     if (!connected || !petId) return;
-    subscribeToVitals(connected);
-    const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
     return () => {
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals).catch(() => {});
-      listener?.remove();
     };
   }, [connected, petId]);
   return {};

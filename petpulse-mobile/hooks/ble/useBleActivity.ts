@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
+import type { Peripheral } from 'react-native-ble-manager';
+import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
+import { UTCFromBytes } from './useBleTime';
 
 /*
     !! Using chaining op (BleManager?.) to prevent expo go errors !!
@@ -11,10 +14,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
   BleManager = require('react-native-ble-manager').default;
 }
-import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { supabase } from '../../lib/supabase';
-import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
-import { UTCFromBytes } from './useBleTime';
 
 export interface Accel {
   x: number;
@@ -129,48 +128,10 @@ export const parseActivity = (data: Uint8Array): Activity => {
 };
 
 export const useBleActivity = (connected: Peripheral | null, petId: string | null) => {
-  const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
-    if (!petId) return;
-    const chr = data.characteristic.toLowerCase();
-    if (chr === CHR_UUIDS.raw) {
-      const rawArray = new Uint8Array(data.value);
-      const raw = parseRaw(rawArray);
-      await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'raw_motion',
-        data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
-        timestamp: raw.utcTimestamp,
-      });
-    }
-    if (chr === CHR_UUIDS.activity) {
-      const activityBuffer = new Uint8Array(data.value);
-      const activity = parseActivity(activityBuffer);
-      await supabase.from('sensor_readings').insert({
-        pet_id: petId,
-        metric_type: 'activity',
-        data: { classifier: activity.classifier, stepCount: activity.stepCount },
-        timestamp: activity.utcTimestamp,
-      });
-    }
-  };
-
-  const subscribeToActivity = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw);
-      console.log('Subscribed to activity notifications');
-    } catch (error) {
-      console.log('subscribeToActivity: ', error);
-    }
-  };
-
   useEffect(() => {
     if (!connected || !petId) return;
-    subscribeToActivity(connected);
-    const listener = BleManager?.onDidUpdateValueForCharacteristic((data) => handleUpdate(data));
 
     return () => {
-      listener?.remove();
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw).catch(() => {});
     };
