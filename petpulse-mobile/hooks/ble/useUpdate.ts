@@ -28,49 +28,81 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
       case CHR_UUIDS.raw: {
         const rawArray = new Uint8Array(data.value);
         const raw = parseRaw(rawArray);
-        await supabase.from('sensor_readings').insert({
+        const { error } = await supabase.from('sensor_readings').insert({
           pet_id: petId,
           metric_type: 'raw_motion',
           data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
           timestamp: raw.utcTimestamp,
         });
+        if (error) {
+          console.error('[useUpdate] insert raw_motion', {
+            petId,
+            metric_type: 'raw_motion',
+            ts: raw.utcTimestamp?.toISOString?.(),
+            error,
+          });
+        }
 
         break;
       }
       case CHR_UUIDS.activity: {
         const activityBuffer = new Uint8Array(data.value);
         const activity = parseActivity(activityBuffer);
-        await supabase.from('sensor_readings').insert({
+        const { error } = await supabase.from('sensor_readings').insert({
           pet_id: petId,
           metric_type: 'activity',
           data: { classifier: activity.classifier, stepCount: activity.stepCount },
           timestamp: activity.utcTimestamp,
         });
+        if (error) {
+          console.error('[useUpdate] insert activity', {
+            petId,
+            metric_type: 'activity',
+            ts: activity.utcTimestamp?.toISOString?.(),
+            error,
+          });
+        }
 
         break;
       }
       case CHR_UUIDS.env: {
         const envArray = new Uint8Array(data.value);
         const env = parseEnv(envArray);
-        const { data: sensorReading, error } = await supabase.from('sensor_readings').insert({
+        const { error } = await supabase.from('sensor_readings').insert({
           pet_id: petId,
           metric_type: 'env',
           data: { temp: env.temperature, humidity: env.humidity },
           timestamp: env.utcTimestamp,
         });
+        if (error) {
+          console.error('[useUpdate] insert env', {
+            petId,
+            metric_type: 'env',
+            ts: env.utcTimestamp?.toISOString?.(),
+            error,
+          });
+        }
 
-        console.log('raw: ', env);
+        console.log('env: ', env);
         break;
       }
       case CHR_UUIDS.vitals: {
         const vitalsBuffer = new Uint8Array(data.value);
         const vitals = parseVitals(vitalsBuffer);
-        await supabase.from('sensor_readings').insert({
+        const { error } = await supabase.from('sensor_readings').insert({
           pet_id: petId,
           metric_type: 'vitals',
           data: { HR: vitals.heartRate, BR: vitals.breathRate, HR_Confidence: vitals.hr_confidence },
           timestamp: vitals.utcTimestamp,
         });
+        if (error) {
+          console.error('[useUpdate] insert vitals', {
+            petId,
+            metric_type: 'vitals',
+            ts: vitals.utcTimestamp?.toISOString?.(),
+            error,
+          });
+        }
 
         break;
       }

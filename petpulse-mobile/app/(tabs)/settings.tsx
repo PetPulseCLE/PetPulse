@@ -296,7 +296,7 @@ export default function Settings() {
               <View className="flex flex-col">
                 <View
                   key={connected?.id}
-                  className="flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3 rounded-xl overflow-hidden"
+                  className="flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 rounded-xl overflow-hidden"
                 >
                   <Button
                     variant="default"
@@ -350,14 +350,14 @@ export default function Settings() {
                   <View
                     key={peripheral.id}
                     className={clsx(
-                      'flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3',
+                      'flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 overflow-hidden',
                       index === 0 && 'rounded-t-xl',
                       index === discovered.length - 1 && 'rounded-b-xl',
                     )}
                   >
                     <Button
                       variant="default"
-                      className="flex flex-row w-11/12 items-center bg-active justify-between active:bg-card-active"
+                      className="flex flex-row w-11/12 items-center bg-tab-bar justify-between active:bg-card-active"
                       onPress={() => onConnect(peripheral)}
                     >
                       <Text className="text-secondary-foreground">{peripheral.name ?? 'Unknown'}</Text>

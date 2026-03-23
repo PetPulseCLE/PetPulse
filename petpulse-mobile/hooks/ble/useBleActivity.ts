@@ -1,19 +1,4 @@
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
-import type { Peripheral } from 'react-native-ble-manager';
-import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 import { UTCFromBytes } from './useBleTime';
-
-/*
-    !! Using chaining op (BleManager?.) to prevent expo go errors !!
-     - for production remove dynamic import and chaining ops for BleManager
-*/
-let BleManager: typeof import('react-native-ble-manager').default | null = null;
-
-if (Platform.OS === 'ios' || Platform.OS === 'android') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional load for native BLE only
-  BleManager = require('react-native-ble-manager').default;
-}
 
 export interface Accel {
   x: number;
@@ -101,7 +86,7 @@ export const parseRaw = (data: Uint8Array): Raw => {
 };
 
 export const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
-  const activityClassView = new DataView(data.buffer);
+  const activityClassView = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const confidenceArray = new Uint8Array(10);
   for (let i = 0; i < 10; i++) {
     confidenceArray.set([activityClassView.getUint8(i)], i);
@@ -112,7 +97,7 @@ export const parseActivityClassifier = (data: Uint8Array): ActivityClass => {
   return { confidenceArray: Array.from(confidenceArray), activityClass, accuracy } as ActivityClass;
 };
 export const parseStepCount = (data: Uint8Array): StepCount => {
-  const stepCountView = new DataView(data.buffer);
+  const stepCountView = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const latency = stepCountView.getUint32(0, true);
   const steps = stepCountView.getUint16(4, true);
   const accuracy = stepCountView.getUint8(6);
@@ -125,17 +110,4 @@ export const parseActivity = (data: Uint8Array): Activity => {
   const classifier = parseActivityClassifier(data.slice(7, 19));
   const utcTimestamp = UTCFromBytes(data.slice(19, 28));
   return { classifier, stepCount, utcTimestamp } as Activity;
-};
-
-export const useBleActivity = (connected: Peripheral | null, petId: string | null) => {
-  useEffect(() => {
-    if (!connected || !petId) return;
-
-    return () => {
-      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity).catch(() => {});
-      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw).catch(() => {});
-    };
-  }, [connected, petId]);
-
-  return {};
 };
