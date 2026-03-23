@@ -32,7 +32,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
           pet_id: petId,
           metric_type: 'raw_motion',
           data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
-          timestamp: raw.utcTimestamp,
+          recorded_at: raw.utcTimestamp,
         });
         if (error) {
           console.error('[useUpdate] insert raw_motion', {
@@ -52,7 +52,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
           pet_id: petId,
           metric_type: 'activity',
           data: { classifier: activity.classifier, stepCount: activity.stepCount },
-          timestamp: activity.utcTimestamp,
+          recorded_at: activity.utcTimestamp,
         });
         if (error) {
           console.error('[useUpdate] insert activity', {
@@ -72,7 +72,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
           pet_id: petId,
           metric_type: 'env',
           data: { temp: env.temperature, humidity: env.humidity },
-          timestamp: env.utcTimestamp,
+          recorded_at: env.utcTimestamp,
         });
         if (error) {
           console.error('[useUpdate] insert env', {
@@ -93,7 +93,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
           pet_id: petId,
           metric_type: 'vitals',
           data: { HR: vitals.heartRate, BR: vitals.breathRate, HR_Confidence: vitals.hr_confidence },
-          timestamp: vitals.utcTimestamp,
+          recorded_at: vitals.utcTimestamp,
         });
         if (error) {
           console.error('[useUpdate] insert vitals', {
@@ -114,7 +114,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
             pet_id: petId,
             metric_type: 'activity',
             data: { classifier: aggregated.activity.classifier, stepCount: aggregated.activity.stepCount },
-            timestamp: aggregated.activity.utcTimestamp,
+            recorded_at: aggregated.activity.utcTimestamp,
           });
           if (error) {
             console.error('[useBleAggregated] insert activity', {
@@ -136,7 +136,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
               magf: aggregated.raw.magf,
               rv: aggregated.raw.rv,
             },
-            timestamp: aggregated.raw.utcTimestamp,
+            recorded_at: aggregated.raw.utcTimestamp,
           });
           if (error) {
             console.error('[useBleAggregated] insert raw_motion', {
@@ -157,7 +157,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
               BR: aggregated.vitals.breathRate,
               HR_Confidence: aggregated.vitals.hr_confidence,
             },
-            timestamp: aggregated.vitals.utcTimestamp,
+            recorded_at: aggregated.vitals.utcTimestamp,
           });
           if (error) {
             console.error('[useBleAggregated] insert vitals', {
@@ -174,7 +174,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
             pet_id: petId,
             metric_type: 'env',
             data: { temp: aggregated.env.temperature, humidity: aggregated.env.humidity },
-            timestamp: aggregated.env.utcTimestamp,
+            recorded_at: aggregated.env.utcTimestamp,
           });
           if (error) {
             console.error('[useBleAggregated] insert env', {
