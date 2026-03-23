@@ -1,7 +1,12 @@
+import { type DeviceMode } from '@/hooks/ble/UUIDS';
+
+import { useBleMode } from '@/hooks/ble/useBleMode';
+import { useUpdate } from '@/hooks/ble/useUpdate';
 import { createContext, useContext } from 'react';
 import type { Peripheral } from 'react-native-ble-manager';
 import { useBleConn } from '../hooks/ble/useBleConn-v2';
 import { useBleTime } from '../hooks/ble/useBleTime';
+import { useAuth } from './AuthContext';
 
 type BleContextType = {
   initialized: boolean;
@@ -17,19 +22,29 @@ type BleContextType = {
   bonded: boolean;
   showScanModal: boolean;
   setShowScanModal: (show: boolean) => void;
+  mode: DeviceMode;
+  updateMode: (newMode: DeviceMode) => Promise<void>;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
+  const { petId } = useAuth();
   const connection = useBleConn();
-  const data = useBleTime(connection.connected, connection.bonded);
+  const time = useBleTime(connection.connected, connection.bonded);
+  const mode = useBleMode(connection.connected, connection.bonded);
+
+  /* Live metrics: per-characteristic BLE notify. Aggregated payloads are SD-only on-device and
+   * synced back separately — firmware does not push both paths over BLE, so no duplicate rows. */
+  const update = useUpdate(connection.connected, petId);
 
   return (
     <BleContext.Provider
       value={{
         ...connection,
-        ...data,
+        ...time,
+        ...mode,
+        ...update,
       }}
     >
       {children}

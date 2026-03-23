@@ -25,15 +25,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
+import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
+import { DeviceMode } from '@/hooks/ble/UUIDS';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import clsx from 'clsx';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, CircleEllipsis, Loader, LogOut, PawPrint, UserPenIcon, X } from 'lucide-react-native';
+import {
+  ChevronRight,
+  CircleEllipsis,
+  ClockArrowDown,
+  Loader,
+  LogOut,
+  PawPrint,
+  RocketIcon,
+  UserPenIcon,
+  X,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
 
 export default function Settings() {
+  /* Use ble connection manager functions from ble context */
+
   /* Use ble connection manager functions from ble context */
   const {
     initialized,
@@ -43,16 +56,22 @@ export default function Settings() {
     stopScan,
     connectToPeripheral,
     forgetDevice,
-    mtu,
-    getRSSI,
     showScanModal,
     setShowScanModal,
+    mtu,
+    getRSSI,
+    mode,
+    updateMode,
   } = useBle();
 
-  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const { modalState } = useLocalSearchParams();
+
+  const [showDeviceModal, setShowDeviceModal] = useState(modalState === 'true');
   const [isConnecting, setIsConnecting] = useState(false);
   const [showForgetAlert, setShowForgetAlert] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [liveRssi, setLiveRssi] = useState<number | null>(null);
+
   const { user, signOut, updateProfile } = useAuth();
   const firstName = user?.user_metadata?.first_name ?? 'FirstName';
   const lastName = user?.user_metadata?.last_name ?? 'LastName';
@@ -113,6 +132,21 @@ export default function Settings() {
       setShowForgetAlert(true);
       await closeDeviceModal();
     }
+  };
+
+  const onDeviceInfoOpen = async () => {
+    if (connected) {
+      try {
+        const rssi = await getRSSI(connected);
+        setLiveRssi(rssi);
+      } catch (error) {
+        console.error('onDeviceInfoOpen: ', error);
+      }
+    }
+  };
+
+  const onToggleDevMode = () => {
+    updateMode(mode === DeviceMode.Dev ? DeviceMode.Background : DeviceMode.Dev);
   };
 
   const openEditAccountModal = () => {
@@ -262,7 +296,7 @@ export default function Settings() {
               <View className="flex flex-col">
                 <View
                   key={connected?.id}
-                  className="flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3 rounded-xl overflow-hidden"
+                  className="flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 rounded-xl overflow-hidden"
                 >
                   <Button
                     variant="default"
@@ -290,7 +324,17 @@ export default function Settings() {
                       <Text className="text-secondary-foreground">
                         Service UUIDs: {'[' + (connected?.advertising?.serviceUUIDs?.join(', ') ?? '') + ']'}
                       </Text>
-                      <View className="flex flex-row gap-2 items-center"></View>
+                      <View className="flex flex-row gap-2 items-center">
+                        <Button variant="outline" className="rounded-md w-full" onPress={onToggleDevMode}>
+                          <Icon
+                            as={mode === DeviceMode.Dev ? RocketIcon : ClockArrowDown}
+                            className={clsx('size-4', mode === DeviceMode.Dev ? 'text-green-500' : 'text-red-500')}
+                          />
+                          <Text className="text-secondary-foreground">
+                            Mode: {mode === DeviceMode.Dev ? 'Dev' : 'Background'}
+                          </Text>
+                        </Button>
+                      </View>
                       <DialogClose asChild>
                         <Button variant="destructive" className="rounded-md" onPress={() => onForget()}>
                           <Text className="text-secondary-foreground">Forget This Device</Text>
@@ -306,14 +350,14 @@ export default function Settings() {
                   <View
                     key={peripheral.id}
                     className={clsx(
-                      'flex flex-row bg-card w-full items-center justify-between active:bg-card-active pr-3',
+                      'flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 overflow-hidden',
                       index === 0 && 'rounded-t-xl',
                       index === discovered.length - 1 && 'rounded-b-xl',
                     )}
                   >
                     <Button
                       variant="default"
-                      className="flex flex-row w-11/12 items-center bg-active justify-between active:bg-card-active"
+                      className="flex flex-row w-11/12 items-center bg-tab-bar justify-between active:bg-card-active"
                       onPress={() => onConnect(peripheral)}
                     >
                       <Text className="text-secondary-foreground">{peripheral.name ?? 'Unknown'}</Text>
