@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, Tabs } from 'expo-router';
 import { House, PawPrint } from 'lucide-react-native';
 import { Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function TabsWithHeader() {
   const { connected } = useBle();
@@ -30,7 +29,8 @@ function TabsWithHeader() {
           tabBarIcon: ({ color }) => <House size={22} color={color} />,
         }}
       />
-      <Tabs.Screen name="metrics" options={{ title: 'Metrics' }} />
+      <Tabs.Screen name="heartrate" options={{ href: null, title: 'Heart Rate' }} />
+      <Tabs.Screen name="breathrate" options={{ href: null, title: 'Breath Rate' }} />
       <Tabs.Screen
         name="settings"
         options={{
@@ -43,7 +43,6 @@ function TabsWithHeader() {
 }
 
 export default function Layout() {
-  const insets = useSafeAreaInsets();
   return (
     <BleProvider>
       <TabsWithHeader />
