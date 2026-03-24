@@ -1,16 +1,13 @@
-import "react-native-get-random-values";
-import "../global.css";
-import { ThemeProvider } from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import {
-  configureReanimatedLogger,
-  ReanimatedLogLevel,
-} from "react-native-reanimated";
-import { PortalHost } from "@rn-primitives/portal";
-import { AuthProvider } from "@/context/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { NAV_THEME } from "@/lib/theme";
+import { AuthProvider } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { NAV_THEME } from '@/lib/theme';
+import { ThemeProvider } from '@react-navigation/native';
+import { PortalHost } from '@rn-primitives/portal';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import 'react-native-get-random-values';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import '../global.css';
 
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
@@ -27,10 +24,7 @@ function StackWithStatusBar() {
         <Stack.Screen name="auth/callback" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
@@ -39,7 +33,7 @@ function StackWithStatusBar() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const resolvedScheme = colorScheme === "dark" ? "dark" : "light";
+  const resolvedScheme = colorScheme === 'dark' ? 'dark' : 'light';
 
   return (
     <AuthProvider>

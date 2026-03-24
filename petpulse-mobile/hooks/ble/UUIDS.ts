@@ -3,7 +3,8 @@ export const SERVICE_UUIDS = {
   activity_service: '792c45e1-7b95-4a4d-8bc2-6d04809bb406',
   battery_service: '180f',
   currentTime_service: '1805',
-  envSensors_service: '792c45e2-7b95-4a4d-8bc2-6d04809bb406',
+  env_service: '792c45e2-7b95-4a4d-8bc2-6d04809bb406',
+  aggregated_service: '792c45e9-7b95-4a4d-8bc2-6d04809bb406',
 };
 
 export const CHR_UUIDS = {
@@ -12,8 +13,8 @@ export const CHR_UUIDS = {
   raw: '792c45e4-7b95-4a4d-8bc2-6d04809bb406',
   activity: '792c45e5-7b95-4a4d-8bc2-6d04809bb406',
   auth: '792c45e7-7b95-4a4d-8bc2-6d04809bb406',
-  temperature: '2a6e',
-  humidity: '2a6f',
+  env: '792c45e8-7b95-4a4d-8bc2-6d04809bb406',
+  aggregated: '792c45ea-7b95-4a4d-8bc2-6d04809bb406',
   levelStat: '2bed',
   energyStat: '2bf0',
   timeStat: '2bee',

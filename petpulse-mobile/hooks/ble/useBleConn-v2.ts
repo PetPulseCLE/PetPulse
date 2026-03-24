@@ -73,6 +73,7 @@ export const useBleConn = () => {
     try {
       await BleManager?.start({ showAlert: true });
       setInitialized(true);
+      console.log('initBleManager: BLE ready');
       return true;
     } catch (error) {
       setInitialized(false);
@@ -249,7 +250,6 @@ export const useBleConn = () => {
         if (!bonded_prph_id) {
           console.log('No Saved Peripheral');
           reconnecting.current = false;
-          await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1)));
           return;
         }
 
@@ -302,7 +302,6 @@ export const useBleConn = () => {
       /* All attempts exhausted */
       reconnecting.current = false;
       setReconnectFailed(true);
-      await removeSavedPrphId();
       if (session) {
         Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
           {
