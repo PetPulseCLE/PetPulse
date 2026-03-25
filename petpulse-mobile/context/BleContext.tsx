@@ -24,19 +24,20 @@ type BleContextType = {
   setShowScanModal: (show: boolean) => void;
   mode: DeviceMode;
   updateMode: (newMode: DeviceMode) => Promise<void>;
+  isReconnecting: boolean;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
 
 export const BleProvider = ({ children }: { children: React.ReactNode }) => {
-  const { petId } = useAuth();
+  const { pet } = useAuth();
   const connection = useBleConn();
   const time = useBleTime(connection.connected, connection.bonded);
   const mode = useBleMode(connection.connected, connection.bonded);
 
   /* Live metrics: per-characteristic BLE notify. Aggregated payloads are SD-only on-device and
    * synced back separately — firmware does not push both paths over BLE, so no duplicate rows. */
-  const update = useUpdate(connection.connected, petId);
+  const update = useUpdate(connection.connected, pet?.id as string | null);
 
   return (
     <BleContext.Provider

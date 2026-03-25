@@ -13,6 +13,16 @@ function getEmailRedirectTo(): string {
   return 'petpulse://auth/callback';
 }
 
+interface Pet {
+  id: string;
+  name: string;
+  pet_type: string;
+  breed_primary: string;
+  breed_secondary: string | null;
+  birth_date: string;
+  weight_lbs: number;
+}
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -21,7 +31,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
-  petId: string | null;
+  pet: Pet | null;
   updateProfile: (updates: { firstName?: string; lastName?: string }) => Promise<{ error: { message: string } | null }>;
 };
 
@@ -31,16 +41,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [petId, setPetId] = useState<string | null>(null);
+  const [pet, setPet] = useState<Pet | null>(null);
 
   const fetchPetId = async (user: User) => {
-    const { data, error } = await supabase.from('pets').select('id').eq('user_id', user.id).maybeSingle();
+    const { data, error } = await supabase.from('pets').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
       if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
-      setPetId(null);
+      setPet(null);
       return;
     }
-    setPetId(data?.id ?? null);
+    setPet(data ?? null);
   };
 
   useEffect(() => {
@@ -153,7 +163,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signOut,
         verifyOtp,
         updateProfile,
-        petId,
+        pet,
       }}
     >
       {children}

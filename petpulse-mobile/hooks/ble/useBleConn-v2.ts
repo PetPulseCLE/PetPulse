@@ -10,7 +10,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 }
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useSegments } from 'expo-router';
+import { useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
@@ -31,7 +31,8 @@ export const useBleConn = () => {
   const [reconnectFailed, setReconnectFailed] = useState(false);
   const userDisconnectedRef = useRef(false);
   const [initialized, setInitialized] = useState(false);
-  const reconnecting = useRef(false);
+  const reconnectingRef = useRef(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [mtu, setMtu] = useState(0);
   const [bonded, setBonded] = useState(false);
@@ -233,14 +234,15 @@ export const useBleConn = () => {
 
   /* Reconnect to previously connected device ~ 6 attempts with backoff */
   const reconnect = async () => {
-    if (!connectedRef.current && !reconnecting.current && !userDisconnectedRef.current) {
-      reconnecting.current = true;
+    if (!connectedRef.current && !reconnectingRef.current && !userDisconnectedRef.current) {
+      reconnectingRef.current = true;
+      setIsReconnecting(true);
       const MAX_ATTEMPTS = 6;
 
       for (let i = 0; i < MAX_ATTEMPTS; i++) {
         /* User forced disconnect during reconnect */
         if (userDisconnectedRef.current) {
-          reconnecting.current = false;
+          reconnectingRef.current = false;
           return;
         }
 
@@ -249,7 +251,7 @@ export const useBleConn = () => {
 
         if (!bonded_prph_id) {
           console.log('No Saved Peripheral');
-          reconnecting.current = false;
+          reconnectingRef.current = false;
           return;
         }
 
@@ -294,22 +296,21 @@ export const useBleConn = () => {
 
         setConnectedDevice(peripheral_info);
         await getMtu(peripheral_info);
-        reconnecting.current = false;
+        reconnectingRef.current = false;
         setReconnectFailed(false);
+        setIsReconnecting(false);
         return;
       }
 
       /* All attempts exhausted */
-      reconnecting.current = false;
+      reconnectingRef.current = false;
+      setIsReconnecting(false);
       setReconnectFailed(true);
       if (session) {
         Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
           {
             text: 'Reconnect',
             onPress: () => {
-              router.push({
-                pathname: '/(tabs)/settings',
-              });
               setShowScanModal(true);
             },
           },
@@ -361,9 +362,6 @@ export const useBleConn = () => {
           {
             text: 'Scan for Devices',
             onPress: () => {
-              router.push({
-                pathname: '/(tabs)/settings',
-              });
               setShowScanModal(true);
             },
           },
@@ -433,5 +431,6 @@ export const useBleConn = () => {
     getRSSI,
     showScanModal,
     setShowScanModal,
+    isReconnecting,
   };
 };

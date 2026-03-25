@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { HeartPulseIcon } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { ArrowLeft, HeartPulseIcon } from 'lucide-react-native';
 import { ScrollView, View } from 'react-native';
 import { BarChart, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +42,7 @@ const TIME_DATA: Record<TimeRange, { label: string; count: number; labels?: stri
 
 export default function HeartRateScreen() {
   const insets = useSafeAreaInsets();
-const [chartType, setChartType] = useState<ChartType>('bar');
+  const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
 
@@ -88,7 +91,10 @@ const [chartType, setChartType] = useState<ChartType>('bar');
     pointerLabelComponent: (items: barDataItem[]) => (
       <View style={{ width: 60, alignItems: 'center' }}>
         <View className="bg-black/50 rounded-sm px-1.5 py-0.5">
-          <Text className="text-xs text-white text-center" numberOfLines={1}>{items[0]?.value}{timeRange === 'D' ? '/h' : ''}</Text>
+          <Text className="text-xs text-white text-center" numberOfLines={1}>
+            {items[0]?.value}
+            {timeRange === 'D' ? '/h' : ''}
+          </Text>
         </View>
       </View>
     ),
@@ -100,6 +106,11 @@ const [chartType, setChartType] = useState<ChartType>('bar');
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       scrollEnabled={enabled}
     >
+      <View className="flex flex-row items-center justify-between mb-4 ml-4 rounded-full bg-tab-bar w-10 h-10">
+        <Button variant="ghost" onPress={() => router.back()} className="rounded-full w-10 h-10">
+          <Icon as={ArrowLeft} size={24} color="#DC2626" strokeWidth={1.5} />
+        </Button>
+      </View>
       <View className="flex flex-col gap-2 mb-8">
         <View
           {...touchHandlers}
@@ -141,7 +152,9 @@ const [chartType, setChartType] = useState<ChartType>('bar');
               <ToggleGroup
                 type="single"
                 value={chartType}
-                onValueChange={(val) => { if (val) setChartType(val as ChartType); }}
+                onValueChange={(val) => {
+                  if (val) setChartType(val as ChartType);
+                }}
                 variant="outline"
               >
                 <ToggleGroupItem value="bar" isFirst>
