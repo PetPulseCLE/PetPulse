@@ -1,4 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
+import { BleProvider } from '@/context/BleContext';
+import { ThemePreferenceProvider } from '@/context/ThemePrefContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
@@ -38,8 +40,12 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ThemeProvider value={NAV_THEME[resolvedScheme]}>
-        <StackWithStatusBar />
-        <PortalHost />
+        <ThemePreferenceProvider>
+          <BleProvider>
+            <StackWithStatusBar />
+            <PortalHost />
+          </BleProvider>
+        </ThemePreferenceProvider>
       </ThemeProvider>
     </AuthProvider>
   );

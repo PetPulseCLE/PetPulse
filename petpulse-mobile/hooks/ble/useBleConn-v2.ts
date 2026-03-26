@@ -10,7 +10,6 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 }
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
@@ -31,16 +30,13 @@ export const useBleConn = () => {
   const [reconnectFailed, setReconnectFailed] = useState(false);
   const userDisconnectedRef = useRef(false);
   const [initialized, setInitialized] = useState(false);
-  const reconnecting = useRef(false);
+  const reconnectingRef = useRef(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [mtu, setMtu] = useState(0);
   const [bonded, setBonded] = useState(false);
 
   const { session } = useAuth();
-
-  const segments = useSegments();
-
-  const isSettingsPage = segments[0] === '(tabs)' && segments[1] === 'settings';
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -187,12 +183,12 @@ export const useBleConn = () => {
   };
 
   /* Connect to peripheral, save its ID for reconnection, set connected state */
-  const connectToPeripheral = async (peripheral: Peripheral) => {
+  const connectToPeripheral = async (peripheral: Peripheral): Promise<boolean> => {
     userDisconnectedRef.current = false;
     const result = await connectWithTimeout(peripheral.id);
     if (!result.success) {
       setConnectedDevice(null);
-      return;
+      return false;
     }
 
     let peripheral_info;
@@ -210,7 +206,7 @@ export const useBleConn = () => {
         console.log('connectToPeripheral: disconnect failed:', error);
       }
       setConnectedDevice(null);
-      return;
+      return false;
     }
 
     const isBonded = await triggerBonding(peripheral);
@@ -221,7 +217,7 @@ export const useBleConn = () => {
         console.log('connectToPeripheral: disconnect after bond failure:', error);
       }
       setConnectedDevice(null);
-      return;
+      return false;
     }
 
     setConnectedDevice(peripheral);
@@ -229,18 +225,21 @@ export const useBleConn = () => {
     await getMtu(peripheral);
     setReconnectFailed(false);
     console.log('Connected', peripheral.id);
+    return true;
   };
 
   /* Reconnect to previously connected device ~ 6 attempts with backoff */
   const reconnect = async () => {
-    if (!connectedRef.current && !reconnecting.current && !userDisconnectedRef.current) {
-      reconnecting.current = true;
-      const MAX_ATTEMPTS = 6;
+    if (!connectedRef.current && !reconnectingRef.current && !userDisconnectedRef.current) {
+      reconnectingRef.current = true;
+      setIsReconnecting(true);
+      const MAX_ATTEMPTS = 3;
 
       for (let i = 0; i < MAX_ATTEMPTS; i++) {
         /* User forced disconnect during reconnect */
         if (userDisconnectedRef.current) {
-          reconnecting.current = false;
+          reconnectingRef.current = false;
+          setIsReconnecting(false);
           return;
         }
 
@@ -249,7 +248,8 @@ export const useBleConn = () => {
 
         if (!bonded_prph_id) {
           console.log('No Saved Peripheral');
-          reconnecting.current = false;
+          reconnectingRef.current = false;
+          setIsReconnecting(false);
           return;
         }
 
@@ -294,22 +294,21 @@ export const useBleConn = () => {
 
         setConnectedDevice(peripheral_info);
         await getMtu(peripheral_info);
-        reconnecting.current = false;
+        reconnectingRef.current = false;
         setReconnectFailed(false);
+        setIsReconnecting(false);
         return;
       }
 
       /* All attempts exhausted */
-      reconnecting.current = false;
+      reconnectingRef.current = false;
+      setIsReconnecting(false);
       setReconnectFailed(true);
       if (session) {
         Alert.alert('Failed to reconnect to device', 'Make sure your harness is nearby and powered on.', [
           {
             text: 'Reconnect',
             onPress: () => {
-              router.push({
-                pathname: '/(tabs)/settings',
-              });
               setShowScanModal(true);
             },
           },
@@ -333,7 +332,7 @@ export const useBleConn = () => {
   };
 
   /* Forget device, disconnect from peripheral, remove saved peripheral ID, remove OS bond */
-  const forgetDevice = async () => {
+  const forgetDevice = async (): Promise<boolean> => {
     const peripheralId = connectedRef.current?.id;
     try {
       await disconnect();
@@ -341,8 +340,10 @@ export const useBleConn = () => {
       if (peripheralId && Platform.OS === 'android') {
         await BleManager?.removeBond(peripheralId);
       }
+      return true;
     } catch (error) {
       console.log('forgetDevice: ', error);
+      return false;
     }
   };
 
@@ -355,15 +356,12 @@ export const useBleConn = () => {
       const savedId = await getSavedPrphId();
       if (savedId) {
         await reconnect();
-      } else if (!noDeviceAlertShown.current && !isSettingsPage) {
+      } else if (!noDeviceAlertShown.current) {
         noDeviceAlertShown.current = true;
         Alert.alert('No Harness Connected', 'Please connect a harness', [
           {
             text: 'Scan for Devices',
             onPress: () => {
-              router.push({
-                pathname: '/(tabs)/settings',
-              });
               setShowScanModal(true);
             },
           },
@@ -433,5 +431,6 @@ export const useBleConn = () => {
     getRSSI,
     showScanModal,
     setShowScanModal,
+    isReconnecting,
   };
 };
