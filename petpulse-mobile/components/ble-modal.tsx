@@ -59,13 +59,20 @@ export default function BleModal() {
 
   const onConnect = async (peripheral: Peripheral) => {
     setIsConnecting(true);
-    await connectToPeripheral(peripheral);
+    const result = await connectToPeripheral(peripheral);
+    if (!result) {
+      setIsConnecting(false);
+      return;
+    }
     setIsConnecting(false);
     await closeDeviceModal();
   };
 
   const onForget = async () => {
-    await forgetDevice();
+    const result = await forgetDevice();
+    if (!result) {
+      return;
+    }
     setShowForgetAlert(true);
     await closeDeviceModal();
   };

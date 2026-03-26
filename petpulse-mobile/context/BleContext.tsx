@@ -14,9 +14,9 @@ type BleContextType = {
   discovered: Peripheral[];
   startScan: () => Promise<void>;
   stopScan: () => Promise<void>;
-  connectToPeripheral: (peripheral: Peripheral) => Promise<void>;
+  connectToPeripheral: (peripheral: Peripheral) => Promise<boolean>;
   disconnect: () => Promise<void>;
-  forgetDevice: () => Promise<void>;
+  forgetDevice: () => Promise<boolean>;
   mtu: number;
   getRSSI: (peripheral: Peripheral) => Promise<number>;
   bonded: boolean;

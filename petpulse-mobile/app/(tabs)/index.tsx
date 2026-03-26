@@ -25,7 +25,6 @@ export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet } = useAuth();
   const { connected, setShowScanModal, isReconnecting } = useBle();
-  s;
   return (
     <ScrollView
       className="h-full"
@@ -111,7 +110,7 @@ export default function Index() {
                 <View className="flex flex-row  items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
                     <Icon as={pet?.pet_type === 'dog' ? Bone : Cat} size={22} className="text-tint" />
-                    <Text className="text-md font-semibold text-secondary-foreground">AI Helath Summary</Text>
+                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary</Text>
                   </View>
                   <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
                 </View>
