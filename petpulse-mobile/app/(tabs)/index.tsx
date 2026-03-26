@@ -25,7 +25,7 @@ export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet } = useAuth();
   const { connected, setShowScanModal, isReconnecting } = useBle();
-  let isReconnectingState = true;
+  s;
   return (
     <ScrollView
       className="h-full"
@@ -64,8 +64,7 @@ export default function Index() {
             <View
               className={clsx(
                 'border-tab-bar h-10 px-3 rounded-xl basis-full grow justify-center',
-                connected ? 'bg-[#12ba2c40]' : 'bg-[#fc612b40]',
-                isReconnecting && 'bg-[#3b82f640]',
+                isReconnecting ? 'bg-[#3b82f640]' : connected ? 'bg-[#12ba2c40]' : 'bg-[#fc612b40]',
               )}
             >
               <Pressable

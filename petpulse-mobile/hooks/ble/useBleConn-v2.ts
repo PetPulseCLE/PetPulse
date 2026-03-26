@@ -237,12 +237,13 @@ export const useBleConn = () => {
     if (!connectedRef.current && !reconnectingRef.current && !userDisconnectedRef.current) {
       reconnectingRef.current = true;
       setIsReconnecting(true);
-      const MAX_ATTEMPTS = 6;
+      const MAX_ATTEMPTS = 3;
 
       for (let i = 0; i < MAX_ATTEMPTS; i++) {
         /* User forced disconnect during reconnect */
         if (userDisconnectedRef.current) {
           reconnectingRef.current = false;
+          setIsReconnecting(false);
           return;
         }
 
@@ -252,6 +253,7 @@ export const useBleConn = () => {
         if (!bonded_prph_id) {
           console.log('No Saved Peripheral');
           reconnectingRef.current = false;
+          setIsReconnecting(false);
           return;
         }
 

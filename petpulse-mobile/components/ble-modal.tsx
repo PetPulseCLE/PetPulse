@@ -42,21 +42,13 @@ export default function BleModal() {
 
   const handleStart = async () => {
     if (initialized) {
-      try {
-        await startScan();
-      } catch (error) {
-        console.error('startScan: ', error);
-      }
+      await startScan();
     }
   };
 
   const handleStop = async () => {
     if (!showScanModal) {
-      try {
-        await stopScan();
-      } catch (error) {
-        console.error('stopScan: ', error);
-      }
+      await stopScan();
     }
   };
 
@@ -67,25 +59,15 @@ export default function BleModal() {
 
   const onConnect = async (peripheral: Peripheral) => {
     setIsConnecting(true);
-    try {
-      await connectToPeripheral(peripheral);
-    } catch (error) {
-      console.error('onConnect: ', error);
-    } finally {
-      setIsConnecting(false);
-      await closeDeviceModal();
-    }
+    await connectToPeripheral(peripheral);
+    setIsConnecting(false);
+    await closeDeviceModal();
   };
 
   const onForget = async () => {
-    try {
-      await forgetDevice();
-    } catch (error) {
-      console.error('onForget: ', error);
-    } finally {
-      setShowForgetAlert(true);
-      await closeDeviceModal();
-    }
+    await forgetDevice();
+    setShowForgetAlert(true);
+    await closeDeviceModal();
   };
 
   const onDeviceInfoOpen = async () => {
