@@ -228,7 +228,7 @@ export const useBleConn = () => {
     return true;
   };
 
-  /* Reconnect to previously connected device ~ 6 attempts with backoff */
+  /* Reconnect to previously connected device ~ 3 attempts with backoff */
   const reconnect = async () => {
     if (!connectedRef.current && !reconnectingRef.current && !userDisconnectedRef.current) {
       reconnectingRef.current = true;

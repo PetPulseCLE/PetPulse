@@ -1,9 +1,9 @@
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -43,10 +43,7 @@ import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Settings() {
-  const {
-    connected,
-    setShowScanModal,
-  } = useBle();
+  const { connected, setShowScanModal } = useBle();
 
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
@@ -132,13 +129,12 @@ export default function Settings() {
           <Text className="text-muted-foreground text-md">{email}</Text>
         </View>
       </View>
-      <View className="mx-3.5 mb-6 shadow-sm">
-        <View className="flex flex-row w-full align-center bg-tab-bar rounded-full ">
-          <Button
-            variant="ghost"
-            className="flex flex-row w-full items-center justify-between active:bg-card-active"
-            onPress={openEditAccountModal}
-          >
+      <View className="mx-3.5 mb-6 shadow-sm ">
+        <Pressable
+          className="flex flex-row px-3 py-2 w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
+          onPress={openEditAccountModal}
+        >
+          <View className="flex flex-row w-full items-center justify-between active:bg-card-active">
             <View className="flex flex-row items-center gap-4">
               <Icon as={UserPenIcon} className="size-6 text-blue-500" />
               <View className="flex flex-col">
@@ -146,17 +142,16 @@ export default function Settings() {
               </View>
             </View>
             <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-          </Button>
-        </View>
+          </View>
+        </Pressable>
       </View>
       {/* ============================= HARNESS SETTINGS ============================= */}
       <View className="mx-3.5 mb-6 shadow-sm">
-        <View className="flex flex-row w-full align-center bg-tab-bar rounded-full ">
-          <Button
-            variant="ghost"
-            className="flex flex-row justify-between items-center w-full active:bg-card-active"
-            onPress={() => setShowScanModal(true)}
-          >
+        <Pressable
+          onPress={() => setShowScanModal(true)}
+          className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
+        >
+          <View className="flex flex-row px-3 py-2 justify-between items-center w-full ">
             <View className="flex flex-row items-center gap-3">
               <Icon
                 as={connected ? BluetoothConnected : Bluetooth}
@@ -167,17 +162,16 @@ export default function Settings() {
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
-          </Button>
-        </View>
+          </View>
+        </Pressable>
       </View>
       {/* ============================= THEME SETTINGS ============================= */}
       <View className="mx-3.5 mb-6 shadow-sm">
-        <View className="flex flex-row w-full align-center bg-tab-bar rounded-full ">
-          <Button
-            variant="ghost"
-            className="flex flex-row justify-between items-center w-full active:bg-card-active"
-            onPress={onToggleTheme}
-          >
+        <Pressable
+          className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
+          onPress={onToggleTheme}
+        >
+          <View className="flex flex-row  px-3 py-2.5 justify-between items-center w-full active:bg-card-active">
             <View className="flex flex-row items-center gap-3">
               <Icon as={theme === 'dark' ? MoonStar : Sun} className="size-5 text-tint" />
               <View className="flex flex-col">
@@ -187,18 +181,17 @@ export default function Settings() {
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
-          </Button>
-        </View>
+          </View>
+        </Pressable>
       </View>
 
       {/* ============================= LOG OUT ============================= */}
       <View className="mx-3.5 mb-6 shadow-sm">
-        <View className="flex flex-row w-full align-center bg-tab-bar rounded-full ">
-          <Button
-            variant="ghost"
-            className="flex flex-row justify-between items-center w-full"
-            onPress={() => setShowLogoutAlert(true)}
-          >
+        <Pressable
+          className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
+          onPress={() => setShowLogoutAlert(true)}
+        >
+          <View className="flex flex-row px-3 py-2 justify-between items-center w-full">
             <View className="flex flex-row items-center gap-4">
               <Icon as={LogOut} className="text-red-500 size-6" />
               <View className="flex flex-col">
@@ -206,8 +199,8 @@ export default function Settings() {
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
-          </Button>
-        </View>
+          </View>
+        </Pressable>
       </View>
 
       {/* Edit Account Modal */}

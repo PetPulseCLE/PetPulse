@@ -5,12 +5,11 @@ import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
-import { ArrowLeft, HeartPulseIcon } from 'lucide-react-native';
+import { ArrowLeft, Droplets } from 'lucide-react-native';
 import { Pressable, ScrollView, View } from 'react-native';
-import { BarChart, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type ChartType = 'bar' | 'area';
 type TimeRange = 'D' | 'W' | 'M';
 
 const DAILY_LABELS = Array.from({ length: 24 }, (_, i) => {
@@ -39,9 +38,10 @@ const TIME_DATA: Record<TimeRange, { label: string; count: number; labels?: stri
   },
 };
 
-export default function HeartRateScreen() {
+const SKY = '#0ea5e9';
+
+export default function HumidityScreen() {
   const insets = useSafeAreaInsets();
-  const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
 
@@ -51,7 +51,7 @@ export default function HeartRateScreen() {
     () =>
       Array.from({ length: count }, (_, index) => ({
         label: labels?.[index],
-        value: Math.floor(Math.random() * 200),
+        value: Math.floor(Math.random() * 60) + 30,
       })),
     [timeRange],
   );
@@ -70,10 +70,10 @@ export default function HeartRateScreen() {
     yAxisThickness: 0,
     yAxisColor: axisAndLabel,
     noOfSections: 6,
-    xAxisLabelTextStyle: { color: axisAndLabel, fontSize: 12 },
+    xAxisLabelTextStyle: { color: axisAndLabel, fontSize: 12, width: timeRange === 'D' ? 24 : undefined, textAlign: 'center' as const },
     yAxisTextStyle: { color: axisAndLabel, fontSize: 12 },
-    initialSpacing: timeRange === 'M' ? 18 : 12,
-    endSpacing: timeRange === 'M' ? 1 : timeRange === 'W' ? 0 : 12,
+    initialSpacing: timeRange === 'M' ? 14 : 12,
+    endSpacing: timeRange === 'M' ? 1 : timeRange === 'W' ? 0 : 20,
   };
 
   const pointerConfig = {
@@ -82,7 +82,7 @@ export default function HeartRateScreen() {
     pointerStripHeight: 200,
     pointerStripColor: axisAndLabel,
     pointerStripWidth: 1,
-    pointerColor: '#DC2626',
+    pointerColor: SKY,
     radius: 0,
     pointerLabelWidth: 20,
     shiftPointerLabelX: -20,
@@ -91,8 +91,7 @@ export default function HeartRateScreen() {
       <View style={{ width: 60, alignItems: 'center' }}>
         <View className="bg-black/50 rounded-sm px-1.5 py-0.5">
           <Text className="text-xs text-white text-center" numberOfLines={1}>
-            {items[0]?.value}
-            {timeRange === 'D' ? '/h' : ''}
+            {items[0]?.value}%
           </Text>
         </View>
       </View>
@@ -110,7 +109,7 @@ export default function HeartRateScreen() {
         onPress={() => router.back()}
       >
         <View className=" w-8 h-8 items-center justify-center">
-          <Icon as={ArrowLeft} size={24} color="#DC2626" strokeWidth={1.5} />
+          <Icon as={ArrowLeft} size={24} color={SKY} strokeWidth={1.5} />
         </View>
       </Pressable>
       <View className="flex flex-col gap-2 mb-8">
@@ -122,17 +121,14 @@ export default function HeartRateScreen() {
           {/* Header */}
           <View className="flex flex-row items-center justify-between mb-4 pl-2 pr-1 border-b border-muted-foreground w-full pb-2">
             <View className="flex flex-row gap-2 items-center">
-              <HeartPulseIcon size={24} color="#DC2626" strokeWidth={1.5} />
-              <Text>Avg. Heart Rate</Text>
+              <Droplets size={24} color={SKY} strokeWidth={1.5} />
+              <Text>Avg. Humidity</Text>
             </View>
             <ToggleGroup
               type="single"
               value={timeRange}
               onValueChange={(val) => {
-                if (val) {
-                  setTimeRange(val as TimeRange);
-                  if (val === 'D') setChartType('bar');
-                }
+                if (val) setTimeRange(val as TimeRange);
               }}
               variant="outline"
             >
@@ -148,72 +144,29 @@ export default function HeartRateScreen() {
             </ToggleGroup>
           </View>
 
-          {/* Chart Type Switcher */}
-          {timeRange !== 'D' && (
-            <View className="items-center mb-4">
-              <ToggleGroup
-                type="single"
-                value={chartType}
-                onValueChange={(val) => {
-                  if (val) setChartType(val as ChartType);
-                }}
-                variant="outline"
-              >
-                <ToggleGroupItem value="bar" isFirst>
-                  <Text className="text-xs">Bar</Text>
-                </ToggleGroupItem>
-                <ToggleGroupItem value="area" isLast>
-                  <Text className="text-xs">Area</Text>
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </View>
-          )}
-
-          {/* Charts */}
+          {/* Chart */}
           <View className="w-full h-[260px]">
-            {chartType === 'bar' && (
-              <BarChart
-                data={data}
-                barWidth={timeRange === 'D' ? 8 : 16}
-                spacing={timeRange === 'D' ? 4 : timeRange === 'W' ? 30 : 70}
-                labelWidth={timeRange === 'D' ? 18 : 14}
-                overflowTop={10}
-                barBorderRadius={4}
-                frontColor="#DC2626"
-                rulesColor="transparent"
-                rulesThickness={1}
-                isAnimated
-                xAxisIndicesWidth={16}
-                animationDuration={1000}
-                disableScroll
-                pointerConfig={{ ...pointerConfig, pointerColor: axisAndLabel }}
-                {...commonAxisProps}
-              />
-            )}
-
-            {chartType === 'area' && (
-              <LineChart
-                data={data}
-                color="#DC2626"
-                thickness={2}
-                curved
-                areaChart
-                startFillColor="#DC2626"
-                endFillColor="#DC2626"
-                startOpacity={0.3}
-                endOpacity={0.05}
-                spacing={timeRange === 'W' ? 45 : timeRange === 'D' ? 12 : 90}
-                overflowTop={10}
-                rulesColor="transparent"
-                isAnimated
-                animationDuration={1000}
-                dataPointsColor="#DC2626"
-                dataPointsRadius={4}
-                disableScroll
-                pointerConfig={pointerConfig}
-                {...commonAxisProps}
-              />
-            )}
+            <LineChart
+              data={data}
+              color={SKY}
+              thickness={2}
+              curved
+              areaChart
+              startFillColor={SKY}
+              endFillColor={SKY}
+              startOpacity={0.3}
+              endOpacity={0.05}
+              spacing={timeRange === 'W' ? 45 : timeRange === 'D' ? 13 : 90}
+              overflowTop={10}
+              rulesColor="transparent"
+              isAnimated
+              animationDuration={1000}
+              dataPointsColor={SKY}
+              dataPointsRadius={4}
+              disableScroll
+              pointerConfig={pointerConfig}
+              {...commonAxisProps}
+            />
           </View>
         </View>
       </View>

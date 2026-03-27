@@ -130,7 +130,7 @@ export default function BleModal() {
               <View className="flex flex-col">
                 <View
                   key={connected?.id}
-                  className="flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 rounded-xl overflow-hidden"
+                  className="flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 rounded-lg overflow-hidden"
                 >
                   <Button
                     variant="default"
@@ -185,8 +185,8 @@ export default function BleModal() {
                     key={peripheral.id}
                     className={clsx(
                       'flex flex-row bg-tab-bar w-full items-center justify-between active:bg-card-active pr-3 overflow-hidden',
-                      index === 0 && 'rounded-t-full',
-                      index === discovered.length - 1 && 'rounded-b-full',
+                      index === 0 && 'rounded-t-xl',
+                      index === discovered.length - 1 && 'rounded-b-xl',
                     )}
                   >
                     <Button

@@ -1,5 +1,6 @@
-import { UTCFromBytes } from './useBleTime';
+import { UTCFromBytes } from '@/hooks/ble/useBleTime';
 
+/* ============================= IMU DATA ============================= */
 export interface Accel {
   x: number;
   y: number;
@@ -55,7 +56,6 @@ export interface Activity {
   stepCount: StepCount;
   utcTimestamp: Date;
 }
-
 export const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const x = view.getFloat32(0, true);
@@ -111,3 +111,55 @@ export const parseActivity = (data: Uint8Array): Activity => {
   const utcTimestamp = UTCFromBytes(data.slice(19, 28));
   return { classifier, stepCount, utcTimestamp } as Activity;
 };
+
+/* ============================= VITALS DATA ============================= */
+export interface Vitals {
+  breathRate: number;
+  heartRate: number;
+  hr_confidence: number;
+  utcTimestamp: Date;
+}
+
+export const parseVitals = (data: Uint8Array): Vitals => {
+  const vitalsView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const breathRate = vitalsView.getUint8(0);
+  const heartRate = vitalsView.getUint8(1);
+  const hr_confidence = vitalsView.getUint8(2);
+  const utcTimestamp = UTCFromBytes(data.slice(3, 12));
+  return { breathRate, heartRate, hr_confidence, utcTimestamp } as Vitals;
+};
+/* ============================= IMU DATA ============================= */
+export interface Env {
+  temperature: number;
+  humidity: number;
+  utcTimestamp: Date;
+}
+
+export const parseEnv = (data: Uint8Array): Env => {
+  const envView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const temperature = envView.getFloat32(0, true);
+  const humidity = envView.getFloat32(4, true);
+  const utcTimestamp = UTCFromBytes(data.slice(8, 17));
+  return { temperature, humidity, utcTimestamp } as Env;
+};
+
+/* ============================= AGGREGATED DATA ============================= */
+export interface Aggregated {
+  raw?: Raw;
+  activity?: Activity;
+  vitals?: Vitals;
+  env?: Env;
+}
+
+export const parseAggregated = (data: Uint8Array): Aggregated => {
+  const aggregatedView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const bitmask = aggregatedView.getUint8(0);
+  /* prettier-ignore */
+  return {
+      raw:      (bitmask & 0x01) ? parseRaw(data.slice(1, 70)) : undefined,
+      activity: (bitmask & 0x02)  ? parseActivity(data.slice(70, 98)) : undefined,
+      vitals:   (bitmask & 0x04) ? parseVitals(data.slice(98, 110)) : undefined,
+      env:      (bitmask & 0x08) ? parseEnv(data.slice(110, 127)) : undefined,
+    } as Aggregated;
+};
+

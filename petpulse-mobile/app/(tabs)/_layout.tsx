@@ -34,6 +34,8 @@ function TabsWithHeader() {
       />
       <Tabs.Screen name="heartrate" options={{ title: 'Heart Rate', href: null, headerShown: false }} />
       <Tabs.Screen name="breathrate" options={{ title: 'Breath Rate', href: null, headerShown: false }} />
+      <Tabs.Screen name="temperature" options={{ title: 'Temperature', href: null, headerShown: false }} />
+      <Tabs.Screen name="humidity" options={{ title: 'Humidity', href: null, headerShown: false }} />
     </Tabs>
   );
 }
