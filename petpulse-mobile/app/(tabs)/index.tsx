@@ -312,12 +312,12 @@ export default function Index() {
 
                   <CardDescription>
                     <Text className="text-muted-foreground text-sm">
-                      {lastEnvRef.current?.temperature}°F, {getTime(envLastUpdatedRef.current)}
+                      {lastEnvRef.current?.humidity}%, {getTime(envLastUpdatedRef.current)}
                     </Text>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Text className="text-muted-foreground text-sm">{env?.temperature}</Text>
+                  <Text className="text-muted-foreground text-sm">{env?.humidity}</Text>
                 </CardContent>
               </Card>
             </Pressable>
