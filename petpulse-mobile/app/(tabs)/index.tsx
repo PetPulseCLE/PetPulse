@@ -166,6 +166,7 @@ export default function Index() {
             </Card>
           </Animated.View>
           {/* ============================= DATA CARDS ============================= */}
+          {/* ============================= ACTIVITY ============================= */}
           <Animated.View
             className="flex flex-row gap-2 px-2 min-w-0"
             entering={FadeIn.delay(100).duration(500).easing(Easing.inOut(Easing.ease))}
@@ -211,6 +212,7 @@ export default function Index() {
               </Card>
             </Pressable>
           </Animated.View>
+          {/* ============================= VITALS ============================= */}
           <Animated.View
             className="flex flex-row gap-2 px-2 min-w-0"
             entering={FadeIn.delay(200).duration(500).easing(Easing.inOut(Easing.ease))}
@@ -265,6 +267,7 @@ export default function Index() {
               </Card>
             </Pressable>
           </Animated.View>
+          {/* ============================= ENV ============================= */}
           <Animated.View
             className="flex flex-row gap-2 px-2 min-w-0"
             entering={FadeIn.delay(300).duration(500).easing(Easing.inOut(Easing.ease))}
