@@ -179,22 +179,24 @@ export default function Index() {
                 <CardContent></CardContent>
               </Card>
             </Pressable>
-            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-1/2">
-              <CardHeader>
-                <View className="flex flex-row items-center justify-between">
-                  <View className="flex flex-row items-center gap-1">
-                    <Icon as={Thermometer} size={22} className="text-amber-500" />
-                    <Text className="text-md font-semibold text-secondary-foreground">Temperature</Text>
+            <Pressable className="basis-1/2 shadow-sm" onPress={() => router.push('/temperature')}>
+              <Card className="bg-tab-bar border-tab-bar">
+                <CardHeader>
+                  <View className="flex flex-row items-center justify-between">
+                    <View className="flex flex-row items-center gap-1">
+                      <Icon as={Thermometer} size={22} className="text-amber-500" />
+                      <Text className="text-md font-semibold text-secondary-foreground">Temperature</Text>
+                    </View>
+                    <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
                   </View>
-                  <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                </View>
 
-                <CardDescription>
-                  <Text className="text-muted-foreground text-sm">3m ago</Text>
-                </CardDescription>
-              </CardHeader>
-              <CardContent></CardContent>
-            </Card>
+                  <CardDescription>
+                    <Text className="text-muted-foreground text-sm">3m ago</Text>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent></CardContent>
+              </Card>
+            </Pressable>
           </Animated.View>
         </View>
       </View>
