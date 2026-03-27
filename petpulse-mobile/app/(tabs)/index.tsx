@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
-import { type Activity, type Env, type Raw, type Vitals } from '@/lib/sensor-readings';
+import { Activity, type Env, type Vitals } from '@/lib/sensor-readings';
 import clsx from 'clsx';
 import { router } from 'expo-router';
 import {
@@ -28,27 +28,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet } = useAuth();
-  const { connected, setShowScanModal, isReconnecting, raw, activity, env, vitals } = useBle();
+  const { connected, setShowScanModal, isReconnecting, activity, env, vitals } = useBle();
 
-  const lastRawRef = useRef<Raw>(raw);
-  const rawLastUpdatedRef = useRef<number>(0);
-  const lastActivityRef = useRef<Activity>(activity);
-  const lastActivityUpdatedRef = useRef<number>(0);
   const lastEnvRef = useRef<Env>(env);
   const envLastUpdatedRef = useRef<number>(0);
   const lastVitalsRef = useRef<Vitals>(vitals);
   const vitalsLastUpdatedRef = useRef<number>(0);
+  const lastActivityRef = useRef<Activity>(activity);
+  const activityLastUpdatedRef = useRef<number>(0);
 
   useEffect(() => {
-    lastRawRef.current = raw;
-    rawLastUpdatedRef.current = Date.now();
-    lastActivityRef.current = activity;
-    lastActivityUpdatedRef.current = Date.now();
     lastEnvRef.current = env;
     envLastUpdatedRef.current = Date.now();
+  }, [env]);
+
+  useEffect(() => {
     lastVitalsRef.current = vitals;
     vitalsLastUpdatedRef.current = Date.now();
-  }, [raw, activity, env, vitals]);
+  }, [vitals]);
+
+  useEffect(() => {
+    lastActivityRef.current = activity;
+    activityLastUpdatedRef.current = Date.now();
+  }, [activity]);
 
   const getTime = (lastUpdated: number) => {
     const now = Date.now();
@@ -196,7 +198,7 @@ export default function Index() {
                     <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
                   </View>
                   <CardDescription>
-                    <Text className="text-muted-foreground text-">
+                    <Text className="text-muted-foreground text-sm">
                       {lastVitalsRef.current?.heartRate}BPM, {getTime(vitalsLastUpdatedRef.current)}
                     </Text>
                   </CardDescription>
@@ -298,13 +300,13 @@ export default function Index() {
                 </View>
 
                 <CardDescription>
-                  <Text className="text-muted-foreground ">
-                    {lastEnvRef.current?.temperature}°F, {getTime(envLastUpdatedRef.current)}
+                  <Text className="text-muted-foreground text-sm">
+                    {lastEnvRef.current?.humidity}%, {getTime(envLastUpdatedRef.current)}
                   </Text>
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Text className="text-muted-foreground text-lg font-semibold">{env?.temperature}</Text>
+                <Text className="text-muted-foreground text-lg font-semibold">{env?.humidity}</Text>
               </CardContent>
             </Card>
           </Animated.View>
