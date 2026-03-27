@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
 import { ArrowLeft, HeartPulseIcon } from 'lucide-react-native';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { BarChart, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -106,11 +105,14 @@ export default function HeartRateScreen() {
       style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       scrollEnabled={enabled}
     >
-      <View className="flex flex-row items-center justify-between mb-4 ml-4 rounded-full bg-tab-bar w-10 h-10">
-        <Button variant="ghost" onPress={() => router.back()} className="rounded-full w-10 h-10">
+      <Pressable
+        className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
+        onPress={() => router.back()}
+      >
+        <View className=" w-8 h-8 items-center justify-center">
           <Icon as={ArrowLeft} size={24} color="#DC2626" strokeWidth={1.5} />
-        </Button>
-      </View>
+        </View>
+      </Pressable>
       <View className="flex flex-col gap-2 mb-8">
         <View
           {...touchHandlers}
