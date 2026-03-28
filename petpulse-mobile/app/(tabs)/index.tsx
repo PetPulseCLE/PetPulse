@@ -1,8 +1,10 @@
+import MetricCard from '@/components/petpulse-ui/metric-card';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
-import { Activity, type Env, type Vitals } from '@/lib/sensor-readings';
+import { activityClassMap } from '@/hooks/ble/UUIDS';
+import { fetch } from '@/lib/petpulse/data-service';
 import clsx from 'clsx';
 import { router } from 'expo-router';
 import {
@@ -20,7 +22,7 @@ import {
   Wind,
   Zap,
 } from 'lucide-react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,30 +31,91 @@ export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals } = useBle();
+  const [stepCount, setStepCount] = useState<number | null>(null);
+  const [activityClass, setActivityClass] = useState<string | null>(null);
+  const [activityClassLastUpdated, setActivityClassLastUpdated] = useState<number | null>(null);
+  const [temperature, setTemperature] = useState<number | null>(null);
+  const [temperatureLastUpdated, setTemperatureLastUpdated] = useState<number | null>(null);
+  const [humidity, setHumidity] = useState<number | null>(null);
+  const [humidityLastUpdated, setHumidityLastUpdated] = useState<number | null>(null);
+  const [heartRate, setHeartRate] = useState<number | null>(null);
+  const [heartRateLastUpdated, setHeartRateLastUpdated] = useState<number | null>(null);
+  const [breathRate, setBreathRate] = useState<number | null>(null);
+  const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
 
-  const lastEnvRef = useRef<Env>(env);
-  const envLastUpdatedRef = useRef<number>(0);
-  const lastVitalsRef = useRef<Vitals>(vitals);
-  const vitalsLastUpdatedRef = useRef<number>(0);
-  const lastActivityRef = useRef<Activity>(activity);
-  const activityLastUpdatedRef = useRef<number>(0);
+  // useEffect(() => {
+  //   const { utcTimestamp, ...dataValues } = env ?? {};
+  //   lastEnvRef.current = { data: dataValues as Env, recorded_at: utcTimestamp ?? new Date() };
+  //   envLastUpdatedRef.current = Date.now();
+  // }, [env]);
+
+  // useEffect(() => {
+  //   lastVitalsRef.current = vitals;
+  //   vitalsLastUpdatedRef.current = Date.now();
+  // }, [vitals]);
 
   useEffect(() => {
-    lastEnvRef.current = env;
-    envLastUpdatedRef.current = Date.now();
-  }, [env]);
-
-  useEffect(() => {
-    lastVitalsRef.current = vitals;
-    vitalsLastUpdatedRef.current = Date.now();
-  }, [vitals]);
-
-  useEffect(() => {
-    lastActivityRef.current = activity;
-    activityLastUpdatedRef.current = Date.now();
+    if (!activity) return;
+    setStepCount(activity.stepCount.steps);
+    setActivityClass(activityClassMap[activity.classifier.activityClass]);
   }, [activity]);
 
-  const getTime = (lastUpdated: number) => {
+  // ============================= STEP & ACTIVITY =============================
+  useEffect(() => {
+    const fetchData = async () => {
+      const stepData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'step_count', 'latest', 'AIML_mock_metrics');
+      if (stepData?.[0]) {
+        setStepCount(stepData[0].data);
+      } else {
+        setStepCount(0);
+      }
+      const activityData = await fetch(
+        '15186d69-a480-47c8-a78a-13790c6d1818',
+        'activity',
+        'latest',
+        'AIML_mock_metrics',
+      );
+      if (activityData?.[0]) {
+        setActivityClass(activityClassMap[activityData[0].data]);
+        setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
+      } else {
+        setActivityClass(null);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // ============================= VITALS =============================
+  useEffect(() => {
+    const fetchData = async () => {
+      const heartRateData = await fetch(
+        '15186d69-a480-47c8-a78a-13790c6d1818',
+        'heart_rate',
+        'latest',
+        'AIML_mock_metrics',
+      );
+      if (heartRateData?.[0]) {
+        setHeartRate(heartRateData[0].data);
+        setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
+      } else {
+        setHeartRate(null);
+      }
+      const breathRateData = await fetch(
+        '15186d69-a480-47c8-a78a-13790c6d1818',
+        'breath_rate',
+        'latest',
+        'AIML_mock_metrics',
+      );
+      if (breathRateData?.[0]) {
+        setBreathRate(breathRateData[0].data);
+        setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
+      }
+    };
+    fetchData();
+  }, []);
+
+  const formatTime = (lastUpdated: number | null) => {
+    if (!lastUpdated) return '';
     const now = Date.now();
     const diff = now - lastUpdated;
     const minutes = Math.floor(diff / 1000 / 60);
@@ -166,50 +229,20 @@ export default function Index() {
             </Card>
           </Animated.View>
           {/* ============================= DATA CARDS ============================= */}
-          {/* ============================= ACTIVITY ============================= */}
+          {/* ============================= STEP & ACTIVITY ============================= */}
           <Animated.View
             className="flex flex-row gap-2 px-2 min-w-0"
             entering={FadeIn.delay(100).duration(500).easing(Easing.inOut(Easing.ease))}
           >
-            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-1/2">
-              <CardHeader>
-                <View className="flex flex-row  items-center justify-between">
-                  <View className="flex flex-row items-center gap-2">
-                    <Icon as={PawPrint} size={22} className="text-emerald-500 " />
-                    <Text className="text-md font-semibold text-secondary-foreground">Step Count</Text>
-                  </View>
-                  <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                </View>
-                <CardDescription>
-                  <Text className="text-muted-foreground text-sm">Today</Text>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Text className="text-muted-foreground text-lg font-semibold">{activity?.stepCount.steps}</Text>
-              </CardContent>
-            </Card>
+            <MetricCard title="Step Count" icon={PawPrint} color="emerald" value={stepCount} lastUpdated="Today" />
             <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300">
-              <Card className="bg-tab-bar border-tab-bar ">
-                <CardHeader>
-                  <View className="flex flex-row items-center justify-between">
-                    <View className="flex flex-row items-center gap-2">
-                      <Icon as={Zap} size={22} className="text-orange-500" />
-                      <Text className="text-md font-semibold text-secondary-foreground">Activity</Text>
-                    </View>
-                    <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                  </View>
-                  <CardDescription>
-                    <Text className="text-muted-foreground text-sm">
-                      {lastVitalsRef.current?.heartRate}BPM, {getTime(vitalsLastUpdatedRef.current)}
-                    </Text>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Text className="text-muted-foreground text-lg font-semibold">
-                    {activity?.classifier.activityClass}
-                  </Text>
-                </CardContent>
-              </Card>
+              <MetricCard
+                title="Activity"
+                icon={Zap}
+                color="orange"
+                value={activityClass}
+                lastUpdated={formatTime(activityClassLastUpdated)}
+              />
             </Pressable>
           </Animated.View>
           {/* ============================= VITALS ============================= */}
@@ -221,50 +254,27 @@ export default function Index() {
               className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300"
               onPress={() => router.push('/heartrate')}
             >
-              <Card className="bg-tab-bar border-tab-bar ">
-                <CardHeader>
-                  <View className="flex flex-row items-center justify-between">
-                    <View className="flex flex-row items-center gap-2">
-                      <Icon as={HeartPulse} size={22} className="text-red-500" />
-                      <Text className="text-md font-semibold text-secondary-foreground">Heart Rate</Text>
-                    </View>
-                    <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                  </View>
-                  <CardDescription>
-                    <Text className="text-muted-foreground text-sm">
-                      {lastVitalsRef.current?.heartRate}BPM, {getTime(vitalsLastUpdatedRef.current)}
-                    </Text>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Text className="text-muted-foreground text-lg font-semibold">{vitals?.heartRate}</Text>
-                </CardContent>
-              </Card>
+              <MetricCard
+                title="Heart Rate"
+                icon={HeartPulse}
+                color="red"
+                value={heartRate}
+                unit="BPM"
+                lastUpdated={formatTime(heartRateLastUpdated)}
+              />
             </Pressable>
             <Pressable
               className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300"
               onPress={() => router.push('/breathrate')}
             >
-              <Card className="bg-tab-bar border-tab-bar">
-                <CardHeader>
-                  <View className="flex flex-row items-center justify-between">
-                    <View className="flex flex-row items-center gap-2">
-                      <Icon as={Wind} size={22} className="text-blue-500" />
-                      <Text className="text-md font-semibold text-secondary-foreground">Resp. Rate</Text>
-                    </View>
-                    <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                  </View>
-
-                  <CardDescription>
-                    <Text className="text-muted-foreground text-sm">
-                      {lastVitalsRef.current?.breathRate}BPM, {getTime(vitalsLastUpdatedRef.current)}
-                    </Text>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Text className="text-muted-foreground text-lg font-semibold">{vitals?.breathRate}</Text>
-                </CardContent>
-              </Card>
+              <MetricCard
+                title="Breath Rate"
+                icon={Wind}
+                color="blue"
+                value={breathRate}
+                unit="BPM"
+                lastUpdated={formatTime(breathRateLastUpdated)}
+              />
             </Pressable>
           </Animated.View>
           {/* ============================= ENV ============================= */}
@@ -286,9 +296,7 @@ export default function Index() {
                     <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
                   </View>
                   <CardDescription>
-                    <Text className="text-muted-foreground text-sm">
-                      {lastEnvRef.current?.temperature}°F, {getTime(envLastUpdatedRef.current)}
-                    </Text>
+                    <Text className="text-muted-foreground text-sm"></Text>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -311,9 +319,7 @@ export default function Index() {
                   </View>
 
                   <CardDescription>
-                    <Text className="text-muted-foreground text-sm">
-                      {lastEnvRef.current?.humidity}%, {getTime(envLastUpdatedRef.current)}
-                    </Text>
+                    <Text className="text-muted-foreground text-sm"></Text>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

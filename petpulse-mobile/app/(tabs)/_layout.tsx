@@ -1,4 +1,4 @@
-import BleModal from '@/components/ble-modal';
+import BleModal from '@/components/petpulse-ui/ble-modal';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
