@@ -35,24 +35,3 @@ export const MODES = [
 ];
 
 export type ModeOption = (typeof MODES)[number];
-
-export const accuracyMap: Record<number, string> = {
-  0: 'Unreliable',
-  1: 'Low',
-  2: 'Medium',
-  3: 'High',
-  4: 'Undefined',
-};
-
-export const activityClassMap: Record<number, string> = {
-  0: 'Unknown',
-  1: 'In Vehicle',
-  2: 'On Bicycle',
-  3: 'On Foot',
-  4: 'Still',
-  5: 'Tilting',
-  6: 'Walking',
-  7: 'Running',
-  8: 'On Stairs',
-  9: 'Undefined',
-};

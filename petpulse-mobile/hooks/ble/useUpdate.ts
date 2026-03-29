@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { insert, type Sensor_Reading } from '../../lib/petpulse/data-service';
+import { insert } from '../../lib/petpulse/data-service';
 import {
   parseActivity,
   parseAggregated,
@@ -41,13 +41,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const rawArray = new Uint8Array(data.value);
           const raw = parseRaw(rawArray);
-          const sensor_reading: Sensor_Reading = {
-            pet_id: petId,
-            metric_type: 'raw_motion',
-            data: { accel: raw.accel, gyro: raw.gyro, magf: raw.magf, rv: raw.rv },
-            recorded_at: raw.utcTimestamp,
-          };
-          await insert(sensor_reading);
+          await insert(petId, 'raw_motion', raw);
           setRaw(raw);
         } catch (error) {
           console.error('[useUpdate] insert raw_motion', {
@@ -63,13 +57,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const activityBuffer = new Uint8Array(data.value);
           const activity = parseActivity(activityBuffer);
-          const sensor_reading: Sensor_Reading = {
-            pet_id: petId,
-            metric_type: 'activity',
-            data: { classifier: activity.classifier, stepCount: activity.stepCount },
-            recorded_at: activity.utcTimestamp,
-          };
-          await insert(sensor_reading);
+          await insert(petId, 'activity', activity);
           setActivity(activity);
         } catch (error) {
           console.error('[useUpdate] insert activity', {
@@ -85,13 +73,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const envArray = new Uint8Array(data.value);
           const env = parseEnv(envArray);
-          const sensor_reading: Sensor_Reading = {
-            pet_id: petId,
-            metric_type: 'env',
-            data: { temp: env.temperature, humidity: env.humidity },
-            recorded_at: env.utcTimestamp,
-          };
-          await insert(sensor_reading);
+          await insert(petId, 'env', env);
           setEnv(env);
         } catch (error) {
           console.error('[useUpdate] insert env', {
@@ -107,13 +89,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const vitalsBuffer = new Uint8Array(data.value);
           const vitals = parseVitals(vitalsBuffer);
-          const sensor_reading: Sensor_Reading = {
-            pet_id: petId,
-            metric_type: 'vitals',
-            data: { heartRate: vitals.heartRate, breathRate: vitals.breathRate, hr_confidence: vitals.hr_confidence },
-            recorded_at: vitals.utcTimestamp,
-          };
-          await insert(sensor_reading);
+          await insert(petId, 'vitals', vitals);
           setVitals(vitals);
         } catch (error) {
           console.error('[useUpdate] insert vitals', {
@@ -130,55 +106,22 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
           const aggArray = new Uint8Array(data.value);
           const aggregated = parseAggregated(aggArray);
           if (aggregated.activity != undefined) {
-            const sensor_reading: Sensor_Reading = {
-              pet_id: petId,
-              metric_type: 'activity',
-              data: { classifier: aggregated.activity.classifier, stepCount: aggregated.activity.stepCount },
-              recorded_at: aggregated.activity.utcTimestamp,
-            };
-            await insert(sensor_reading);
+            await insert(petId, 'activity', aggregated.activity);
             setActivity(aggregated.activity);
           }
 
           if (aggregated.raw != undefined) {
-            const sensor_reading: Sensor_Reading = {
-              pet_id: petId,
-              metric_type: 'raw_motion',
-              data: {
-                accel: aggregated.raw.accel,
-                gyro: aggregated.raw.gyro,
-                magf: aggregated.raw.magf,
-                rv: aggregated.raw.rv,
-              },
-              recorded_at: aggregated.raw.utcTimestamp,
-            };
-            await insert(sensor_reading);
+            await insert(petId, 'raw_motion', aggregated.raw);
             setRaw(aggregated.raw);
           }
 
           if (aggregated.vitals != undefined) {
-            const sensor_reading: Sensor_Reading = {
-              pet_id: petId,
-              metric_type: 'vitals',
-              data: {
-                heartRate: aggregated.vitals.heartRate,
-                breathRate: aggregated.vitals.breathRate,
-                hr_confidence: aggregated.vitals.hr_confidence,
-              },
-              recorded_at: aggregated.vitals.utcTimestamp,
-            };
-            await insert(sensor_reading);
+            await insert(petId, 'vitals', aggregated.vitals);
             setVitals(aggregated.vitals);
           }
 
           if (aggregated.env != undefined) {
-            const sensor_reading: Sensor_Reading = {
-              pet_id: petId,
-              metric_type: 'env',
-              data: { temp: aggregated.env.temperature, humidity: aggregated.env.humidity },
-              recorded_at: aggregated.env.utcTimestamp,
-            };
-            await insert(sensor_reading);
+            await insert(petId, 'env', aggregated.env);
             setEnv(aggregated.env);
           }
         } catch (error) {
@@ -217,9 +160,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals).catch(() => {});
-      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated).catch(
-        () => {},
-      );
+      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated).catch(() => {});
     };
   }, [connected, petId]);
 

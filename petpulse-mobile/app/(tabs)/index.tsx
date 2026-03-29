@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
-import { activityClassMap } from '@/hooks/ble/UUIDS';
 import { fetch } from '@/lib/petpulse/data-service';
+import { activityClassMap } from '@/lib/petpulse/sensor-readings';
 import clsx from 'clsx';
 import { router } from 'expo-router';
 import {
@@ -43,33 +43,28 @@ export default function Index() {
   const [breathRate, setBreathRate] = useState<number | null>(null);
   const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
 
-  // useEffect(() => {
-  //   const { utcTimestamp, ...dataValues } = env ?? {};
-  //   lastEnvRef.current = { data: dataValues as Env, recorded_at: utcTimestamp ?? new Date() };
-  //   envLastUpdatedRef.current = Date.now();
-  // }, [env]);
-
-  // useEffect(() => {
-  //   lastVitalsRef.current = vitals;
-  //   vitalsLastUpdatedRef.current = Date.now();
-  // }, [vitals]);
+  useEffect(() => {
+    if (!env) return;
+    setTemperature(env?.temperature);
+    setHumidity(env?.humidity);
+  }, [env]);
 
   useEffect(() => {
-    if (!activity) return;
-    setStepCount(activity.stepCount.steps);
-    setActivityClass(activityClassMap[activity.classifier.activityClass]);
-  }, [activity]);
+    if (!vitals) return;
+    setHeartRate(vitals?.heartRate);
+    setBreathRate(vitals?.breathRate);
+  }, [vitals]);
 
   // ============================= STEP & ACTIVITY =============================
   useEffect(() => {
     const fetchData = async () => {
-      const stepData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'step_count', 'latest', 'AIML_mock_metrics');
+      const stepData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'step_count', 'latest');
       if (stepData?.[0]) {
         setStepCount(stepData[0].data);
       } else {
         setStepCount(0);
       }
-      const activityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'activity', 'latest', 'AIML_mock_metrics');
+      const activityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'activity', 'latest');
       if (activityData?.[0]) {
         setActivityClass(activityClassMap[activityData[0].data]);
         setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
@@ -80,17 +75,25 @@ export default function Index() {
     fetchData();
   }, []);
 
+  // ----- From BLE -----
+  useEffect(() => {
+    if (!activity) return;
+    setStepCount(activity.stepCount.steps);
+    setActivityClass(activityClassMap[activity.classifier.activityClass]);
+    setActivityClassLastUpdated(activity.utcTimestamp.getTime());
+  }, [activity]);
+
   // ============================= VITALS =============================
   useEffect(() => {
     const fetchData = async () => {
-      const heartRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'heart_rate', 'latest', 'AIML_mock_metrics');
+      const heartRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'heart_rate', 'latest');
       if (heartRateData?.[0]) {
         setHeartRate(Math.round(heartRateData[0].data));
         setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
       } else {
         setHeartRate(null);
       }
-      const breathRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'breath_rate', 'latest', 'AIML_mock_metrics');
+      const breathRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'breath_rate', 'latest');
       if (breathRateData?.[0]) {
         setBreathRate(breathRateData[0].data);
         setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
@@ -98,15 +101,25 @@ export default function Index() {
     };
     fetchData();
   }, []);
+
+  // ----- From BLE -----
+  useEffect(() => {
+    if (!vitals) return;
+    setHeartRate(vitals?.heartRate);
+    setBreathRate(vitals?.breathRate);
+    setHeartRateLastUpdated(vitals?.utcTimestamp.getTime());
+    setBreathRateLastUpdated(vitals?.utcTimestamp.getTime());
+  }, [vitals]);
+
   // ============================= ENV =============================
   useEffect(() => {
     const fetchData = async () => {
-      const temperatureData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'temperature', 'latest', 'AIML_mock_metrics');
+      const temperatureData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'temperature', 'latest');
       if (temperatureData?.[0]) {
         setTemperature(temperatureData[0].data);
         setTemperatureLastUpdated(temperatureData[0].recorded_at.getTime());
       }
-      const humidityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'humidity', 'latest', 'AIML_mock_metrics');
+      const humidityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'humidity', 'latest');
       if (humidityData?.[0]) {
         setHumidity(humidityData[0].data);
         setHumidityLastUpdated(humidityData[0].recorded_at.getTime());
@@ -114,6 +127,14 @@ export default function Index() {
     };
     fetchData();
   }, []);
+  // ----- From BLE -----
+  useEffect(() => {
+    if (!env) return;
+    setTemperature(env?.temperature);
+    setHumidity(env?.humidity);
+    setTemperatureLastUpdated(env?.utcTimestamp.getTime());
+    setHumidityLastUpdated(env?.utcTimestamp.getTime());
+  }, [env]);
 
   const formatTime = (lastUpdated: number | null) => {
     if (!lastUpdated) return '';
