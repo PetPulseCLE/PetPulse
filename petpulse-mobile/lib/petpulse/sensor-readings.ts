@@ -163,3 +163,14 @@ export const parseAggregated = (data: Uint8Array): Aggregated => {
     } as Aggregated;
 };
 
+/* ============================= SENSOR READING HELPER ============================= */
+export type DataType = 'step_count' | 'activity' | 'temperature' | 'humidity' | 'heart_rate' | 'breath_rate';
+
+export type MetricType = 'raw_motion' | 'activity' | 'vitals' | 'env';
+
+export type FetchPeriod = 'latest' | 'day' | 'week' | 'month';
+
+export type DataPoint = {
+  data: number;
+  recorded_at: Date;
+};

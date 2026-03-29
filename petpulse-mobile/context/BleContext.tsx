@@ -1,7 +1,7 @@
 import { type DeviceMode } from '@/hooks/ble/UUIDS';
 import { useBleMode } from '@/hooks/ble/useBleMode';
 import { useUpdate } from '@/hooks/ble/useUpdate';
-import { type Activity, type Env, type Raw, type Vitals } from '@/lib/sensor-readings';
+import { type Activity, type Env, type Raw, type Vitals } from '@/lib/petpulse/sensor-readings';
 import { createContext, useContext } from 'react';
 import type { Peripheral } from 'react-native-ble-manager';
 import { useBleConn } from '../hooks/ble/useBleConn-v2';

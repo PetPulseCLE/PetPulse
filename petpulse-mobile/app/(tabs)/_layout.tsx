@@ -1,4 +1,4 @@
-import BleModal from '@/components/ble-modal';
+import BleModal from '@/components/petpulse-ui/ble-modal';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +36,7 @@ function TabsWithHeader() {
       <Tabs.Screen name="breathrate" options={{ title: 'Breath Rate', href: null, headerShown: false }} />
       <Tabs.Screen name="temperature" options={{ title: 'Temperature', href: null, headerShown: false }} />
       <Tabs.Screen name="humidity" options={{ title: 'Humidity', href: null, headerShown: false }} />
+      <Tabs.Screen name="activity" options={{ title: 'Activity', href: null, headerShown: false }} />
       <Tabs.Screen name="stepcount" options={{ title: 'Step Count', href: null, headerShown: false }} />
     </Tabs>
   );

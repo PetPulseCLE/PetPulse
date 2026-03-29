@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { insert, type Sensor_Reading } from '../../lib/data-service';
+import { insert, type Sensor_Reading } from '../../lib/petpulse/data-service';
 import {
   parseActivity,
   parseAggregated,
@@ -12,7 +12,7 @@ import {
   type Env,
   type Raw,
   type Vitals,
-} from '../../lib/sensor-readings';
+} from '../../lib/petpulse/sensor-readings';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
 
 /*
