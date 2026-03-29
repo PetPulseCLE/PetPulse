@@ -37,6 +37,7 @@ function TabsWithHeader() {
       <Tabs.Screen name="temperature" options={{ title: 'Temperature', href: null, headerShown: false }} />
       <Tabs.Screen name="humidity" options={{ title: 'Humidity', href: null, headerShown: false }} />
       <Tabs.Screen name="activity" options={{ title: 'Activity', href: null, headerShown: false }} />
+      <Tabs.Screen name="stepcount" options={{ title: 'Step Count', href: null, headerShown: false }} />
     </Tabs>
   );
 }

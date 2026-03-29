@@ -234,7 +234,28 @@ export default function Index() {
             className="flex flex-row gap-2 px-2 min-w-0"
             entering={FadeIn.delay(100).duration(500).easing(Easing.inOut(Easing.ease))}
           >
-            <MetricCard title="Step Count" icon={PawPrint} color="emerald" value={stepCount} lastUpdated="Today" />
+            <Pressable
+              className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300"
+              onPress={() => router.push('/stepcount')}
+            >
+              <Card className="bg-tab-bar border-tab-bar">
+                <CardHeader>
+                  <View className="flex flex-row items-center justify-between">
+                    <View className="flex flex-row items-center gap-2">
+                      <Icon as={PawPrint} size={22} className="text-emerald-500" />
+                      <Text className="text-md font-semibold text-secondary-foreground">Step Count</Text>
+                    </View>
+                    <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
+                  </View>
+                  <CardDescription>
+                    <Text className="text-muted-foreground text-sm">Today</Text>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Text className="text-muted-foreground text-lg font-semibold">{activity?.stepCount.steps}</Text>
+                </CardContent>
+              </Card>
+            </Pressable>
             <Pressable
               className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300"
               onPress={() => router.push('/activity')}
@@ -243,7 +264,7 @@ export default function Index() {
                 title="Activity"
                 icon={Zap}
                 color="orange"
-                value={activityClass}
+                value={activityClass ?? (activity?.classifier.activityClass != null ? activityClassMap[activity.classifier.activityClass] : null)}
                 lastUpdated={formatTime(activityClassLastUpdated)}
               />
             </Pressable>
