@@ -29,7 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
-  const { user, pet } = useAuth();
+  const { user, pet, mockSubject } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals } = useBle();
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [activityClass, setActivityClass] = useState<string | null>(null);
@@ -43,18 +43,18 @@ export default function Index() {
   const [breathRate, setBreathRate] = useState<number | null>(null);
   const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
 
-  //if (!user || !pet) return null; Add back in after development
-
   // ============================= STEP & ACTIVITY =============================
+  console.log('[Index] mockSubject', mockSubject?.id);
   useEffect(() => {
+    if (!mockSubject) return;
     const fetchData = async () => {
-      const stepData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'step_count', 'latest');
+      const stepData = await fetch(mockSubject.id, 'step_count', 'latest');
       if (stepData?.[0]) {
         setStepCount(stepData[0].data);
       } else {
         setStepCount(0);
       }
-      const activityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'activity', 'latest');
+      const activityData = await fetch(mockSubject.id, 'activity', 'latest');
       if (activityData?.[0]) {
         setActivityClass(activityClassMap[activityData[0].data]);
         setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
@@ -75,15 +75,16 @@ export default function Index() {
 
   // ============================= VITALS =============================
   useEffect(() => {
+    if (!mockSubject) return;
     const fetchData = async () => {
-      const heartRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'heart_rate', 'latest');
+      const heartRateData = await fetch(mockSubject.id, 'heart_rate', 'latest');
       if (heartRateData?.[0]) {
         setHeartRate(Math.round(heartRateData[0].data));
         setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
       } else {
         setHeartRate(null);
       }
-      const breathRateData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'breath_rate', 'latest');
+      const breathRateData = await fetch(mockSubject.id, 'breath_rate', 'latest');
       if (breathRateData?.[0]) {
         setBreathRate(breathRateData[0].data);
         setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
@@ -104,12 +105,13 @@ export default function Index() {
   // ============================= ENV =============================
   useEffect(() => {
     const fetchData = async () => {
-      const temperatureData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'temperature', 'latest');
+      if (!mockSubject) return;
+      const temperatureData = await fetch(mockSubject.id, 'temperature', 'latest');
       if (temperatureData?.[0]) {
         setTemperature(temperatureData[0].data);
         setTemperatureLastUpdated(temperatureData[0].recorded_at.getTime());
       }
-      const humidityData = await fetch('15186d69-a480-47c8-a78a-13790c6d1818', 'humidity', 'latest');
+      const humidityData = await fetch(mockSubject.id, 'humidity', 'latest');
       if (humidityData?.[0]) {
         setHumidity(humidityData[0].data);
         setHumidityLastUpdated(humidityData[0].recorded_at.getTime());

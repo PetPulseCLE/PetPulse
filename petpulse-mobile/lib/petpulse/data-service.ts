@@ -54,7 +54,7 @@ export async function fetch(
     period_param: period,
     start_date_param: start_date,
     end_date_param: end_date,
-    avg_param_param: avg_param,
+    avg_param: avg_param,
     bucket_period_param: bucket_period,
   });
 
