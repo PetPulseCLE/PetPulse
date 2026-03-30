@@ -9,7 +9,7 @@ import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, Droplets } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { LineChart, barDataItem } from 'react-native-gifted-charts';
+import { CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TimeRange = 'D' | 'W' | 'M';
@@ -125,15 +125,18 @@ export default function HumidityScreen() {
     pointerLabelWidth: 20,
     shiftPointerLabelX: -20,
     shiftPointerLabelY: -10,
-    pointerLabelComponent: (items: barDataItem[]) => (
-      <View style={{ width: 60, alignItems: 'center' }}>
-        <View className="bg-black/50 rounded-sm px-1.5 py-0.5">
-          <Text className="text-xs text-white text-center" numberOfLines={1}>
-            {items[0]?.value}%
-          </Text>
+    pointerLabelComponent: (items: barDataItem[]) =>
+      items[0]?.value ? (
+        <View style={{ width: 60, alignItems: 'center' }}>
+          <View className="bg-black/50 rounded-sm px-1.5 py-0.5">
+            <Text className="text-xs text-white text-center" numberOfLines={1}>
+              {items[0]?.value}%
+            </Text>
+          </View>
         </View>
-      </View>
-    ),
+      ) : (
+        <View />
+      ),
   };
 
   return (
@@ -197,6 +200,9 @@ export default function HumidityScreen() {
                 data={data}
                 color={SKY}
                 thickness={2}
+                curved
+                curveType={CurveType.QUADRATIC}
+                curvature={0.1}
                 areaChart
                 startFillColor={SKY}
                 endFillColor={SKY}

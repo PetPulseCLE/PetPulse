@@ -9,7 +9,7 @@ import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, HeartPulseIcon } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { BarChart, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { BarChart, CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChartType = 'bar' | 'area';
@@ -46,6 +46,7 @@ function fillSlots(
         label: DAILY_LABELS[i],
         value: hourMap.get(i) ?? 0,
         frontColor: hourMap.has(i) ? '#DC2626' : 'transparent',
+        hideDataPoint: !hourMap.has(i),
       }));
     }
     case 'W': {
@@ -57,6 +58,7 @@ function fillSlots(
         label: WEEKLY_LABELS[i],
         value: dayMap.get(i) ?? 0,
         frontColor: dayMap.has(i) ? '#DC2626' : 'transparent',
+        hideDataPoint: !dayMap.has(i),
       }));
     }
     case 'M': {
@@ -69,6 +71,7 @@ function fillSlots(
         label: MONTHLY_LABELS[i],
         value: weekMap.get(i) ?? 0,
         frontColor: weekMap.has(i) ? '#DC2626' : 'transparent',
+        hideDataPoint: !weekMap.has(i),
       }));
     }
   }
@@ -249,6 +252,8 @@ export default function HeartRateScreen() {
                     color="#DC2626"
                     thickness={2}
                     curved
+                    curveType={CurveType.QUADRATIC}
+                    curvature={0.1}
                     areaChart
                     startFillColor="#DC2626"
                     endFillColor="#DC2626"

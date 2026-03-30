@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { BarChart, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { BarChart, CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -48,6 +48,7 @@ function fillSlots(
         label: DAILY_LABELS[i],
         value: hourMap.get(i) ?? 0,
         frontColor: hourMap.has(i) ? BREATH_COLOR : 'transparent',
+        hideDataPoint: !hourMap.has(i),
       }));
     }
     case 'W': {
@@ -59,6 +60,7 @@ function fillSlots(
         label: WEEKLY_LABELS[i],
         value: dayMap.get(i) ?? 0,
         frontColor: dayMap.has(i) ? BREATH_COLOR : 'transparent',
+        hideDataPoint: !dayMap.has(i),
       }));
     }
     case 'M': {
@@ -71,6 +73,7 @@ function fillSlots(
         label: MONTHLY_LABELS[i],
         value: weekMap.get(i) ?? 0,
         frontColor: weekMap.has(i) ? BREATH_COLOR : 'transparent',
+        hideDataPoint: !weekMap.has(i),
       }));
     }
   }
@@ -263,6 +266,8 @@ export default function BreathRateScreen() {
                     color={BREATH_COLOR}
                     thickness={2}
                     curved
+                    curveType={CurveType.QUADRATIC}
+                    curvature={0.1}
                     areaChart
                     startFillColor={BREATH_COLOR}
                     endFillColor={BREATH_COLOR}

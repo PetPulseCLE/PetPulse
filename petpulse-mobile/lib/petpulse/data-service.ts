@@ -18,15 +18,17 @@ export const insert = async (pet_id: string, metric_type: MetricType, data: Acti
 export async function fetch(
   pet_id: string,
   data_type: DataType,
-  period: FetchPeriod,
-  start_date?: Date,
-  end_date?: Date,
+  period: FetchPeriod | null = null,
+  start_date: Date | null = null,
+  end_date: Date | null = null,
 ): Promise<DataPoint[] | null> {
   // Default query
   let query = supabase.rpc('fetch_mock_data', {
     pet_id_param: pet_id,
     data_type_param: data_type,
     period_param: period,
+    start_date_param: start_date,
+    end_date_param: end_date
   });
 
   try {
