@@ -43,17 +43,7 @@ export default function Index() {
   const [breathRate, setBreathRate] = useState<number | null>(null);
   const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!env) return;
-    setTemperature(env?.temperature);
-    setHumidity(env?.humidity);
-  }, [env]);
-
-  useEffect(() => {
-    if (!vitals) return;
-    setHeartRate(vitals?.heartRate);
-    setBreathRate(vitals?.breathRate);
-  }, [vitals]);
+  //if (!user || !pet) return null; Add back in after development
 
   // ============================= STEP & ACTIVITY =============================
   useEffect(() => {
