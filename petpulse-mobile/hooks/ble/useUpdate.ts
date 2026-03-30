@@ -138,16 +138,22 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
   };
 
   const subscribeTo = async (peripheral: Peripheral) => {
-    try {
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals);
-      await BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated);
-      console.log('Subscribed to activity notifications');
-    } catch (error) {
-      console.error('[useUpdate] subscribeTo', { error });
-    }
+    // array of notifications to subscribe to
+    const notifs = [
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.activity),
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.raw),
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env),
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals),
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated),
+    ];
+
+    // Subscribe in parallel, log if any promise rejects
+    const results = await Promise.allSettled(notifs);
+    results.forEach((result) => {
+      if (result.status === 'rejected') {
+        console.error('[useUpdate] subscribeTo failed', result.reason);
+      }
+    });
   };
 
   useEffect(() => {
