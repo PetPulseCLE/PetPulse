@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { fetch } from '@/lib/petpulse/data-service';
 import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
@@ -72,23 +73,26 @@ function fillSlots(
 
 export default function HumidityScreen() {
   const insets = useSafeAreaInsets();
-  // TODO: replace with real pet ID from auth once subjects table is ready
-  const TEMP_PET_ID = '15186d69-a480-47c8-a78a-13790c6d1818';
+  const { mockSubject } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
   const [data, setData] = useState<{ label: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    if (!mockSubject?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const result = await fetch(TEMP_PET_ID, 'humidity', PERIOD_MAP[timeRange]);
+    const result = await fetch(mockSubject.id, 'humidity', PERIOD_MAP[timeRange]);
     if (result && result.length > 0) {
       setData(fillSlots(result, timeRange));
     } else {
       setData([]);
     }
     setLoading(false);
-  }, [timeRange]);
+  }, [mockSubject?.id, timeRange]);
 
   useEffect(() => {
     fetchData();
