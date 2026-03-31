@@ -85,7 +85,14 @@ export default function TemperatureScreen() {
       return;
     }
     setLoading(true);
-    const result = await fetch(mockSubject.id, 'temperature', PERIOD_MAP[timeRange]);
+    let result: { data: number; recorded_at: Date }[] | null;
+    if (timeRange === 'D') {
+      result = await fetch(mockSubject.id, 'temperature', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
+    } else if (timeRange === 'W') {
+      result = await fetch(mockSubject.id, 'temperature', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
+    } else {
+      result = await fetch(mockSubject.id, 'temperature', PERIOD_MAP[timeRange]);
+    }
     if (result && result.length > 0) {
       setData(fillSlots(result, timeRange));
     } else {

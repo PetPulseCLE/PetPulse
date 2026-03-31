@@ -92,9 +92,18 @@ export default function HeartRateScreen() {
       setLoading(false);
       return;
     }
+    setData([]);
     setLoading(true);
-    const result = await fetch(mockSubject.id, 'heart_rate', PERIOD_MAP[timeRange]);
-    if (result) {
+
+    let result: { data: number; recorded_at: Date }[] | null;
+    if (timeRange === 'D') {
+      result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
+    } else if (timeRange === 'W') {
+      result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
+    } else {
+      result = await fetch(mockSubject.id, 'heart_rate', PERIOD_MAP[timeRange]);
+    }
+    if (result && result.length > 0) {
       setData(fillSlots(result, timeRange));
     } else {
       setData([]);
@@ -105,6 +114,7 @@ export default function HeartRateScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
 
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
 
@@ -180,6 +190,8 @@ export default function HeartRateScreen() {
               value={timeRange}
               onValueChange={(val) => {
                 if (val) {
+                  setData([]);
+                  setLoading(true);
                   setTimeRange(val as TimeRange);
                   if (val === 'D') setChartType('bar');
                 }
@@ -233,6 +245,7 @@ export default function HeartRateScreen() {
               <>
                 {chartType === 'bar' && (
                   <BarChart
+                    key={`bar-${timeRange}-${data.length}`}
                     data={data}
                     barWidth={timeRange === 'D' ? 8 : 16}
                     spacing={timeRange === 'D' ? 4 : timeRange === 'W' ? 30 : 70}
@@ -242,9 +255,10 @@ export default function HeartRateScreen() {
                     frontColor="#DC2626"
                     rulesColor="transparent"
                     rulesThickness={1}
-                    isAnimated
+                   // isAnimated
                     xAxisIndicesWidth={16}
-                    animationDuration={1000}
+                  //  animationDuration={300}
+                 //   disablePress
                     disableScroll
                     pointerConfig={{ ...pointerConfig, pointerColor: axisAndLabel }}
                     {...commonAxisProps}
