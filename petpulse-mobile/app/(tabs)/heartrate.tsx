@@ -101,7 +101,7 @@ export default function HeartRateScreen() {
     } else if (timeRange === 'W') {
       result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
     } else {
-      result = await fetch(mockSubject.id, 'heart_rate', PERIOD_MAP[timeRange]);
+      result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
     }
     if (result && result.length > 0) {
       setData(fillSlots(result, timeRange));

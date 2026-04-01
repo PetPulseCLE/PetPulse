@@ -223,15 +223,17 @@ export default function Index() {
           {/* ============================= DATA CARDS ============================= */}
           {/* ============================= STEP & ACTIVITY ============================= */}
           <Animated.View className="flex flex-row gap-2 px-2 min-w-0" entering={FadeIn.delay(100).duration(500).easing(Easing.inOut(Easing.ease))}>
-            <MetricCard
-              title="Step Count"
-              icon={PawPrint}
-              iconColorClassName="text-emerald-500"
-              value={stepCount}
-              metricType="step_count"
-              lastUpdated="Today"
-            />
-            <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300">
+            <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300" onPress={() => router.push('/stepcount')}>
+              <MetricCard
+                title="Step Count"
+                icon={PawPrint}
+                iconColorClassName="text-emerald-500"
+                value={stepCount}
+                metricType="step_count"
+                lastUpdated="Today"
+              />
+            </Pressable>
+            <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300" onPress={() => router.push('/activity')}>
               <MetricCard
                 title="Activity"
                 icon={Zap}
