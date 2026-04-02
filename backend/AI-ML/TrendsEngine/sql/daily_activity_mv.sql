@@ -18,7 +18,7 @@ SELECT
     pet_id,
     DATE_TRUNC('day', recorded_at)::date                AS observation_day,
     COUNT(*)                                            AS total_readings,
-    SUM((data->'stepCount'->>'steps')::numeric)         AS total_steps,
+    COALESCE(SUM((data->'stepCount'->>'steps')::numeric), 0) AS total_steps,
     COUNT(*) FILTER (
         WHERE data->'classifier'->>'activityClass' IS NOT NULL
           AND (data->'classifier'->>'activityClass')::int NOT IN (0, 1, 4)

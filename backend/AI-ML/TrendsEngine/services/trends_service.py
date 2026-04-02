@@ -6,9 +6,9 @@ Pipeline overview:
   2. Align each metric to a dense 30-day grid; interpolate gaps.
   3. Run IsolationForest on aggregated vitals (HR + BR); null anomalous days before analysis.
   4. Apply Z-score classification:
-       baseline  = days  1–14  (iloc[:14])
-       trend win = days 24–30  (iloc[23:])
-       Z = (trend_mean − baseline_mean) / baseline_std
+       baseline  = days  1-14  (iloc[:14])
+       trend win = days 24-30  (iloc[23:])
+       Z = (trend_mean - baseline_mean) / baseline_std
   5. Return structured TrendsResponse ready for the Expo frontend.
 
 Source data schema (per sample):
@@ -219,26 +219,30 @@ def _detect_anomalies(vitals_df: pd.DataFrame) -> np.ndarray:
 
     Trains on (avg_hr, avg_br) with contamination=0.05.
     Returns an array of shape (n,): 1 = normal, -1 = anomaly.
-    Falls back to all-normal when fewer than 10 rows are available.
+    NaN rows are excluded from fitting and kept as normal (1) in the output.
+    Falls back to all-normal when fewer than 10 valid rows are available.
     """
     n = len(vitals_df)
-    if n < 10:
-        return np.ones(n, dtype=int)
+    preds = np.ones(n, dtype=int)
+    valid_mask = vitals_df[["avg_hr", "avg_br"]].notna().all(axis=1).to_numpy()
+    if valid_mask.sum() < 10:
+        return preds
 
-    features = vitals_df[["avg_hr", "avg_br"]].to_numpy()
-    return IsolationForest(
+    features = vitals_df.loc[valid_mask, ["avg_hr", "avg_br"]].to_numpy()
+    preds[valid_mask] = IsolationForest(
         contamination=0.05, random_state=42, n_jobs=-1
     ).fit_predict(features)
+    return preds
 
 
 def _z_score_windows(series: pd.Series) -> tuple[float, float]:
     """
     Compute Z-score and percentage change between the baseline and trend windows.
 
-    Baseline  : iloc[:14]   (days  1–14)
-    Trend win : iloc[23:]   (days 24–30)
+    Baseline  : iloc[:14]   (days  1-14)
+    Trend win : iloc[23:]   (days 24-30)
 
-    Z = (trend_mean − baseline_mean) / baseline_std
+    Z = (trend_mean - baseline_mean) / baseline_std
     Returns (z_score, pct_change).  Returns (0.0, 0.0) on flat/empty baseline.
     """
     baseline   = series.iloc[:14]
@@ -303,7 +307,7 @@ def compute_trends(pet_id: str) -> TrendsResponse:
       4. Run IsolationForest on aggregated vitals (HR + BR); null anomalous
          days so they are treated as missing and filled by interpolation rather
          than skewing the Z-score calculation.
-      5. Compute Z-score over baseline (days 1–14) vs trend (days 24–30).
+      5. Compute Z-score over baseline (days 1-14) vs trend (days 24-30).
       6. Classify status and assemble response.
     """
     end_date   = date.today()

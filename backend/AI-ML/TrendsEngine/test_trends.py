@@ -126,7 +126,7 @@ class TestZScoreWindows:
 
     def test_declining_series_negative_z(self):
         series = pd.Series(_declining(30, start=90.0, step=1.5))
-        z, pct = _z_score_windows(series)
+        z, _ = _z_score_windows(series)
         assert z < 0, "Declining series should yield negative Z"
 
     def test_all_nan_baseline_returns_zero(self):
@@ -197,6 +197,15 @@ class TestDetectAnomalies:
         df = pd.DataFrame({"avg_hr": hr, "avg_br": br})
         result = _detect_anomalies(df)
         assert result[-1] == -1, "Obvious outlier should be flagged as anomaly"
+
+    def test_nan_rows_treated_as_normal(self):
+        """NaN rows must be excluded from IsolationForest and default to normal (1)."""
+        hr = [75.0] * 25 + [float("nan")] * 5
+        br = [15.0] * 25 + [float("nan")] * 5
+        df = pd.DataFrame({"avg_hr": hr, "avg_br": br})
+        result = _detect_anomalies(df)
+        assert len(result) == 30
+        assert (result[25:] == 1).all(), "NaN rows should default to normal (1)"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
