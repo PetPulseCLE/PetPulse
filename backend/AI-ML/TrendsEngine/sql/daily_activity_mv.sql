@@ -20,18 +20,21 @@ SELECT
     COUNT(*)                                            AS total_readings,
     SUM((data->'stepCount'->>'steps')::numeric)         AS total_steps,
     COUNT(*) FILTER (
-        WHERE (data->'classifier'->>'activityClass')::int NOT IN (0, 1, 4)
+        WHERE data->'classifier'->>'activityClass' IS NOT NULL
+          AND (data->'classifier'->>'activityClass')::int NOT IN (0, 1, 4)
     )                                                   AS active_count,
     ROUND(
         COUNT(*) FILTER (
-            WHERE (data->'classifier'->>'activityClass')::int NOT IN (0, 1, 4)
+            WHERE data->'classifier'->>'activityClass' IS NOT NULL
+              AND (data->'classifier'->>'activityClass')::int NOT IN (0, 1, 4)
         )::numeric
-        / NULLIF(COUNT(*), 0) * 100,
+        / NULLIF(COUNT(*) FILTER (
+            WHERE data->'classifier'->>'activityClass' IS NOT NULL
+        ), 0) * 100,
         2
     )                                                   AS activity_pct
 FROM   "AIML_mock_metrics"
 WHERE  metric_type = 'activity'
-  AND  data->'classifier'->>'activityClass' IS NOT NULL
 GROUP  BY pet_id, DATE_TRUNC('day', recorded_at)
 WITH DATA;
 

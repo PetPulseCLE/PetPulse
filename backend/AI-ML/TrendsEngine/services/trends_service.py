@@ -52,10 +52,10 @@ def _classify_vitals(z: float, pct_change: float) -> str:
     Map Z-score and percentage change to a vitals status.
 
     Rules (CLAUDE.md):
-      warning  → |Z| > 2.0  OR  |Δ%| > 10
-      improved → Z > 1.0
+      warning   → |Z| >= 2.0  OR  |Δ%| >= 10
+      improved  → Z > 1.0
       declining → Z < -1.0
-      stable   → otherwise
+      stable    → otherwise
     """
     if abs(z) >= 2.0 or abs(pct_change) >= 10.0:
         return "warning"
@@ -71,7 +71,7 @@ def _classify_activity(z: float) -> str:
     Map Z-score to an activity status.
 
     Rules (CLAUDE.md):
-      declining → Z < -1.5
+      declining → Z <= -1.5
       improved  → Z > 1.0
       stable    → otherwise
     """
@@ -249,11 +249,18 @@ def _z_score_windows(series: pd.Series) -> tuple[float, float]:
     trend_mean    = float(trend_win.mean())
 
     if baseline_std == 0 or np.isnan(baseline_std):
-        return 0.0, 0.0
+        z = 0.0
+    else:
+        z = (trend_mean - baseline_mean) / baseline_std
 
-    z   = (trend_mean - baseline_mean) / baseline_std
-    pct = (trend_mean - baseline_mean) / baseline_mean * 100 if baseline_mean != 0 else 0.0
-    return float(z), float(pct)
+    if baseline_mean != 0 and not np.isnan(baseline_mean):
+        pct = (trend_mean - baseline_mean) / baseline_mean * 100
+    else:
+        pct = 0.0
+
+    z = 0.0 if np.isnan(z) else float(z)
+    pct = 0.0 if np.isnan(pct) else float(pct)
+    return z, pct
 
 
 def _build_trend(
@@ -347,6 +354,6 @@ def compute_trends(pet_id: str) -> TrendsResponse:
 
     return TrendsResponse(
         pet_id=pet_id,
-        computed_at=end_date.isoformat(),
+        computed_at=end_date,
         trends=trends,
     )

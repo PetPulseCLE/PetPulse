@@ -1,8 +1,16 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.client import get_client
 from routers.trends import router as trends_router
+
+_allowed_origins = [
+    stripped
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if (stripped := o.strip()) and stripped.startswith(("http://", "https://"))
+]
 
 app = FastAPI(
     title="PetPulse Trends Engine",
@@ -12,7 +20,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_methods=["GET"],
     allow_headers=["*"],
 )

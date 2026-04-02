@@ -15,9 +15,11 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS daily_weight_mv AS
 SELECT
     pet_id,
     DATE_TRUNC('day', recorded_at)::date   AS observation_day,
-    AVG((data->>'current')::numeric)       AS avg_weight,
-    MAX((data->>'target')::numeric)        AS target_weight,
-    COUNT(*)                               AS total_readings
+    AVG(CASE WHEN data->>'current' ~ '^[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'current')::numeric END)  AS avg_weight,
+    MAX(CASE WHEN data->>'target' ~ '^[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'target')::numeric END)   AS target_weight,
+    COUNT(*)                                        AS total_readings
 FROM   "AIML_mock_metrics"
 WHERE  metric_type = 'weight'
   AND  data->>'current' IS NOT NULL

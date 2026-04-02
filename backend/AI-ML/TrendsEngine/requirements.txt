@@ -6,11 +6,11 @@ python-dotenv==1.0.1
 
 # Data Science & ML
 pandas==2.2.3
-numpy>=2.0
+numpy==2.4.3
 scikit-learn==1.6.1
 
 # Utilities
 pydantic==2.11.3
 
 # Testing
-pytest>=8.0
+pytest==9.0.2

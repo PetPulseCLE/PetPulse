@@ -264,19 +264,26 @@ class TestDisplayString:
 # compute_trends — end-to-end with mocked Supabase
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _mock_supabase_response(rows: list[dict]) -> MagicMock:
-    """Build a fake Supabase query chain that returns rows on .execute()."""
-    resp = MagicMock()
-    resp.data = rows
-    chain = MagicMock()
-    chain.table.return_value = chain
-    chain.select.return_value = chain
-    chain.eq.return_value = chain
-    chain.gte.return_value = chain
-    chain.lte.return_value = chain
-    chain.order.return_value = chain
-    chain.execute.return_value = resp
-    return chain
+def _mock_supabase_response(table_data: dict[str, list[dict]]) -> MagicMock:
+    """Build a fake Supabase client that dispatches responses by table name."""
+    client = MagicMock()
+
+    def table_side_effect(table_name: str) -> MagicMock:
+        if table_name not in table_data:
+            raise AssertionError(f"Unexpected table queried: {table_name}")
+        chain = MagicMock()
+        resp = MagicMock()
+        resp.data = table_data[table_name]
+        chain.select.return_value = chain
+        chain.eq.return_value = chain
+        chain.gte.return_value = chain
+        chain.lte.return_value = chain
+        chain.order.return_value = chain
+        chain.execute.return_value = resp
+        return chain
+
+    client.table.side_effect = table_side_effect
+    return client
 
 
 def _build_vitals_rows(pet_id: str, n: int = 30) -> list[dict]:
@@ -325,14 +332,15 @@ class TestComputeTrendsEndToEnd:
         weight_rows   = weight   if weight   is not None else []
         activity_rows = activity if activity is not None else _build_activity_rows(PET_ID)
 
-        call_count = [0]
-        def get_client_side_effect():
-            idx = call_count[0]
-            call_count[0] += 1
-            datasets = [vitals_rows, temp_rows, weight_rows, activity_rows]
-            return _mock_supabase_response(datasets[idx % 4])
+        table_data = {
+            "daily_vitals_mv":   vitals_rows,
+            "daily_temp_mv":     temp_rows,
+            "daily_weight_mv":   weight_rows,
+            "daily_activity_mv": activity_rows,
+        }
+        mock_client = _mock_supabase_response(table_data)
 
-        with patch("services.trends_service.get_client", side_effect=get_client_side_effect):
+        with patch("services.trends_service.get_client", return_value=mock_client):
             return compute_trends(PET_ID)
 
     def test_response_has_correct_pet_id(self):
@@ -341,7 +349,7 @@ class TestComputeTrendsEndToEnd:
 
     def test_response_has_computed_at(self):
         result = self._run_with_mock()
-        assert result.computed_at == date.today().isoformat()
+        assert result.computed_at == date.today()
 
     def test_trends_list_is_not_empty(self):
         result = self._run_with_mock()

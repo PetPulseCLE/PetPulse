@@ -127,8 +127,8 @@ Z = (current - μ) / σ
 
 ### Logic
 
-- Activity declining: Z \< -1.5
-- Vitals warning: \|Z\| \> 2.0 OR \>10% change
+- Activity declining: Z \<= -1.5
+- Vitals warning: \|Z\| \>= 2.0 OR \|% change\| \>= 10.0
 
 ### Statuses
 
@@ -152,15 +152,16 @@ Z = (current - μ) / σ
 
 ```json
 {
-  "pet_id": "uuid",
+  "pet_id": "5835cc7d-a287-4735-b008-399fcb2999bf",
+  "computed_at": "2026-04-02",
   "trends": [
     {
       "metricKey": "heart_rate",
       "status": "improved",
-      "displayString": "Example text",
-      "uiColor": "#FF3B30",
-      "percentageChange": 12.5,
-      "sparklineData": [62, 64, 65, 68, 70]
+      "displayString": "Heart Rate has been trending upward",
+      "uiColor": "#34C759",
+      "percentageChange": 5.3,
+      "sparklineData": [72.1, 73.4, 74.0, 74.5, 75.2, 76.1, 76.8]
     }
   ]
 }

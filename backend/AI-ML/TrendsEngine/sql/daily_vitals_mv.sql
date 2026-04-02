@@ -12,11 +12,15 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS daily_vitals_mv AS
 SELECT
     pet_id,
     DATE_TRUNC('day', recorded_at)::date            AS observation_day,
-    AVG((data->>'heartRate')::numeric)              AS avg_hr,
-    AVG((data->>'breathRate')::numeric)             AS avg_br,
-    STDDEV((data->>'heartRate')::numeric)           AS stddev_hr,
-    STDDEV((data->>'breathRate')::numeric)          AS stddev_br,
-    COUNT(*)                                        AS total_readings
+    AVG(CASE WHEN data->>'heartRate' ~ '^-?[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'heartRate')::numeric END)      AS avg_hr,
+    AVG(CASE WHEN data->>'breathRate' ~ '^-?[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'breathRate')::numeric END)     AS avg_br,
+    STDDEV(CASE WHEN data->>'heartRate' ~ '^-?[0-9]+(\.[0-9]+)?$'
+                THEN (data->>'heartRate')::numeric END)   AS stddev_hr,
+    STDDEV(CASE WHEN data->>'breathRate' ~ '^-?[0-9]+(\.[0-9]+)?$'
+                THEN (data->>'breathRate')::numeric END)  AS stddev_br,
+    COUNT(*)                                              AS total_readings
 FROM   "AIML_mock_metrics"
 WHERE  metric_type = 'vitals'
   AND  data->>'heartRate'  IS NOT NULL

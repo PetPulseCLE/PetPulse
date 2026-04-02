@@ -11,10 +11,13 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS daily_temp_mv AS
 SELECT
     pet_id,
     DATE_TRUNC('day', recorded_at)::date        AS observation_day,
-    AVG((data->>'temperature')::numeric)        AS avg_temp,
-    AVG((data->>'humidity')::numeric)           AS avg_humidity,
-    STDDEV((data->>'temperature')::numeric)     AS stddev_temp,
-    COUNT(*)                                    AS total_readings
+    AVG(CASE WHEN data->>'temperature' ~ '^-?[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'temperature')::numeric END)    AS avg_temp,
+    AVG(CASE WHEN data->>'humidity' ~ '^-?[0-9]+(\.[0-9]+)?$'
+             THEN (data->>'humidity')::numeric END)       AS avg_humidity,
+    STDDEV(CASE WHEN data->>'temperature' ~ '^-?[0-9]+(\.[0-9]+)?$'
+                THEN (data->>'temperature')::numeric END) AS stddev_temp,
+    COUNT(*)                                              AS total_readings
 FROM   "AIML_mock_metrics"
 WHERE  metric_type = 'env'
   AND  data->>'temperature' IS NOT NULL
