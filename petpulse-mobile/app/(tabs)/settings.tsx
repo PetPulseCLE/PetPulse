@@ -83,6 +83,16 @@ export default function Settings() {
     }
   };
 
+  const onLogout = async () => {
+    try {
+      await signOut();
+      setShowLogoutAlert(false);
+      router.replace('/(auth)');
+    } catch (error) {
+      /* Error toasts handled directly in AuthContext signout */
+    }
+  };
+
   const { theme, toggleTheme } = useThemePreference();
 
   const onToggleTheme = () => {
@@ -180,7 +190,7 @@ export default function Settings() {
       <View className="mx-3.5 mb-6 shadow-sm">
         <Pressable
           className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
-          onPress={() => setShowLogoutAlert(true)}
+          onPress={() => router.push('/devtools')}
         >
           <View className="flex flex-row px-3 py-2 justify-between items-center w-full">
             <View className="flex flex-row items-center gap-4">
@@ -277,14 +287,7 @@ export default function Settings() {
             <AlertDialogCancel>
               <Text className="text-muted-foreground">Cancel</Text>
             </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive"
-              onPress={async () => {
-                await signOut();
-                setShowLogoutAlert(false);
-                router.replace('/(auth)');
-              }}
-            >
+            <AlertDialogAction className="bg-destructive" onPress={onLogout}>
               <Text className="text-destructive-foreground">Log out</Text>
             </AlertDialogAction>
           </AlertDialogFooter>

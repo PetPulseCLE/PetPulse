@@ -1,7 +1,7 @@
 import { DataType } from '@/lib/petpulse/sensor-readings';
-import { type LucideIcon, ChevronRight } from 'lucide-react-native';
+import { type LucideIcon, AlertCircle, ChevronRight, Loader } from 'lucide-react-native';
 import { Text, View } from 'react-native';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '../ui/card';
 import { Icon } from '../ui/icon';
 
 export interface MetricCardProps {
@@ -13,14 +13,11 @@ export interface MetricCardProps {
   metricType?: DataType;
   lastUpdated?: string;
   unit?: string;
+  loading?: boolean;
 }
 
 /* prettier-ignore */
-export default function MetricCard({title, icon, iconColorClassName, valueColorClassName, value, metricType, lastUpdated = 'Today', unit}: MetricCardProps) {
-
-if(valueColorClassName === undefined) {
-    valueColorClassName = iconColorClassName;
-  }
+export default function MetricCard({title, icon, iconColorClassName, valueColorClassName = iconColorClassName, value, metricType, lastUpdated = 'Today', unit, loading}: MetricCardProps) {
   return (
     <Card className="bg-tab-bar border-tab-bar shadow-sm basis-1/2">
       <CardHeader>
@@ -32,16 +29,24 @@ if(valueColorClassName === undefined) {
           <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
         </View>
         <CardDescription>
-          <Text className="text-muted-foreground text-sm">{lastUpdated}</Text>
+          {value === null ? (null): <Text className="text-muted-foreground text-sm">{lastUpdated}</Text>}
+          
         </CardDescription>
       </CardHeader>
       <CardContent>
         <View className="flex flex-row items-center gap-2">
-          <Text className={`text-lg ${valueColorClassName}`}>{value?.toLocaleString('en-US')}</Text>
-          {unit && <Text className="text-muted-foreground text-sm font-medium">{unit}</Text>}
+        {loading ? (
+            <Icon as={Loader} className="size-4  animate-spin" color='#737373'/>
+          ) : value === null ? (
+            <>
+            <Icon as={AlertCircle} className="size-4 text-red-500" color='#dc2626'/>
+            <Text className="text-muted-foreground text-sm font-light">Data Unavailable</Text>
+            </>
+          ) : (
+            <Text className={`text-lg ${valueColorClassName}`}>{value?.toLocaleString('en-US')}</Text>)}
+            {!loading && value !== null && unit ? (<Text className="text-muted-foreground text-sm font-medium">{unit}</Text>) : (null)}
         </View>
       </CardContent>
-      <CardFooter></CardFooter>
     </Card>
   );
 }

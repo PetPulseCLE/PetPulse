@@ -1,15 +1,15 @@
+import { QueryError } from '@supabase/supabase-js';
+import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
 import type { Activity, DataPoint, DataType, Env, FetchPeriod, MetricType, Raw, RpcDataPoint, Vitals } from './sensor-readings';
 
-interface FetchParams {
-  pet_id: string;
-  data_type: DataType;
-  period?: FetchPeriod | null;
-  start_date?: Date | null;
-  end_date?: Date | null;
+// Supabase type insert responses
+export interface InsertResponse {
+  error: QueryError | null;
+  success: boolean;
 }
 
-export const insert = async (pet_id: string, metric_type: MetricType, data: Activity | Env | Vitals | Raw) => {
+export const insert = async (pet_id: string, metric_type: MetricType, data: Activity | Env | Vitals | Raw): Promise<InsertResponse> => {
   const { utcTimestamp, ...dataValues } = data;
   const { error } = await supabase.from('sensor_readings').insert({
     pet_id: pet_id,
@@ -19,9 +19,16 @@ export const insert = async (pet_id: string, metric_type: MetricType, data: Acti
   });
   if (error) {
     console.error('[insert] error', error);
+    return { error, success: false };
   }
-  return error;
+  return { error: null, success: true };
 };
+
+// Supabase type fetch responses
+export interface FetchResponse {
+  dataPoints: DataPoint[] | null;
+  error: QueryError | null;
+}
 
 /**
  * @requires:
@@ -46,7 +53,7 @@ export async function fetch(
   end_date: Date | null = null,
   avg_param: boolean | null = null,
   bucket_period: 'hour' | 'day' | null = null,
-): Promise<DataPoint[] | null> {
+): Promise<FetchResponse> {
   // Default query
   let query = supabase.rpc('fetch_mock_data', {
     pet_id_param: pet_id,
@@ -58,19 +65,105 @@ export async function fetch(
     bucket_period_param: bucket_period,
   });
 
-  try {
-    const { data: rows, error } = await query.overrideTypes<RpcDataPoint[]>();
-    if (error) {
-      console.error('[fetch] error', error);
-      return null;
-    }
-    console.log('[fetch] rows', rows);
-    return (rows as RpcDataPoint[]).map((rows) => ({
-      data: Number(rows.return_data),
-      recorded_at: new Date(rows.return_ts),
-    }));
-  } catch (error) {
+  const { data: rows, error } = await query.overrideTypes<RpcDataPoint[]>();
+  if (error) {
     console.error('[fetch] error', error);
-    return null;
+    return { dataPoints: null, error };
   }
+  console.log('[fetch] rows', rows);
+  const dataPoints = (rows as RpcDataPoint[]).map((row) => ({
+    data: Number(row.return_data),
+    recorded_at: new Date(row.return_ts),
+  }));
+  return { dataPoints, error: null };
 }
+
+// ============================= TOASTS & HELPERS =============================
+export const toastError = (message: string) => {
+  Toast.show({
+    type: 'error',
+    text1: 'Error',
+    text2: message,
+    position: 'top',
+    swipeable: true,
+    topOffset: 55,
+    visibilityTime: 3000,
+  });
+};
+
+export const toastSuccess = (message: string) => {
+  Toast.show({
+    type: 'success',
+    text1: message,
+    position: 'top',
+    visibilityTime: 3000,
+    swipeable: true,
+    topOffset: 55,
+  });
+};
+
+const toastInfo = (successfulLoads: number, totalLoads: number) => {
+  Toast.show({
+    type: 'info',
+    text1: 'Some data may be missing',
+    text2: `${successfulLoads} of ${totalLoads} Metrics Loaded Successfully`,
+    position: 'top',
+    visibilityTime: 3000,
+    topOffset: 55,
+    swipeable: true,
+  });
+};
+
+export const loadDashboardLatest = async (
+  pet_id: string,
+): Promise<{
+  stepData: DataPoint[] | null;
+  heartRateData: DataPoint[] | null;
+  breathRateData: DataPoint[] | null;
+  temperatureData: DataPoint[] | null;
+  humidityData: DataPoint[] | null;
+  activityData: DataPoint[] | null;
+}> => {
+  let success = 0;
+  let error = 0;
+  try {
+    const [step, heartRate, breathRate, temperature, humidity, activity] = await Promise.allSettled([
+      fetch(pet_id, 'step_count', 'latest'),
+      fetch(pet_id, 'heart_rate', 'latest'),
+      fetch(pet_id, 'breath_rate', 'latest'),
+      fetch(pet_id, 'temperature', 'latest'),
+      fetch(pet_id, 'humidity', 'latest'),
+      fetch(pet_id, 'activity', 'latest'),
+    ]);
+    step.status === 'fulfilled' ? success++ : error++;
+    heartRate.status === 'fulfilled' ? success++ : error++;
+    breathRate.status === 'fulfilled' ? success++ : error++;
+    temperature.status === 'fulfilled' ? success++ : error++;
+    humidity.status === 'fulfilled' ? success++ : error++;
+    activity.status === 'fulfilled' ? success++ : error++;
+    if (success !== 6 && error !== 0) {
+      toastInfo(success, 6);
+    }
+    if (error === 6) {
+      toastError('Error loading latest data for dashboard');
+    }
+    return {
+      stepData: step.status === 'fulfilled' ? step.value.dataPoints : null,
+      heartRateData: heartRate.status === 'fulfilled' ? heartRate.value.dataPoints : null,
+      breathRateData: breathRate.status === 'fulfilled' ? breathRate.value.dataPoints : null,
+      temperatureData: temperature.status === 'fulfilled' ? temperature.value.dataPoints : null,
+      humidityData: humidity.status === 'fulfilled' ? humidity.value.dataPoints : null,
+      activityData: activity.status === 'fulfilled' ? activity.value.dataPoints : null,
+    };
+  } catch (error) {
+    console.error('[loadDashboardLatest] error', error);
+    return {
+      stepData: null,
+      heartRateData: null,
+      breathRateData: null,
+      temperatureData: null,
+      humidityData: null,
+      activityData: null,
+    };
+  }
+};
