@@ -127,7 +127,7 @@ export const loadDashboardLatest = async (
   let success = 0;
   let error = 0;
   try {
-    const [step, heartRate, breathRate, temperature, humidity, activity] = await Promise.allSettled([
+    const [step, heartRate, breathRate, temperature, humidity, activity] = await Promise.all([
       fetch(pet_id, 'step_count', 'latest'),
       fetch(pet_id, 'heart_rate', 'latest'),
       fetch(pet_id, 'breath_rate', 'latest'),
@@ -135,12 +135,12 @@ export const loadDashboardLatest = async (
       fetch(pet_id, 'humidity', 'latest'),
       fetch(pet_id, 'activity', 'latest'),
     ]);
-    step.status === 'fulfilled' ? success++ : error++;
-    heartRate.status === 'fulfilled' ? success++ : error++;
-    breathRate.status === 'fulfilled' ? success++ : error++;
-    temperature.status === 'fulfilled' ? success++ : error++;
-    humidity.status === 'fulfilled' ? success++ : error++;
-    activity.status === 'fulfilled' ? success++ : error++;
+    step.error === null ? success++ : error++;
+    heartRate.error === null ? success++ : error++;
+    breathRate.error === null ? success++ : error++;
+    temperature.error === null ? success++ : error++;
+    humidity.error === null ? success++ : error++;
+    activity.error === null ? success++ : error++;
     if (success !== 6 && error !== 0) {
       toastInfo(success, 6);
     }
@@ -148,12 +148,12 @@ export const loadDashboardLatest = async (
       toastError('Error loading latest data for dashboard');
     }
     return {
-      stepData: step.status === 'fulfilled' ? step.value.dataPoints : null,
-      heartRateData: heartRate.status === 'fulfilled' ? heartRate.value.dataPoints : null,
-      breathRateData: breathRate.status === 'fulfilled' ? breathRate.value.dataPoints : null,
-      temperatureData: temperature.status === 'fulfilled' ? temperature.value.dataPoints : null,
-      humidityData: humidity.status === 'fulfilled' ? humidity.value.dataPoints : null,
-      activityData: activity.status === 'fulfilled' ? activity.value.dataPoints : null,
+      stepData: step.error === null ? step.dataPoints : null,
+      heartRateData: heartRate.error === null ? heartRate.dataPoints : null,
+      breathRateData: breathRate.error === null ? breathRate.dataPoints : null,
+      temperatureData: temperature.error === null ? temperature.dataPoints : null,
+      humidityData: humidity.error === null ? humidity.dataPoints : null,
+      activityData: activity.error === null ? activity.dataPoints : null,
     };
   } catch (error) {
     console.error('[loadDashboardLatest] error', error);

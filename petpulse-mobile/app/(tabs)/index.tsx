@@ -57,24 +57,24 @@ export default function Index() {
       try {
         const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(mockSubject.id);
         if (bleLoading.current) return;
-        if (stepData != null) setStepCount(stepData[0].data); // Since 0 is valid & use != vs !== for type coercion of undefined
-        if (heartRateData != null) {
+        if (stepData != null && stepData.length > 0) setStepCount(stepData[0].data); // Since 0 is valid & use != vs !== for type coercion of undefined
+        if (heartRateData != null && heartRateData.length > 0) {
           setHeartRate(Math.round(heartRateData[0].data));
           setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
         }
-        if (breathRateData != null) {
+        if (breathRateData != null && breathRateData.length > 0) {
           setBreathRate(Math.round(breathRateData[0].data));
           setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
         }
-        if (temperatureData != null) {
+        if (temperatureData != null && temperatureData.length > 0) {
           setTemperature(temperatureData[0].data);
           setTemperatureLastUpdated(temperatureData[0].recorded_at.getTime());
         }
-        if (humidityData != null) {
+        if (humidityData != null && humidityData.length > 0) {
           setHumidity(humidityData[0].data);
           setHumidityLastUpdated(humidityData[0].recorded_at.getTime());
         }
-        if (activityData != null) {
+        if (activityData != null && activityData.length > 0) {
           setActivityClass(activityClassMap[activityData[0].data]);
           setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
         }
