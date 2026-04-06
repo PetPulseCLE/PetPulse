@@ -1,3 +1,4 @@
+import { DataType } from '@/lib/petpulse/sensor-readings';
 import { type LucideIcon, ChevronRight } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '../ui/card';
@@ -6,19 +7,26 @@ import { Icon } from '../ui/icon';
 export interface MetricCardProps {
   title: string;
   icon: LucideIcon;
-  color: string;
+  iconColorClassName: string;
+  valueColorClassName?: string;
   value: number | string | null;
+  metricType?: DataType;
   lastUpdated?: string;
   unit?: string;
 }
 
-export default function MetricCard({ title, icon, color, value, lastUpdated = 'Today', unit }: MetricCardProps) {
+/* prettier-ignore */
+export default function MetricCard({title, icon, iconColorClassName, valueColorClassName, value, metricType, lastUpdated = 'Today', unit}: MetricCardProps) {
+
+if(valueColorClassName === undefined) {
+    valueColorClassName = iconColorClassName;
+  }
   return (
     <Card className="bg-tab-bar border-tab-bar shadow-sm basis-1/2">
       <CardHeader>
         <View className="flex flex-row  items-center justify-between">
           <View className="flex flex-row items-center gap-2">
-            <Icon as={icon} size={22} className={`text-${color}-500`} />
+            <Icon as={icon} size={22} className={iconColorClassName} />
             <Text className="text-md font-semibold text-secondary-foreground">{title}</Text>
           </View>
           <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
@@ -29,8 +37,8 @@ export default function MetricCard({ title, icon, color, value, lastUpdated = 'T
       </CardHeader>
       <CardContent>
         <View className="flex flex-row items-center gap-2">
-          <Text className={`text-${color}-500 text-lg`}>{value}</Text>
-          {unit && <Text className="text-muted-foreground text-sm">{unit}</Text>}
+          <Text className={`text-lg ${valueColorClassName}`}>{value?.toLocaleString('en-US')}</Text>
+          {unit && <Text className="text-muted-foreground text-sm font-medium">{unit}</Text>}
         </View>
       </CardContent>
       <CardFooter></CardFooter>

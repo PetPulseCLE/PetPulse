@@ -6,8 +6,7 @@ import { supabase } from '../lib/supabase';
 function getEmailRedirectTo(): string {
   if (Platform.OS === 'web') {
     const origin =
-      (typeof window !== 'undefined' && window.location?.origin) ||
-      (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
+      (typeof window !== 'undefined' && window.location?.origin) || (process.env.EXPO_PUBLIC_WEB_REDIRECT_ORIGIN ?? 'http://localhost:3000');
     return `${origin}/auth/callback`;
   }
   return 'petpulse://auth/callback';
@@ -23,6 +22,20 @@ interface Pet {
   weight_lbs: number;
 }
 
+interface MockSubject {
+  id: string;
+  user_id: string;
+  subject_id: string;
+  name: string;
+  pet_type: string;
+  breed_primary: string;
+  is_mixed_breed: boolean;
+  breed_secondary: string | null;
+  birth_date: string;
+  weight_lbs: number;
+  sex: string;
+}
+
 type AuthContextType = {
   user: User | null;
   session: Session | null;
@@ -31,6 +44,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
   verifyOtp: (email: string, token: string) => Promise<any>;
+  mockSubject: MockSubject | null;
   pet: Pet | null;
   updateProfile: (updates: { firstName?: string; lastName?: string }) => Promise<{ error: { message: string } | null }>;
 };
@@ -42,15 +56,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [pet, setPet] = useState<Pet | null>(null);
+  const [mockSubject, setMockSubject] = useState<MockSubject | null>(null);
 
   const fetchPetId = async (user: User) => {
-    const { data, error } = await supabase.from('pets').select('*').eq('user_id', user.id).maybeSingle();
+    const { data, error } = await supabase.from('AIML_mock_subjects').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
       if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
-      setPet(null);
+      setMockSubject(null);
       return;
     }
-    setPet(data ?? null);
+    setMockSubject(data ?? null);
   };
 
   useEffect(() => {
@@ -164,6 +179,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         verifyOtp,
         updateProfile,
         pet,
+        mockSubject,
       }}
     >
       {children}

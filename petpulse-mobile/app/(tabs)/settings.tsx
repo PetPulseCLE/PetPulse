@@ -1,14 +1,4 @@
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import {
   AlertDialog,
@@ -29,16 +19,7 @@ import { useThemePreference } from '@/context/ThemePrefContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import clsx from 'clsx';
 import { router } from 'expo-router';
-import {
-  Bluetooth,
-  BluetoothConnected,
-  ChevronRight,
-  LogOut,
-  MoonStar,
-  Sun,
-  UserPenIcon,
-  X,
-} from 'lucide-react-native';
+import { Bluetooth, BluetoothConnected, ChevronRight, LogOut, MoonStar, SlidersVertical, Sun, UserPenIcon, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -118,9 +99,7 @@ export default function Settings() {
           <Avatar alt={fullName} className="size-24 bg-secondary">
             <AvatarImage source={{ uri: '' }} />
             <AvatarFallback className="bg-tab-bar">
-              <Text className="text-4xl text-secondary-foreground">
-                {firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}
-              </Text>
+              <Text className="text-4xl text-secondary-foreground">{firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase()}</Text>
             </AvatarFallback>
           </Avatar>
         </View>
@@ -153,10 +132,7 @@ export default function Settings() {
         >
           <View className="flex flex-row px-3 py-2 justify-between items-center w-full ">
             <View className="flex flex-row items-center gap-3">
-              <Icon
-                as={connected ? BluetoothConnected : Bluetooth}
-                className={clsx('size-6', connected ? 'text-green-500' : 'text-orange-500')}
-              />
+              <Icon as={connected ? BluetoothConnected : Bluetooth} className={clsx('size-6', connected ? 'text-green-500' : 'text-orange-500')} />
               <View className="flex flex-col">
                 <Text className="text-secondary-foreground font-medium">My Harness: {connected?.name ?? 'None'}</Text>
               </View>
@@ -175,9 +151,7 @@ export default function Settings() {
             <View className="flex flex-row items-center gap-3">
               <Icon as={theme === 'dark' ? MoonStar : Sun} className="size-5 text-tint" />
               <View className="flex flex-col">
-                <Text className="text-secondary-foreground font-medium">
-                  Theme: {theme === 'dark' ? 'Dark' : 'Light'}
-                </Text>
+                <Text className="text-secondary-foreground font-medium">Theme: {theme === 'dark' ? 'Dark' : 'Light'}</Text>
               </View>
             </View>
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
@@ -202,6 +176,23 @@ export default function Settings() {
           </View>
         </Pressable>
       </View>
+      {/* ============================= DEV TOOLS ============================= */}
+      <View className="mx-3.5 mb-6 shadow-sm">
+        <Pressable
+          className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
+          onPress={() => setShowLogoutAlert(true)}
+        >
+          <View className="flex flex-row px-3 py-2 justify-between items-center w-full">
+            <View className="flex flex-row items-center gap-4">
+              <Icon as={SlidersVertical} className="text-[#79697b] size-6" />
+              <View className="flex flex-col">
+                <Text className="text-secondary-foreground font-medium">Dev Tools</Text>
+              </View>
+            </View>
+            <Icon as={ChevronRight} className="text-muted-foreground size-4" />
+          </View>
+        </Pressable>
+      </View>
 
       {/* Edit Account Modal */}
       <Modal visible={showEditAccountModal} animationType="slide" presentationStyle="pageSheet">
@@ -212,11 +203,7 @@ export default function Settings() {
               <Icon as={X} className="text-muted-foreground size-6" />
             </Button>
           </View>
-          <ScrollView
-            className="flex-1 px-4 pt-6"
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView className="flex-1 px-4 pt-6" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Text className="text-muted-foreground text-sm font-medium mb-2">First name</Text>
             <TextInput
               value={editFirstName}
@@ -274,11 +261,7 @@ export default function Settings() {
             </View>
             {accountSaveError ? <Text className="text-destructive text-sm mb-4">{accountSaveError}</Text> : null}
             <Button onPress={onSaveAccount} disabled={savingAccount} className="rounded-xl h-12 bg-primary">
-              {savingAccount ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-primary-foreground font-medium">Save changes</Text>
-              )}
+              {savingAccount ? <ActivityIndicator color="#fff" /> : <Text className="text-primary-foreground font-medium">Save changes</Text>}
             </Button>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -288,9 +271,7 @@ export default function Settings() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Log Out?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to log out? You will need to sign in again to access your account.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to log out? You will need to sign in again to access your account.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>

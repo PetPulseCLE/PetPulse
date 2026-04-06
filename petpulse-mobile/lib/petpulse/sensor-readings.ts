@@ -170,7 +170,47 @@ export type MetricType = 'raw_motion' | 'activity' | 'vitals' | 'env';
 
 export type FetchPeriod = 'latest' | 'day' | 'week' | 'month';
 
+export type RpcDataPoint = {
+  return_data: number;
+  return_ts: Date;
+};
+
 export type DataPoint = {
   data: number;
   recorded_at: Date;
+};
+
+export const accuracyMap: Record<number, string> = {
+  0: 'Unreliable',
+  1: 'Low',
+  2: 'Medium',
+  3: 'High',
+  4: 'Undefined',
+};
+
+export const activityClassMap: Record<number, string> = {
+  0: 'Unknown',
+  1: 'In Vehicle',
+  2: 'On Bicycle',
+  3: 'On Foot',
+  4: 'Still',
+  5: 'Tilting',
+  6: 'Walking',
+  7: 'Running',
+  8: 'On Stairs',
+  9: 'Undefined',
+};
+
+// Used for mock data (AIML_mock_metrics / AIML_mock_subjects)
+export const activityMockMap: Record<number, string> = {
+  0: 'Still',
+  1: 'Still',
+  2: 'Still',
+  3: 'Walking',
+  4: 'Walking',
+  5: 'Walking',
+  6: 'Running',
+  7: 'Running',
+  8: 'Running',
+  9: 'Running',
 };
