@@ -1,50 +1,77 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { fetch, FetchResponse } from '@/lib/petpulse/data-service';
+import { activityMockMap } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, Zap } from 'lucide-react-native';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TimeRange = 'D' | 'W' | 'M';
 
-const ACTIVITY_COLORS = {
-  still: '#F87171',
-  stillGradient: '#FCA5A5',
-  walking: '#A78BFA',
-  walkingGradient: '#C4B5FD',
-  running: '#34D399',
-  runningGradient: '#6EE7B7',
+const ACTIVITY_COLORS: Record<string, string> = {
+  Still: '#F87171',
+  Walking: '#A78BFA',
+  Running: '#34D399',
 };
-
-function generateMockData() {
-  const still = Math.floor(Math.random() * 300) + 60;
-  const walking = Math.floor(Math.random() * 200) + 30;
-  const running = Math.floor(Math.random() * 120) + 10;
-  return [
-    { value: still, color: ACTIVITY_COLORS.still },
-    { value: walking, color: ACTIVITY_COLORS.walking },
-    { value: running, color: ACTIVITY_COLORS.running },
-  ];
-}
 
 export default function ActivityScreen() {
   const insets = useSafeAreaInsets();
+  const { mockSubject } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('D');
+  const [data, setData] = useState<{ value: number; color: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
   const tabBar = useThemeColor({}, 'tabBar');
 
-  const data = useMemo(() => generateMockData(), [timeRange]);
+  const fetchData = useCallback(async () => {
+    if (!mockSubject?.id) {
+      setLoading(false);
+      return;
+    }
+    setData([]);
+    setLoading(true);
+
+    let result: FetchResponse | null;
+    if (timeRange === 'D') {
+      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-18'), new Date('2026-03-19'));
+    } else if (timeRange === 'W') {
+      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-16'), new Date('2026-03-23'));
+    } else {
+      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-01'), new Date('2026-04-01'));
+    }
+
+    if (result && result.dataPoints && result.dataPoints.length > 0) {
+      const counts: Record<string, number> = { Still: 0, Walking: 0, Running: 0 };
+      for (const dp of result.dataPoints) {
+        const label = activityMockMap[Math.round(dp.data)] ?? 'Still';
+        counts[label]++;
+      }
+      const pieData = Object.entries(counts)
+        .filter(([, count]) => count > 0)
+        .map(([label, count]) => ({
+          value: count,
+          color: ACTIVITY_COLORS[label],
+        }));
+      setData(pieData);
+    } else {
+      setData([]);
+    }
+    setLoading(false);
+  }, [mockSubject?.id, timeRange]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return (
-    <ScrollView
-      className="h-full"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-    >
+    <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <Pressable
         className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
         onPress={() => router.back()}
@@ -66,7 +93,11 @@ export default function ActivityScreen() {
               type="single"
               value={timeRange}
               onValueChange={(val) => {
-                if (val) setTimeRange(val as TimeRange);
+                if (val) {
+                  setData([]);
+                  setLoading(true);
+                  setTimeRange(val as TimeRange);
+                }
               }}
               variant="outline"
             >
@@ -84,32 +115,41 @@ export default function ActivityScreen() {
 
           {/* Donut Chart + Legend */}
           <View className="flex flex-row items-center justify-center py-6 gap-8">
-            <PieChart
-              data={data}
-              donut
-              radius={90}
-              innerRadius={58}
-              innerCircleColor={tabBar}
-              sectionAutoFocus
-              focusOnPress
-              isAnimated
-            />
+            {loading ? (
+              <View className="items-center justify-center" style={{ height: 180 }}>
+                <ActivityIndicator size="large" color="#f97316" />
+              </View>
+            ) : data.length === 0 ? (
+              <View className="items-center justify-center" style={{ height: 180 }}>
+                <Text className="text-muted-foreground">No data available</Text>
+              </View>
+            ) : (
+              <>
+                <PieChart data={data} donut radius={90} innerRadius={58} innerCircleColor={tabBar} sectionAutoFocus focusOnPress isAnimated />
 
-            {/* Legend */}
-            <View className="flex flex-col gap-4">
-              <View className="flex flex-row items-center gap-3">
-                <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.still }} />
-                <Text className="text-sm" style={{ color: axisAndLabel }}>Still</Text>
-              </View>
-              <View className="flex flex-row items-center gap-3">
-                <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.walking }} />
-                <Text className="text-sm" style={{ color: axisAndLabel }}>Walking</Text>
-              </View>
-              <View className="flex flex-row items-center gap-3">
-                <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.running }} />
-                <Text className="text-sm" style={{ color: axisAndLabel }}>Running</Text>
-              </View>
-            </View>
+                {/* Legend */}
+                <View className="flex flex-col gap-4">
+                  <View className="flex flex-row items-center gap-3">
+                    <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Still }} />
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Still
+                    </Text>
+                  </View>
+                  <View className="flex flex-row items-center gap-3">
+                    <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Walking }} />
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Walking
+                    </Text>
+                  </View>
+                  <View className="flex flex-row items-center gap-3">
+                    <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Running }} />
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Running
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </View>

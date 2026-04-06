@@ -200,3 +200,17 @@ export const activityClassMap: Record<number, string> = {
   8: 'On Stairs',
   9: 'Undefined',
 };
+
+// Used for mock data (AIML_mock_metrics / AIML_mock_subjects)
+export const activityMockMap: Record<number, string> = {
+  0: 'Still',
+  1: 'Still',
+  2: 'Still',
+  3: 'Walking',
+  4: 'Walking',
+  5: 'Walking',
+  6: 'Running',
+  7: 'Running',
+  8: 'Running',
+  9: 'Running',
+};
