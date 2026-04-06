@@ -141,7 +141,7 @@ export const loadDashboardLatest = async (
     temperature.error === null ? success++ : error++;
     humidity.error === null ? success++ : error++;
     activity.error === null ? success++ : error++;
-    if (success === 6 && error === 0) {
+    if (success < 6 && error > 0) {
       toastInfo(success, 6);
     }
     if (error === 6) {
