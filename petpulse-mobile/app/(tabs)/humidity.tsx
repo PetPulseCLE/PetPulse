@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useAuth } from '@/context/AuthContext';
+import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { fetch } from '@/lib/petpulse/data-service';
-import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, Droplets } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
@@ -14,12 +12,6 @@ import { CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TimeRange = 'D' | 'W' | 'M';
-
-const PERIOD_MAP: Record<TimeRange, FetchPeriod> = {
-  D: 'day',
-  W: 'week',
-  M: 'month',
-};
 
 const DAILY_LABELS = Array.from({ length: 24 }, (_, i) => {
   if (i === 0) return '12A';
@@ -73,40 +65,15 @@ function fillSlots(
 
 export default function HumidityScreen() {
   const insets = useSafeAreaInsets();
-  const { mockSubject } = useAuth();
+  const { isLoading, chartData } = useChartData();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
-  const [data, setData] = useState<{ label: string; value: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    if (!mockSubject?.id) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    //const result = await fetch(mockSubject.id, 'humidity', PERIOD_MAP[timeRange]);
-    let result: { data: number; recorded_at: Date }[] | null;
-    if (timeRange === 'D') {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
-    } else if (timeRange === 'W') {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
-    } else {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
-    }
-    if (result && result.length > 0) {
-      setData(fillSlots(result, timeRange));
-    } else {
-      setData([]);
-    }
-    setLoading(false);
-  }, [mockSubject?.id, timeRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
+
+  const rawRows = chartData?.humidity?.[timeRange] ?? null;
+  const fetchFailed = !isLoading && rawRows === null;
+  const data = rawRows && rawRows.length > 0 ? fillSlots(rawRows, timeRange) : [];
 
   const touchHandlers = {
     onTouchStart: () => setEnabled(false),
@@ -199,9 +166,13 @@ export default function HumidityScreen() {
 
           {/* Chart */}
           <View className="w-full h-[260px]">
-            {loading ? (
+            {isLoading ? (
               <View className="flex-1 items-center justify-center">
                 <ActivityIndicator size="large" color={SKY} />
+              </View>
+            ) : fetchFailed ? (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-muted-foreground">Failed to load data</Text>
               </View>
             ) : data.length === 0 ? (
               <View className="flex-1 items-center justify-center">
@@ -212,7 +183,6 @@ export default function HumidityScreen() {
                 data={data}
                 color={SKY}
                 thickness={2}
-                //curved
                 curveType={CurveType.QUADRATIC}
                 curvature={0.1}
                 areaChart

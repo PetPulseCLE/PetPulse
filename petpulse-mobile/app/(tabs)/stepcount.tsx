@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useAuth } from '@/context/AuthContext';
+import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { fetch } from '@/lib/petpulse/data-service';
 import { router } from 'expo-router';
 import { ArrowLeft, PawPrint } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
@@ -70,42 +69,16 @@ function fillSlots(
 
 export default function StepCountScreen() {
   const insets = useSafeAreaInsets();
-  const { mockSubject } = useAuth();
+  const { isLoading, chartData } = useChartData();
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
-  const [data, setData] = useState<{ label: string; value: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    if (!mockSubject?.id) {
-      setLoading(false);
-      return;
-    }
-    setData([]);
-    setLoading(true);
-
-    let result: { data: number; recorded_at: Date }[] | null;
-    if (timeRange === 'D') {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
-    } else if (timeRange === 'W') {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
-    } else {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
-    }
-    if (result && result.length > 0) {
-      setData(fillSlots(result, timeRange));
-    } else {
-      setData([]);
-    }
-    setLoading(false);
-  }, [mockSubject?.id, timeRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
+
+  const rawRows = chartData?.step_count?.[timeRange] ?? null;
+  const fetchFailed = !isLoading && rawRows === null;
+  const data = rawRows && rawRows.length > 0 ? fillSlots(rawRows, timeRange) : [];
 
   const touchHandlers = {
     onTouchStart: () => setEnabled(false),
@@ -181,8 +154,6 @@ export default function StepCountScreen() {
               value={timeRange}
               onValueChange={(val) => {
                 if (val) {
-                  setData([]);
-                  setLoading(true);
                   setTimeRange(val as TimeRange);
                   if (val === 'D') setChartType('bar');
                 }
@@ -224,9 +195,13 @@ export default function StepCountScreen() {
 
           {/* Charts */}
           <View className="w-full h-[260px]">
-            {loading ? (
+            {isLoading ? (
               <View className="flex-1 items-center justify-center">
                 <ActivityIndicator size="large" color={EMERALD} />
+              </View>
+            ) : fetchFailed ? (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-muted-foreground">Failed to load data</Text>
               </View>
             ) : data.length === 0 ? (
               <View className="flex-1 items-center justify-center">

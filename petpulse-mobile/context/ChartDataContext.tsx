@@ -1,0 +1,104 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { fetch } from '@/lib/petpulse/data-service';
+import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
+
+type TimeRange = 'D' | 'W' | 'M';
+
+// For each metric, we store the raw data points for each time range.
+// null means the fetch failed; [] means it succeeded but returned no rows.
+type MetricCache = Record<TimeRange, DataPoint[] | null>;
+type ChartCache = Record<DataType, MetricCache>;
+
+type ChartDataContextValue = {
+  isLoading: boolean;
+  chartData: ChartCache | null;
+};
+
+const ChartDataContext = createContext<ChartDataContextValue>({
+  isLoading: true,
+  chartData: null,
+});
+
+const METRICS: DataType[] = [
+  'heart_rate',
+  'breath_rate',
+  'temperature',
+  'humidity',
+  'step_count',
+  'activity',
+];
+
+// These are the same hardcoded date ranges used in every chart screen.
+// Defined once here so we don't repeat them in 6 places.
+const DATE_RANGES: Record<TimeRange, { start: Date; end: Date }> = {
+  D: { start: new Date('2026-03-18'), end: new Date('2026-03-19') },
+  W: { start: new Date('2026-03-16'), end: new Date('2026-03-23') },
+  M: { start: new Date('2026-03-01'), end: new Date('2026-04-01') },
+};
+
+export function ChartDataProvider({ children }: { children: ReactNode }) {
+  const { mockSubject, loading: authLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [chartData, setChartData] = useState<ChartCache | null>(null);
+
+  useEffect(() => {
+    // Wait for auth to finish loading before doing anything
+    if (authLoading) return;
+
+    // If auth is done but there's no pet subject, nothing to fetch
+    if (!mockSubject?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const petId = mockSubject.id;
+
+    const prefetchAll = async () => {
+      setIsLoading(true);
+
+      // Build all 18 fetch calls (6 metrics × 3 time ranges) at once.
+      // activity doesn't use avg_param — it returns raw event rows, not averages.
+      const calls = METRICS.flatMap((metric) =>
+        (['D', 'W', 'M'] as const).map(async (range) => {
+          const { start, end } = DATE_RANGES[range];
+          const avgParam = metric !== 'activity' ? true : null;
+          const result = await fetch(petId, metric, null, start, end, avgParam);
+          return { metric, range, result };
+        })
+      );
+
+      // allSettled means: even if one fetch fails, the rest still complete.
+      // Our fetch() never throws — it returns null on error — so all settle as fulfilled.
+      const settled = await Promise.allSettled(calls);
+
+      // Start with all slots as null (error state), fill in whatever came back
+      const cache: Partial<ChartCache> = {};
+      for (const metric of METRICS) {
+        cache[metric] = { D: null, W: null, M: null };
+      }
+
+      for (const item of settled) {
+        if (item.status === 'fulfilled') {
+          const { metric, range, result } = item.value;
+          cache[metric]![range] = result; // DataPoint[] or null
+        }
+      }
+
+      setChartData(cache as ChartCache);
+      setIsLoading(false);
+    };
+
+    prefetchAll();
+  }, [mockSubject?.id, authLoading]);
+
+  return (
+    <ChartDataContext.Provider value={{ isLoading, chartData }}>
+      {children}
+    </ChartDataContext.Provider>
+  );
+}
+
+export function useChartData() {
+  return useContext(ChartDataContext);
+}

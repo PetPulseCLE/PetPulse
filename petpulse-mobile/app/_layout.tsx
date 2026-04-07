@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { BleProvider } from '@/context/BleContext';
+import { ChartDataProvider } from '@/context/ChartDataContext';
 import { ThemePreferenceProvider } from '@/context/ThemePrefContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { NAV_THEME } from '@/lib/theme';
@@ -39,14 +40,16 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={NAV_THEME[resolvedScheme]}>
-        <ThemePreferenceProvider>
-          <BleProvider>
-            <StackWithStatusBar />
-            <PortalHost />
-          </BleProvider>
-        </ThemePreferenceProvider>
-      </ThemeProvider>
+      <ChartDataProvider>
+        <ThemeProvider value={NAV_THEME[resolvedScheme]}>
+          <ThemePreferenceProvider>
+            <BleProvider>
+              <StackWithStatusBar />
+              <PortalHost />
+            </BleProvider>
+          </ThemePreferenceProvider>
+        </ThemeProvider>
+      </ChartDataProvider>
     </AuthProvider>
   );
 }
