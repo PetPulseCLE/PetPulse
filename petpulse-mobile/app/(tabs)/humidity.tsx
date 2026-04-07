@@ -28,14 +28,14 @@ const SKY = '#0ea5e9';
 function fillSlots(
   result: { data: number; recorded_at: Date }[],
   timeRange: TimeRange,
-) {
+): { label: string; value: number | null; hideDataPoint: boolean }[] {
   switch (timeRange) {
     case 'D': {
       const hourMap = new Map<number, number>();
       for (const dp of result) hourMap.set(dp.recorded_at.getHours(), Math.round(dp.data));
       return Array.from({ length: 24 }, (_, i) => ({
         label: DAILY_LABELS[i],
-        value: (hourMap.get(i) ?? null) as unknown as number,
+        value: hourMap.get(i) ?? null,
         hideDataPoint: !hourMap.has(i),
       }));
     }
@@ -44,7 +44,7 @@ function fillSlots(
       for (const dp of result) dayMap.set(dp.recorded_at.getDay(), Math.round(dp.data));
       return Array.from({ length: 7 }, (_, i) => ({
         label: WEEKLY_LABELS[i],
-        value: (dayMap.get(i) ?? null) as unknown as number,
+        value: dayMap.get(i) ?? null,
         hideDataPoint: !dayMap.has(i),
       }));
     }
@@ -56,7 +56,7 @@ function fillSlots(
       }
       return Array.from({ length: 4 }, (_, i) => ({
         label: MONTHLY_LABELS[i],
-        value: (weekMap.get(i) ?? null) as unknown as number,
+        value: weekMap.get(i) ?? null,
         hideDataPoint: !weekMap.has(i),
       }));
     }
@@ -102,7 +102,7 @@ export default function HumidityScreen() {
     pointerColor: SKY,
     radius: 0,
     pointerLabelWidth: 20,
-    shiftPointerLabelX: -20,
+    shiftPointerLabelX: -15,
     shiftPointerLabelY: -10,
     pointerLabelComponent: (items: barDataItem[]) =>
       items[0]?.value ? (
@@ -180,7 +180,7 @@ export default function HumidityScreen() {
               </View>
             ) : (
               <LineChart
-                data={data}
+                data={data as any}
                 color={SKY}
                 thickness={2}
                 curveType={CurveType.QUADRATIC}
