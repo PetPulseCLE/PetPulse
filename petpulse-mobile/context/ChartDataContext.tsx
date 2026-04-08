@@ -46,11 +46,9 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
     // Wait for auth to finish loading before doing anything
     if (authLoading) return;
 
-    // If auth is done but there's no pet subject, nothing to fetch
-    if (!mockSubject?.id) {
-      setIsLoading(false);
-      return;
-    }
+    // If auth is done but there's no pet subject, nothing to fetch yet.
+    // Keep isLoading true so chart screens show a spinner instead of "Failed to load data".
+    if (!mockSubject?.id) return;
 
     const petId = mockSubject.id;
 
@@ -63,8 +61,8 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
         (['D', 'W', 'M'] as const).map(async (range) => {
           const { start, end } = DATE_RANGES[range];
           const avgParam = metric !== 'activity' ? true : null;
-          const result = await fetch(petId, metric, null, start, end, avgParam);
-          return { metric, range, result };
+          const response = await fetch(petId, metric, null, start, end, avgParam);
+          return { metric, range, result: response.dataPoints };
         })
       );
 
