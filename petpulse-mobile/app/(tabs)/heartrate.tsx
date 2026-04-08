@@ -5,12 +5,12 @@ import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { fetch } from '@/lib/petpulse/data-service';
+import { fetch, FetchResponse } from '@/lib/petpulse/data-service';
 import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, HeartPulseIcon } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { BarChart, CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { BarChart, barDataItem, CurveType, LineChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChartType = 'bar' | 'area';
@@ -33,10 +33,7 @@ const DAILY_LABELS = Array.from({ length: 24 }, (_, i) => {
 const WEEKLY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHLY_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
 
-function fillSlots(
-  result: { data: number; recorded_at: Date }[],
-  timeRange: TimeRange,
-) {
+function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: TimeRange) {
   switch (timeRange) {
     case 'D': {
       const hourMap = new Map<number, number>();
@@ -95,7 +92,7 @@ export default function HeartRateScreen() {
     setData([]);
     setLoading(true);
 
-    let result: { data: number; recorded_at: Date }[] | null;
+    let result: FetchResponse | null;
     if (timeRange === 'D') {
       result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
     } else if (timeRange === 'W') {
@@ -103,8 +100,8 @@ export default function HeartRateScreen() {
     } else {
       result = await fetch(mockSubject.id, 'heart_rate', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
     }
-    if (result && result.length > 0) {
-      setData(fillSlots(result, timeRange));
+    if (result && result.dataPoints && result.dataPoints.length > 0) {
+      setData(fillSlots(result.dataPoints, timeRange));
     } else {
       setData([]);
     }
@@ -114,7 +111,6 @@ export default function HeartRateScreen() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
 
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
 
@@ -160,11 +156,7 @@ export default function HeartRateScreen() {
   };
 
   return (
-    <ScrollView
-      className="h-full"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-      scrollEnabled={enabled}
-    >
+    <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }} scrollEnabled={enabled}>
       <Pressable
         className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
         onPress={() => router.back()}
@@ -255,10 +247,10 @@ export default function HeartRateScreen() {
                     frontColor="#DC2626"
                     rulesColor="transparent"
                     rulesThickness={1}
-                   // isAnimated
+                    // isAnimated
                     xAxisIndicesWidth={16}
-                  //  animationDuration={300}
-                 //   disablePress
+                    //  animationDuration={300}
+                    //   disablePress
                     disableScroll
                     pointerConfig={{ ...pointerConfig, pointerColor: axisAndLabel }}
                     {...commonAxisProps}

@@ -13,6 +13,7 @@ function TabsWithHeader() {
     <Tabs
       screenOptions={{
         tabBarStyle: { backgroundColor: tabBarBg },
+
         tabBarActiveTintColor: '#3b82f6', // Custom blue color for active tab
       }}
     >
@@ -38,6 +39,7 @@ function TabsWithHeader() {
       <Tabs.Screen name="humidity" options={{ title: 'Humidity', href: null, headerShown: false }} />
       <Tabs.Screen name="activity" options={{ title: 'Activity', href: null, headerShown: false }} />
       <Tabs.Screen name="stepcount" options={{ title: 'Step Count', href: null, headerShown: false }} />
+      <Tabs.Screen name="devtools" options={{ title: 'Dev Tools', href: null, headerShown: false }} />
     </Tabs>
   );
 }

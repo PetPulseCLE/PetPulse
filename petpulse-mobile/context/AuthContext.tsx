@@ -1,3 +1,4 @@
+import { toastError, toastSuccess } from '@/lib/petpulse/data-service';
 import { Session, User } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
@@ -148,7 +149,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toastError('Problem signing out, please try again.');
+      throw error;
+    }
+    toastSuccess('Signed out successfully');
   };
 
   const verifyOtp = async (email: string, token: string) => {
