@@ -3,6 +3,7 @@ import { BleProvider } from '@/context/BleContext';
 import { ChartDataProvider } from '@/context/ChartDataContext';
 import { ThemePreferenceProvider } from '@/context/ThemePrefContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { toastConfig } from '@/lib/petpulse/toast-config';
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
@@ -10,6 +11,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-get-random-values';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 import '../global.css';
 
 configureReanimatedLogger({

@@ -8,7 +8,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
 import { ArrowLeft, Thermometer } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { barDataItem, CurveType, LineChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TimeRange = 'D' | 'W' | 'M';
@@ -119,11 +119,7 @@ export default function TemperatureScreen() {
   };
 
   return (
-    <ScrollView
-      className="h-full"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-      scrollEnabled={enabled}
-    >
+    <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }} scrollEnabled={enabled}>
       <Pressable
         className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
         onPress={() => router.back()}

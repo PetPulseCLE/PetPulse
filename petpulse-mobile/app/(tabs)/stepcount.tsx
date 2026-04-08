@@ -8,7 +8,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
 import { ArrowLeft, PawPrint } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { BarChart, CurveType, LineChart, barDataItem } from 'react-native-gifted-charts';
+import { BarChart, barDataItem, CurveType, LineChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ChartType = 'bar' | 'area';
@@ -26,10 +26,7 @@ const MONTHLY_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
 
 const EMERALD = '#10b981';
 
-function fillSlots(
-  result: { data: number; recorded_at: Date }[],
-  timeRange: TimeRange,
-) {
+function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: TimeRange) {
   switch (timeRange) {
     case 'D': {
       const hourMap = new Map<number, number>();
@@ -124,11 +121,7 @@ export default function StepCountScreen() {
   };
 
   return (
-    <ScrollView
-      className="h-full"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-      scrollEnabled={enabled}
-    >
+    <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }} scrollEnabled={enabled}>
       <Pressable
         className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
         onPress={() => router.back()}

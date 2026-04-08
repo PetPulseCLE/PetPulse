@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import type { BleManagerDidUpdateValueForCharacteristicEvent, Peripheral } from 'react-native-ble-manager';
-import { insert } from '../../lib/petpulse/data-service';
+import { insert, toastError, type InsertResponse } from '../../lib/petpulse/data-service';
 import {
   parseActivity,
   parseAggregated,
@@ -31,25 +31,35 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
   const [activity, setActivity] = useState<Activity | null>(null);
   const [env, setEnv] = useState<Env | null>(null);
   const [vitals, setVitals] = useState<Vitals | null>(null);
+  /** true = last insert(s) succeeded; toast at most once per failure streak. */
+  const cloudSyncHealthyRef = useRef(true);
+
+  const handleInsertFailure = (userMessage: string, err: unknown) => {
+    console.error('[useUpdate] insert failed', { petId, userMessage, err });
+    if (cloudSyncHealthyRef.current) {
+      cloudSyncHealthyRef.current = false;
+      toastError(userMessage);
+    }
+  };
+
+  const handleInsertSuccess = () => {
+    cloudSyncHealthyRef.current = true;
+  };
 
   const handleUpdate = async (data: BleManagerDidUpdateValueForCharacteristicEvent) => {
     if (!petId) return;
     const chr = data.characteristic.toLowerCase();
-
     switch (chr) {
       case CHR_UUIDS.raw: {
         try {
           const rawArray = new Uint8Array(data.value);
           const raw = parseRaw(rawArray);
-          await insert(petId, 'raw_motion', raw);
           setRaw(raw);
-        } catch (error) {
-          console.error('[useUpdate] insert raw_motion', {
-            petId,
-            chr,
-            metric_type: 'raw_motion',
-            error,
-          });
+          const res = await insert(petId, 'raw_motion', raw);
+          if (res.error) handleInsertFailure('Couldn’t save raw motion to the cloud', res.error);
+          else handleInsertSuccess();
+        } catch (err) {
+          console.error('[useUpdate] raw_motion parse', { petId, chr, err });
         }
         break;
       }
@@ -57,15 +67,12 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const activityBuffer = new Uint8Array(data.value);
           const activity = parseActivity(activityBuffer);
-          await insert(petId, 'activity', activity);
           setActivity(activity);
-        } catch (error) {
-          console.error('[useUpdate] insert activity', {
-            petId,
-            chr,
-            metric_type: 'activity',
-            error,
-          });
+          const result = await insert(petId, 'activity', activity);
+          if (result.error) handleInsertFailure('Couldn’t save activity to the cloud', result.error);
+          else handleInsertSuccess();
+        } catch (err) {
+          console.error('[useUpdate] activity parse', { petId, chr, err });
         }
         break;
       }
@@ -73,15 +80,12 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const envArray = new Uint8Array(data.value);
           const env = parseEnv(envArray);
-          await insert(petId, 'env', env);
           setEnv(env);
-        } catch (error) {
-          console.error('[useUpdate] insert env', {
-            petId,
-            chr,
-            metric_type: 'env',
-            error,
-          });
+          const result = await insert(petId, 'env', env);
+          if (result.error) handleInsertFailure('Couldn’t save environment data to the cloud', result.error);
+          else handleInsertSuccess();
+        } catch (err) {
+          console.error('[useUpdate] env parse', { petId, chr, err });
         }
         break;
       }
@@ -89,15 +93,12 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const vitalsBuffer = new Uint8Array(data.value);
           const vitals = parseVitals(vitalsBuffer);
-          await insert(petId, 'vitals', vitals);
           setVitals(vitals);
-        } catch (error) {
-          console.error('[useUpdate] insert vitals', {
-            petId,
-            chr,
-            metric_type: 'vitals',
-            error,
-          });
+          const result = await insert(petId, 'vitals', vitals);
+          if (result.error) handleInsertFailure('Couldn’t save vitals to the cloud', result.error);
+          else handleInsertSuccess();
+        } catch (err) {
+          console.error('[useUpdate] vitals parse', { petId, chr, err });
         }
         break;
       }
@@ -105,32 +106,28 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         try {
           const aggArray = new Uint8Array(data.value);
           const aggregated = parseAggregated(aggArray);
-          if (aggregated.activity != undefined) {
-            await insert(petId, 'activity', aggregated.activity);
+          const batch: InsertResponse[] = [];
+          if (aggregated.activity !== undefined) {
             setActivity(aggregated.activity);
+            batch.push(await insert(petId, 'activity', aggregated.activity));
           }
-
-          if (aggregated.raw != undefined) {
-            await insert(petId, 'raw_motion', aggregated.raw);
+          if (aggregated.raw !== undefined) {
             setRaw(aggregated.raw);
+            batch.push(await insert(petId, 'raw_motion', aggregated.raw));
           }
-
-          if (aggregated.vitals != undefined) {
-            await insert(petId, 'vitals', aggregated.vitals);
+          if (aggregated.vitals !== undefined) {
             setVitals(aggregated.vitals);
+            batch.push(await insert(petId, 'vitals', aggregated.vitals));
           }
-
-          if (aggregated.env != undefined) {
-            await insert(petId, 'env', aggregated.env);
+          if (aggregated.env !== undefined) {
             setEnv(aggregated.env);
+            batch.push(await insert(petId, 'env', aggregated.env));
           }
-        } catch (error) {
-          console.error('[useUpdate] insert aggregated', {
-            petId,
-            chr,
-            metric_type: 'aggregated',
-            error,
-          });
+          const firstErr = batch.find((result) => result.error)?.error;
+          if (firstErr) handleInsertFailure('Couldn’t save aggregated data to the cloud', firstErr);
+          else if (batch.length > 0) handleInsertSuccess();
+        } catch (err) {
+          console.error('[useUpdate] aggregated parse', { petId, chr, err });
         }
         break;
       }
@@ -153,8 +150,13 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
       if (result.status === 'rejected') {
         console.error('[useUpdate] subscribeTo failed', result.reason);
       }
+      console.log('[useUpdate] subscribeTo success', result.status);
     });
   };
+
+  useEffect(() => {
+    cloudSyncHealthyRef.current = true;
+  }, [petId]);
 
   useEffect(() => {
     if (!connected || !petId) return;

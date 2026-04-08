@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
-import { fetch } from '@/lib/petpulse/data-service';
+import { loadDashboardLatest } from '@/lib/petpulse/data-service';
 import { activityClassMap } from '@/lib/petpulse/sensor-readings';
 import clsx from 'clsx';
 import { router } from 'expo-router';
@@ -22,9 +22,9 @@ import {
   Wind,
   Zap,
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Index() {
@@ -42,90 +42,76 @@ export default function Index() {
   const [heartRateLastUpdated, setHeartRateLastUpdated] = useState<number | null>(null);
   const [breathRate, setBreathRate] = useState<number | null>(null);
   const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState<boolean>(false);
+  const bleLoading = useRef<boolean>(false);
 
   // ============================= STEP & ACTIVITY =============================
-  console.log('[Index] mockSubject', mockSubject?.id);
   useEffect(() => {
-    if (!mockSubject) return;
+    setDashboardLoading(true);
+    bleLoading.current = false;
     const fetchData = async () => {
-      const stepData = await fetch(mockSubject.id, 'step_count', 'latest');
-      if (stepData?.[0]) {
-        setStepCount(stepData[0].data);
-      } else {
-        setStepCount(0);
+      if (!mockSubject) {
+        setDashboardLoading(false);
+        return;
       }
-      const activityData = await fetch(mockSubject.id, 'activity', 'latest');
-      if (activityData?.[0]) {
-        setActivityClass(activityClassMap[activityData[0].data]);
-        setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
-      } else {
-        setActivityClass(null);
+      try {
+        const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(mockSubject.id);
+        if (bleLoading.current) return;
+        if (stepData != null && stepData.length > 0) setStepCount(stepData[0].data); // Since 0 is valid & use != vs !== for type coercion of undefined
+        if (heartRateData != null && heartRateData.length > 0) {
+          setHeartRate(Math.round(heartRateData[0].data));
+          setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
+        }
+        if (breathRateData != null && breathRateData.length > 0) {
+          setBreathRate(Math.round(breathRateData[0].data));
+          setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
+        }
+        if (temperatureData != null && temperatureData.length > 0) {
+          setTemperature(temperatureData[0].data);
+          setTemperatureLastUpdated(temperatureData[0].recorded_at.getTime());
+        }
+        if (humidityData != null && humidityData.length > 0) {
+          setHumidity(humidityData[0].data);
+          setHumidityLastUpdated(humidityData[0].recorded_at.getTime());
+        }
+        if (activityData != null && activityData.length > 0) {
+          setActivityClass(activityClassMap[activityData[0].data]);
+          setActivityClassLastUpdated(activityData[0].recorded_at.getTime());
+        }
+      } finally {
+        setDashboardLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [mockSubject]);
 
   // ----- From BLE -----
   useEffect(() => {
     if (!activity) return;
+    bleLoading.current = true;
     setStepCount(activity.stepCount.steps);
     setActivityClass(activityClassMap[activity.classifier.activityClass]);
     setActivityClassLastUpdated(activity.utcTimestamp.getTime());
   }, [activity]);
 
-  // ============================= VITALS =============================
-  useEffect(() => {
-    if (!mockSubject) return;
-    const fetchData = async () => {
-      const heartRateData = await fetch(mockSubject.id, 'heart_rate', 'latest');
-      if (heartRateData?.[0]) {
-        setHeartRate(Math.round(heartRateData[0].data));
-        setHeartRateLastUpdated(heartRateData[0].recorded_at.getTime());
-      } else {
-        setHeartRate(null);
-      }
-      const breathRateData = await fetch(mockSubject.id, 'breath_rate', 'latest');
-      if (breathRateData?.[0]) {
-        setBreathRate(breathRateData[0].data);
-        setBreathRateLastUpdated(breathRateData[0].recorded_at.getTime());
-      }
-    };
-    fetchData();
-  }, []);
-
   // ----- From BLE -----
   useEffect(() => {
     if (!vitals) return;
-    setHeartRate(vitals?.heartRate);
-    setBreathRate(vitals?.breathRate);
-    setHeartRateLastUpdated(vitals?.utcTimestamp.getTime());
-    setBreathRateLastUpdated(vitals?.utcTimestamp.getTime());
+    bleLoading.current = true;
+    setHeartRate(vitals.heartRate);
+    setBreathRate(vitals.breathRate);
+    setHeartRateLastUpdated(vitals.utcTimestamp.getTime());
+    setBreathRateLastUpdated(vitals.utcTimestamp.getTime());
   }, [vitals]);
 
-  // ============================= ENV =============================
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!mockSubject) return;
-      const temperatureData = await fetch(mockSubject.id, 'temperature', 'latest');
-      if (temperatureData?.[0]) {
-        setTemperature(temperatureData[0].data);
-        setTemperatureLastUpdated(temperatureData[0].recorded_at.getTime());
-      }
-      const humidityData = await fetch(mockSubject.id, 'humidity', 'latest');
-      if (humidityData?.[0]) {
-        setHumidity(humidityData[0].data);
-        setHumidityLastUpdated(humidityData[0].recorded_at.getTime());
-      }
-    };
-    fetchData();
-  }, []);
   // ----- From BLE -----
   useEffect(() => {
     if (!env) return;
-    setTemperature(env?.temperature);
-    setHumidity(env?.humidity);
-    setTemperatureLastUpdated(env?.utcTimestamp.getTime());
-    setHumidityLastUpdated(env?.utcTimestamp.getTime());
+    bleLoading.current = true;
+    setTemperature(env.temperature);
+    setHumidity(env.humidity);
+    setTemperatureLastUpdated(env.utcTimestamp.getTime());
+    setHumidityLastUpdated(env.utcTimestamp.getTime());
   }, [env]);
 
   const formatTime = (lastUpdated: number | null) => {
@@ -151,12 +137,13 @@ export default function Index() {
         paddingRight: insets.right,
       }}
     >
-      <View className="flex flex-col gap-2 px-4 py-4">
+      <View className="flex flex-col gap-2 px-4 py-2">
         <Animated.Text className="text-xl text-tint" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
           Welcome back, {user?.user_metadata?.first_name}
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
-          {pet?.name}
+          {/* {pet?.name} */}
+          {mockSubject?.name}
           {"\'s"} Health Summary
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
@@ -197,24 +184,26 @@ export default function Index() {
             </Pressable>
           </Animated.View>
           {/* ============================= HEALTH SUMMARY CARD ============================= */}
-          <Animated.View className="flex flex-row gap-2 px-2" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
-            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow">
+          <Animated.View
+            className="flex flex-row gap-2 px-2"
+            entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}
+            layout={LinearTransition.duration(300)}
+          >
+            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
               <CardHeader>
                 <View className="flex flex-row  items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
-                    <Icon as={pet?.pet_type === 'dog' ? Bone : Cat} size={22} className="text-tint" />
+                    <Icon as={mockSubject?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
                     <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary</Text>
                   </View>
-                  <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
                 </View>
               </CardHeader>
               <CardContent>
                 <View>
-                  <Text className="text-muted-foreground text-sm leading-relaxed" ellipsizeMode="tail" numberOfLines={3}>
+                  <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
                     enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-                    reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt
-                    in culpa qui officia deserunt mollit anim id est laborum.
+                    reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
                   </Text>
                 </View>
               </CardContent>
@@ -231,6 +220,7 @@ export default function Index() {
                 value={stepCount}
                 metricType="step_count"
                 lastUpdated="Today"
+                loading={dashboardLoading}
               />
             </Pressable>
             <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300" onPress={() => router.push('/activity')}>
@@ -241,6 +231,7 @@ export default function Index() {
                 value={activityClass}
                 metricType="activity"
                 lastUpdated={formatTime(activityClassLastUpdated)}
+                loading={dashboardLoading}
               />
             </Pressable>
           </Animated.View>
@@ -255,6 +246,7 @@ export default function Index() {
                 metricType="heart_rate"
                 unit="BPM"
                 lastUpdated={formatTime(heartRateLastUpdated)}
+                loading={dashboardLoading}
               />
             </Pressable>
             <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300" onPress={() => router.push('/breathrate')}>
@@ -266,6 +258,7 @@ export default function Index() {
                 unit="BPM"
                 metricType="breath_rate"
                 lastUpdated={formatTime(breathRateLastUpdated)}
+                loading={dashboardLoading}
               />
             </Pressable>
           </Animated.View>
@@ -280,6 +273,7 @@ export default function Index() {
                 unit="°F"
                 metricType="temperature"
                 lastUpdated={formatTime(temperatureLastUpdated)}
+                loading={dashboardLoading}
               />
             </Pressable>
             <Pressable className="basis-1/2 shadow-sm active:scale-95 transition-all duration-300" onPress={() => router.push('/humidity')}>
@@ -291,6 +285,7 @@ export default function Index() {
                 unit="%"
                 metricType="humidity"
                 lastUpdated={formatTime(humidityLastUpdated)}
+                loading={dashboardLoading}
               />
             </Pressable>
           </Animated.View>
