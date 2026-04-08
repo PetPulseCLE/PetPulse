@@ -15,10 +15,11 @@ export const ThemePreferenceProvider = ({ children }: { children: React.ReactNod
 
   const getTheme = async () => {
     const theme = await AsyncStorage.getItem('theme');
-    setTheme(theme as ColorSchemeName);
+    const themeVal = theme === 'dark' ? 'dark' : 'light';
+    setTheme(themeVal);
   };
 
-  const saveTheme = async (theme: ColorSchemeName | null) => {
+  const saveTheme = async (theme: string | null) => {
     try {
       await AsyncStorage.setItem('theme', theme === 'dark' ? 'dark' : 'light');
     } catch (error) {
@@ -30,17 +31,17 @@ export const ThemePreferenceProvider = ({ children }: { children: React.ReactNod
     if (theme === 'dark') {
       Appearance.setColorScheme('light');
       setTheme('light');
-      saveTheme('light' as ColorSchemeName);
+      saveTheme('light');
     } else {
       Appearance.setColorScheme('dark');
       setTheme('dark');
-      saveTheme('dark' as ColorSchemeName);
+      saveTheme('dark');
     }
   };
 
   useEffect(() => {
     getTheme();
-    Appearance.setColorScheme(theme as ColorSchemeName);
+    Appearance.setColorScheme(theme);
   }, [theme]);
 
   return <ThemePreferenceContext.Provider value={{ theme, toggleTheme }}>{children}</ThemePreferenceContext.Provider>;
