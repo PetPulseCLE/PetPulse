@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useAuth } from '@/context/AuthContext';
+import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { fetch, FetchResponse } from '@/lib/petpulse/data-service';
 import { activityMockMap } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, Zap } from 'lucide-react-native';
@@ -23,52 +22,29 @@ const ACTIVITY_COLORS: Record<string, string> = {
 
 export default function ActivityScreen() {
   const insets = useSafeAreaInsets();
-  const { mockSubject } = useAuth();
+  const { isLoading, chartData } = useChartData();
   const [timeRange, setTimeRange] = useState<TimeRange>('D');
-  const [data, setData] = useState<{ value: number; color: string }[]>([]);
-  const [loading, setLoading] = useState(true);
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
   const tabBar = useThemeColor({}, 'tabBar');
 
-  const fetchData = useCallback(async () => {
-    if (!mockSubject?.id) {
-      setLoading(false);
-      return;
-    }
-    setData([]);
-    setLoading(true);
+  const rawRows = chartData?.activity?.[timeRange] ?? null;
+  const fetchFailed = !isLoading && rawRows === null;
 
-    let result: FetchResponse | null;
-    if (timeRange === 'D') {
-      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-18'), new Date('2026-03-19'));
-    } else if (timeRange === 'W') {
-      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-16'), new Date('2026-03-23'));
-    } else {
-      result = await fetch(mockSubject.id, 'activity', null, new Date('2026-03-01'), new Date('2026-04-01'));
+  // Turn the raw activity class numbers into pie chart slices
+  let data: { value: number; color: string }[] = [];
+  if (rawRows && rawRows.length > 0) {
+    const counts: Record<string, number> = { Still: 0, Walking: 0, Running: 0 };
+    for (const dp of rawRows) {
+      const label = activityMockMap[Math.round(dp.data)] ?? 'Still';
+      counts[label]++;
     }
-
-    if (result && result.dataPoints && result.dataPoints.length > 0) {
-      const counts: Record<string, number> = { Still: 0, Walking: 0, Running: 0 };
-      for (const dp of result.dataPoints) {
-        const label = activityMockMap[Math.round(dp.data)] ?? 'Still';
-        counts[label]++;
-      }
-      const pieData = Object.entries(counts)
-        .filter(([, count]) => count > 0)
-        .map(([label, count]) => ({
-          value: count,
-          color: ACTIVITY_COLORS[label],
-        }));
-      setData(pieData);
-    } else {
-      setData([]);
-    }
-    setLoading(false);
-  }, [mockSubject?.id, timeRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    data = Object.entries(counts)
+      .filter(([, count]) => count > 0)
+      .map(([label, count]) => ({
+        value: count,
+        color: ACTIVITY_COLORS[label],
+      }));
+  }
 
   return (
     <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
@@ -93,11 +69,7 @@ export default function ActivityScreen() {
               type="single"
               value={timeRange}
               onValueChange={(val) => {
-                if (val) {
-                  setData([]);
-                  setLoading(true);
-                  setTimeRange(val as TimeRange);
-                }
+                if (val) setTimeRange(val as TimeRange);
               }}
               variant="outline"
             >
@@ -115,9 +87,13 @@ export default function ActivityScreen() {
 
           {/* Donut Chart + Legend */}
           <View className="flex flex-row items-center justify-center py-6 gap-8">
-            {loading ? (
+            {isLoading ? (
               <View className="items-center justify-center" style={{ height: 180 }}>
                 <ActivityIndicator size="large" color="#f97316" />
+              </View>
+            ) : fetchFailed ? (
+              <View className="items-center justify-center" style={{ height: 180 }}>
+                <Text className="text-muted-foreground">Failed to load data</Text>
               </View>
             ) : data.length === 0 ? (
               <View className="items-center justify-center" style={{ height: 180 }}>
