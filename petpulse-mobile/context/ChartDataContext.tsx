@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useAuth } from './AuthContext';
 import { fetch } from '@/lib/petpulse/data-service';
 import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 
 type TimeRange = 'D' | 'W' | 'M';
 
@@ -20,14 +20,7 @@ const ChartDataContext = createContext<ChartDataContextValue>({
   chartData: null,
 });
 
-const METRICS: DataType[] = [
-  'heart_rate',
-  'breath_rate',
-  'temperature',
-  'humidity',
-  'step_count',
-  'activity',
-];
+const METRICS: DataType[] = ['heart_rate', 'breath_rate', 'temperature', 'humidity', 'step_count', 'activity'];
 
 // These are the same hardcoded date ranges used in every chart screen.
 // Defined once here so we don't repeat them in 6 places.
@@ -63,7 +56,7 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
           const avgParam = metric !== 'activity' ? true : null;
           const response = await fetch(petId, metric, null, start, end, avgParam);
           return { metric, range, result: response.dataPoints };
-        })
+        }),
       );
 
       // allSettled means: even if one fetch fails, the rest still complete.
@@ -71,7 +64,7 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
       const settled = await Promise.allSettled(calls);
 
       // Start with all slots as null (error state), fill in whatever came back
-      const cache: Partial<ChartCache> = {};
+      const cache = {} as ChartCache;
       for (const metric of METRICS) {
         cache[metric] = { D: null, W: null, M: null };
       }
@@ -79,22 +72,18 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
       for (const item of settled) {
         if (item.status === 'fulfilled') {
           const { metric, range, result } = item.value;
-          cache[metric]![range] = result; // DataPoint[] or null
+          cache[metric][range] = result; // DataPoint[] or null
         }
       }
 
-      setChartData(cache as ChartCache);
+      setChartData(cache);
       setIsLoading(false);
     };
 
     prefetchAll();
   }, [mockSubject?.id, authLoading]);
 
-  return (
-    <ChartDataContext.Provider value={{ isLoading, chartData }}>
-      {children}
-    </ChartDataContext.Provider>
-  );
+  return <ChartDataContext.Provider value={{ isLoading, chartData }}>{children}</ChartDataContext.Provider>;
 }
 
 export function useChartData() {
