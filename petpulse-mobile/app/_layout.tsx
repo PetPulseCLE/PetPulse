@@ -42,28 +42,17 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-<<<<<<< HEAD
       <ChartDataProvider>
         <ThemeProvider value={NAV_THEME[resolvedScheme]}>
           <ThemePreferenceProvider>
             <BleProvider>
               <StackWithStatusBar />
               <PortalHost />
+              <Toast config={toastConfig} />
             </BleProvider>
           </ThemePreferenceProvider>
         </ThemeProvider>
       </ChartDataProvider>
-=======
-      <ThemeProvider value={NAV_THEME[resolvedScheme]}>
-        <ThemePreferenceProvider>
-          <BleProvider>
-            <StackWithStatusBar />
-            <PortalHost />
-            <Toast config={toastConfig} />
-          </BleProvider>
-        </ThemePreferenceProvider>
-      </ThemeProvider>
->>>>>>> 4fc659cec86014497d36854fdb3757a3c94c9d7d
     </AuthProvider>
   );
 }

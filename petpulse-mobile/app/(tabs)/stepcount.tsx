@@ -5,10 +5,6 @@ import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-<<<<<<< HEAD
-=======
-import { fetch, FetchResponse } from '@/lib/petpulse/data-service';
->>>>>>> 4fc659cec86014497d36854fdb3757a3c94c9d7d
 import { router } from 'expo-router';
 import { ArrowLeft, PawPrint } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
@@ -74,42 +70,9 @@ export default function StepCountScreen() {
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
-<<<<<<< HEAD
-=======
-  const [data, setData] = useState<{ label: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    if (!mockSubject?.id) {
-      setLoading(false);
-      return;
-    }
-    setData([]);
-    setLoading(true);
-
-    let result: FetchResponse | null;
-    if (timeRange === 'D') {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
-    } else if (timeRange === 'W') {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
-    } else {
-      result = await fetch(mockSubject.id, 'step_count', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
-    }
-    if (result && result.dataPoints && result.dataPoints.length > 0) {
-      setData(fillSlots(result.dataPoints, timeRange));
-    } else {
-      setData([]);
-    }
-    setLoading(false);
-  }, [mockSubject?.id, timeRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
->>>>>>> 4fc659cec86014497d36854fdb3757a3c94c9d7d
-
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
-
   const rawRows = chartData?.step_count?.[timeRange] ?? null;
   const fetchFailed = !isLoading && rawRows === null;
   const data = rawRows && rawRows.length > 0 ? fillSlots(rawRows, timeRange) : [];
