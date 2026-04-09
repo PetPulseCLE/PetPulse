@@ -3,6 +3,7 @@ import { BleProvider } from '@/context/BleContext';
 import { ChartDataProvider } from '@/context/ChartDataContext';
 import { ThemePreferenceProvider } from '@/context/ThemePrefContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { toastConfig } from '@/lib/petpulse/toast-config';
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
@@ -10,6 +11,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-get-random-values';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
 import '../global.css';
 
 configureReanimatedLogger({
@@ -40,6 +42,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
+<<<<<<< HEAD
       <ChartDataProvider>
         <ThemeProvider value={NAV_THEME[resolvedScheme]}>
           <ThemePreferenceProvider>
@@ -50,6 +53,17 @@ export default function RootLayout() {
           </ThemePreferenceProvider>
         </ThemeProvider>
       </ChartDataProvider>
+=======
+      <ThemeProvider value={NAV_THEME[resolvedScheme]}>
+        <ThemePreferenceProvider>
+          <BleProvider>
+            <StackWithStatusBar />
+            <PortalHost />
+            <Toast config={toastConfig} />
+          </BleProvider>
+        </ThemePreferenceProvider>
+      </ThemeProvider>
+>>>>>>> 4fc659cec86014497d36854fdb3757a3c94c9d7d
     </AuthProvider>
   );
 }

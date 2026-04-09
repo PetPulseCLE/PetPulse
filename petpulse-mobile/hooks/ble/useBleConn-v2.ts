@@ -405,7 +405,11 @@ export const useBleConn = () => {
         if (!savedId) return;
         const isConnected = await BleManager?.isPeripheralConnected(savedId);
         if (!isConnected) {
-          await reconnect();
+          try {
+            await reconnect();
+          } catch (error) {
+            console.log('AppStateListener: reconnect threw:', error);
+          }
         }
       }
     });

@@ -47,10 +47,7 @@ export default function ActivityScreen() {
   }
 
   return (
-    <ScrollView
-      className="h-full"
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
-    >
+    <ScrollView className="h-full" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <Pressable
         className="flex flex-row mb-4 ml-4 rounded-xl items-center justify-center bg-tab-bar border-ring border w-10 h-10 active:scale-95 transition-transform duration-300 shadow-sm"
         onPress={() => router.back()}
@@ -104,30 +101,27 @@ export default function ActivityScreen() {
               </View>
             ) : (
               <>
-                <PieChart
-                  data={data}
-                  donut
-                  radius={90}
-                  innerRadius={58}
-                  innerCircleColor={tabBar}
-                  sectionAutoFocus
-                  focusOnPress
-                  isAnimated
-                />
+                <PieChart data={data} donut radius={90} innerRadius={58} innerCircleColor={tabBar} sectionAutoFocus focusOnPress isAnimated />
 
                 {/* Legend */}
                 <View className="flex flex-col gap-4">
                   <View className="flex flex-row items-center gap-3">
                     <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Still }} />
-                    <Text className="text-sm" style={{ color: axisAndLabel }}>Still</Text>
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Still
+                    </Text>
                   </View>
                   <View className="flex flex-row items-center gap-3">
                     <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Walking }} />
-                    <Text className="text-sm" style={{ color: axisAndLabel }}>Walking</Text>
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Walking
+                    </Text>
                   </View>
                   <View className="flex flex-row items-center gap-3">
                     <View className="w-3 h-3 rounded-full" style={{ backgroundColor: ACTIVITY_COLORS.Running }} />
-                    <Text className="text-sm" style={{ color: axisAndLabel }}>Running</Text>
+                    <Text className="text-sm" style={{ color: axisAndLabel }}>
+                      Running
+                    </Text>
                   </View>
                 </View>
               </>
