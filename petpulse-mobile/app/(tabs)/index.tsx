@@ -58,11 +58,7 @@ export default function Index() {
         const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(mockSubject.id);
         if (bleLoading.current) return;
         if (stepData != null && stepData.length > 0) {
-          if (Date.now() - stepData[0].recorded_at.getTime() > 1000 * 60 * 60 * 24) {
-            setStepCount(0);
-          } else {
-            setStepCount(stepData[0].data);
-          }
+          Date.now() - stepData[0].recorded_at.getTime() > 1000 * 60 * 60 * 24 ? setStepCount(0) : setStepCount(stepData[0].data);
         }
         if (heartRateData != null && heartRateData.length > 0) {
           setHeartRate(Math.round(heartRateData[0].data));
