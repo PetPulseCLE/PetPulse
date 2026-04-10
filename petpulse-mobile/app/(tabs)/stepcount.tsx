@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import ChartSummary from '@/components/petpulse-ui/chart-summary';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAuth } from '@/context/AuthContext';
 import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
@@ -67,6 +69,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
 export default function StepCountScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
+  const { mockSubject } = useAuth();
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
@@ -252,6 +255,14 @@ export default function StepCountScreen() {
             )}
           </View>
         </View>
+        <ChartSummary
+          metric="step_count"
+          metricLabel="step count"
+          timeRange={timeRange}
+          dataPoints={rawRows}
+          pet={mockSubject}
+          accentColor={EMERALD}
+        />
       </View>
     </ScrollView>
   );

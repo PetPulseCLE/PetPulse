@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import ChartSummary from '@/components/petpulse-ui/chart-summary';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAuth } from '@/context/AuthContext';
 import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { router } from 'expo-router';
@@ -66,6 +68,7 @@ function fillSlots(
 export default function TemperatureScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
+  const { mockSubject } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
 
@@ -202,6 +205,14 @@ export default function TemperatureScreen() {
             )}
           </View>
         </View>
+        <ChartSummary
+          metric="temperature"
+          metricLabel="body temperature"
+          timeRange={timeRange}
+          dataPoints={rawRows}
+          pet={mockSubject}
+          accentColor={AMBER}
+        />
       </View>
     </ScrollView>
   );

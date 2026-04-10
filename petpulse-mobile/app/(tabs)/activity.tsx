@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import ChartSummary from '@/components/petpulse-ui/chart-summary';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useAuth } from '@/context/AuthContext';
 import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { activityMockMap } from '@/lib/petpulse/sensor-readings';
@@ -23,6 +25,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
 export default function ActivityScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
+  const { mockSubject } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('D');
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
   const tabBar = useThemeColor({}, 'tabBar');
@@ -128,6 +131,14 @@ export default function ActivityScreen() {
             )}
           </View>
         </View>
+        <ChartSummary
+          metric="activity"
+          metricLabel="activity"
+          timeRange={timeRange}
+          dataPoints={rawRows}
+          pet={mockSubject}
+          accentColor="#f97316"
+        />
       </View>
     </ScrollView>
   );
