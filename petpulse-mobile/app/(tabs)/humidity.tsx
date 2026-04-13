@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 
+import ChartSummary from '@/components/petpulse-ui/chart-summary';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/context/AuthContext';
+import { useChartData } from '@/context/ChartDataContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { fetch, FetchResponse } from '@/lib/petpulse/data-service';
-import type { FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { router } from 'expo-router';
 import { ArrowLeft, Droplets } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
@@ -14,12 +14,6 @@ import { barDataItem, CurveType, LineChart } from 'react-native-gifted-charts';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TimeRange = 'D' | 'W' | 'M';
-
-const PERIOD_MAP: Record<TimeRange, FetchPeriod> = {
-  D: 'day',
-  W: 'week',
-  M: 'month',
-};
 
 const DAILY_LABELS = Array.from({ length: 24 }, (_, i) => {
   if (i === 0) return '12A';
@@ -33,14 +27,17 @@ const MONTHLY_LABELS = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
 
 const SKY = '#0ea5e9';
 
-function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: TimeRange) {
+function fillSlots(
+  result: { data: number; recorded_at: Date }[],
+  timeRange: TimeRange,
+): { label: string; value: number | null; hideDataPoint: boolean }[] {
   switch (timeRange) {
     case 'D': {
       const hourMap = new Map<number, number>();
       for (const dp of result) hourMap.set(dp.recorded_at.getHours(), Math.round(dp.data));
       return Array.from({ length: 24 }, (_, i) => ({
         label: DAILY_LABELS[i],
-        value: (hourMap.get(i) ?? null) as unknown as number,
+        value: hourMap.get(i) ?? null,
         hideDataPoint: !hourMap.has(i),
       }));
     }
@@ -49,7 +46,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
       for (const dp of result) dayMap.set(dp.recorded_at.getDay(), Math.round(dp.data));
       return Array.from({ length: 7 }, (_, i) => ({
         label: WEEKLY_LABELS[i],
-        value: (dayMap.get(i) ?? null) as unknown as number,
+        value: dayMap.get(i) ?? null,
         hideDataPoint: !dayMap.has(i),
       }));
     }
@@ -61,7 +58,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
       }
       return Array.from({ length: 4 }, (_, i) => ({
         label: MONTHLY_LABELS[i],
-        value: (weekMap.get(i) ?? null) as unknown as number,
+        value: weekMap.get(i) ?? null,
         hideDataPoint: !weekMap.has(i),
       }));
     }
@@ -70,40 +67,16 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
 
 export default function HumidityScreen() {
   const insets = useSafeAreaInsets();
+  const { isLoading, chartData } = useChartData();
   const { mockSubject } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
-  const [data, setData] = useState<{ label: string; value: number }[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    if (!mockSubject?.id) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    //const result = await fetch(mockSubject.id, 'humidity', PERIOD_MAP[timeRange]);
-    let result: FetchResponse | null;
-    if (timeRange === 'D') {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-18'), new Date('2026-03-19'), true);
-    } else if (timeRange === 'W') {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-16'), new Date('2026-03-23'), true);
-    } else {
-      result = await fetch(mockSubject.id, 'humidity', null, new Date('2026-03-01'), new Date('2026-04-01'), true);
-    }
-    if (result && result.dataPoints && result.dataPoints.length > 0) {
-      setData(fillSlots(result.dataPoints, timeRange));
-    } else {
-      setData([]);
-    }
-    setLoading(false);
-  }, [mockSubject?.id, timeRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
+
+  const rawRows = chartData?.humidity?.[timeRange] ?? null;
+  const fetchFailed = !isLoading && rawRows === null;
+  const data = rawRows && rawRows.length > 0 ? fillSlots(rawRows, timeRange) : [];
 
   const touchHandlers = {
     onTouchStart: () => setEnabled(false),
@@ -132,7 +105,7 @@ export default function HumidityScreen() {
     pointerColor: SKY,
     radius: 0,
     pointerLabelWidth: 20,
-    shiftPointerLabelX: -20,
+    shiftPointerLabelX: -15,
     shiftPointerLabelY: -10,
     pointerLabelComponent: (items: barDataItem[]) =>
       items[0]?.value ? (
@@ -192,9 +165,13 @@ export default function HumidityScreen() {
 
           {/* Chart */}
           <View className="w-full h-[260px]">
-            {loading ? (
+            {isLoading ? (
               <View className="flex-1 items-center justify-center">
                 <ActivityIndicator size="large" color={SKY} />
+              </View>
+            ) : fetchFailed ? (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-muted-foreground">Failed to load data</Text>
               </View>
             ) : data.length === 0 ? (
               <View className="flex-1 items-center justify-center">
@@ -202,10 +179,9 @@ export default function HumidityScreen() {
               </View>
             ) : (
               <LineChart
-                data={data}
+                data={data as any}
                 color={SKY}
                 thickness={2}
-                //curved
                 curveType={CurveType.QUADRATIC}
                 curvature={0.1}
                 areaChart
@@ -228,6 +204,14 @@ export default function HumidityScreen() {
             )}
           </View>
         </View>
+        <ChartSummary
+          metric="humidity"
+          metricLabel="humidity"
+          timeRange={timeRange}
+          dataPoints={rawRows}
+          pet={mockSubject}
+          accentColor={SKY}
+        />
       </View>
     </ScrollView>
   );

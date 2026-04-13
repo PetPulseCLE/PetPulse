@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { BleProvider } from '@/context/BleContext';
+import { ChartDataProvider } from '@/context/ChartDataContext';
 import { ThemePreferenceProvider } from '@/context/ThemePrefContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { toastConfig } from '@/lib/petpulse/toast-config';
@@ -41,15 +42,17 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <ThemeProvider value={NAV_THEME[resolvedScheme]}>
-        <ThemePreferenceProvider>
-          <BleProvider>
-            <StackWithStatusBar />
-            <PortalHost />
-            <Toast config={toastConfig} />
-          </BleProvider>
-        </ThemePreferenceProvider>
-      </ThemeProvider>
+      <ChartDataProvider>
+        <ThemeProvider value={NAV_THEME[resolvedScheme]}>
+          <ThemePreferenceProvider>
+            <BleProvider>
+              <StackWithStatusBar />
+              <PortalHost />
+              <Toast config={toastConfig} />
+            </BleProvider>
+          </ThemePreferenceProvider>
+        </ThemeProvider>
+      </ChartDataProvider>
     </AuthProvider>
   );
 }
