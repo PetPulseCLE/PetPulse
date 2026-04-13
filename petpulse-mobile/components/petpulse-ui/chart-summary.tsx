@@ -33,6 +33,10 @@ const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   M: "This month's readings",
 };
 
+// Metrics that have vet reference ranges and can show a status pill.
+// Explicit here so the pill logic doesn't silently depend on getStatus returning 'unknown'.
+const CLINICAL_METRICS = new Set<DataType>(['heart_rate', 'breath_rate', 'temperature']);
+
 // Status styles. 'unknown' has no entry — the pill is hidden in that case.
 const STATUS_STYLES: Record<'normal' | 'elevated' | 'low', { label: string; bg: string; text: string }> = {
   normal: { label: 'Normal', bg: 'bg-green-500/20', text: 'text-green-600' },
@@ -75,10 +79,10 @@ export default function ChartSummary({
   const age = computeAge(pet.birth_date);
   const size = getSizeBucket(pet);
   const species = pet.pet_type.toLowerCase();
-  const speciesWord = species === 'cat' ? 'cat' : 'dog';
+  const speciesWord = species === 'cat' ? 'cat' : species === 'dog' ? 'dog' : 'pet';
   const sizeLabel = `${size.charAt(0).toUpperCase() + size.slice(1)}-sized ${speciesWord}`;
 
-  const status = stats ? getStatus(metric, stats.avg, pet) : 'unknown';
+  const status = stats && CLINICAL_METRICS.has(metric) ? getStatus(metric, stats.avg, pet) : 'unknown';
   const statusStyle = status !== 'unknown' ? STATUS_STYLES[status] : null;
 
   const summaryText = isActivity
