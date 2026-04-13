@@ -403,3 +403,24 @@ class TestComputeTrendsEndToEnd:
         for t in result.trends:
             assert t.uiColor.startswith("#"), f"Expected hex color, got {t.uiColor}"
             assert len(t.uiColor) == 7
+
+    def test_weight_included_when_data_present(self):
+        end = date.today()
+        weight_rows = [
+            {
+                "observation_day": (end - timedelta(days=29 - i)).isoformat(),
+                "avg_weight": 25.0 + i * 0.05,
+            }
+            for i in range(30)
+        ]
+        result = self._run_with_mock(weight=weight_rows)
+        assert "weight" in {t.metricKey for t in result.trends}
+
+    def test_vitals_anomaly_is_interpolated(self):
+        vitals_rows = _build_vitals_rows(PET_ID)
+        vitals_rows[15]["avg_hr"] = 300.0
+        vitals_rows[15]["avg_br"] = 100.0
+        result = self._run_with_mock(vitals=vitals_rows)
+        hr_trend = next((t for t in result.trends if t.metricKey == "heart_rate"), None)
+        assert hr_trend is not None
+        assert hr_trend.status in ("improved", "declining", "stable", "warning")

@@ -290,7 +290,7 @@ def _build_trend(
         displayString=_display_string(metric_key, status, pct),
         uiColor=STATUS_COLORS[status],
         percentageChange=round(pct, 2),
-        sparklineData=series.iloc[-7:].round(1).tolist(),
+        sparklineData=series.iloc[-7:].fillna(0).round(1).tolist(),
     )
 
 
