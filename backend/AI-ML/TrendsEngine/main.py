@@ -1,4 +1,6 @@
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,10 +14,19 @@ _allowed_origins = [
     if (stripped := o.strip()) and stripped.startswith(("http://", "https://"))
 ]
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Initialize external clients at boot so config issues fail fast."""
+    get_client()
+    yield
+
+
 app = FastAPI(
     title="PetPulse Trends Engine",
     description="30-day pet health trend analysis: vitals, temperature, weight, and activity.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -26,12 +37,6 @@ app.add_middleware(
 )
 
 app.include_router(trends_router)
-
-
-@app.on_event("startup")
-def startup() -> None:
-    """Initialize external clients at boot so config issues fail fast."""
-    get_client()
 
 
 @app.get("/health")
