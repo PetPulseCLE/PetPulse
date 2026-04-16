@@ -1,0 +1,16 @@
+# Database & API
+supabase==2.28.3
+fastapi==0.110.0
+uvicorn==0.27.1
+python-dotenv==1.0.1
+
+# Data Science & ML
+pandas==2.2.3
+numpy==2.4.3
+scikit-learn==1.6.1
+
+# Utilities
+pydantic==2.11.3
+
+# Testing
+pytest==9.0.2
