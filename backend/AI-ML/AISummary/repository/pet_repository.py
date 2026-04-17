@@ -1,9 +1,8 @@
-import datetime
-
 from supabase import create_client
 
 from config import settings
 from models import BaselineMetrics, HealthSnapshot, TodayMetrics
+from services.time_service import get_effective_today
 
 supabase = create_client(settings.supabase_url, settings.supabase_key)
 
@@ -17,7 +16,7 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
         .execute()
     )
 
-    today_str = datetime.date.today().isoformat()
+    today_str = get_effective_today().isoformat()
 
     today_vitals = (
         supabase.table("daily_vitals_mv")
@@ -52,14 +51,14 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
     baseline_vitals = (
         supabase.rpc(
             "get_baseline_vitals",
-            {"p_pet_id": pet_id},
+            {"p_pet_id": pet_id, "p_effective_today": today_str},
         ).execute()
     )
 
     baseline_activity = (
         supabase.rpc(
             "get_baseline_activity",
-            {"p_pet_id": pet_id},
+            {"p_pet_id": pet_id, "p_effective_today": today_str},
         ).execute()
     )
 

@@ -12,6 +12,7 @@
 *.env
 .env.*
 docs/plans/
+*.md
 *.pem
 *.key
 **/serviceAccount*.json
