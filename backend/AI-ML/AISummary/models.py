@@ -16,9 +16,11 @@ class BaselineMetrics(BaseModel):
     avg_hr: float | None = None
     avg_br: float | None = None
     avg_steps: float | None = None
+    avg_activity_pct: float | None = None
 
 
 class HealthSnapshot(BaseModel):
     pet_id: str
+    pet_name: str | None = None
     today: TodayMetrics
     baseline: BaselineMetrics

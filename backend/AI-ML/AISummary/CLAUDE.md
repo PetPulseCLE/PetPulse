@@ -1,30 +1,24 @@
-# Pet Health AI API: Phase 2 Rules (Data & Deltas)
+# Pet Health AI API: Phase 3 Rules (Intelligence Layer)
 
 ## Tech Stack
-
 - **Backend**: FastAPI (Python 3.11+)
-- **Database**: Supabase (PostgreSQL) with Materialized Views:
-  - `daily_vitals_mv` (avg_hr, avg_br, stddev_hr, stddev_br)
-  - `daily_activity_mv` (total_steps, activity_pct)
-  - `daily_weight_mv` (avg_weight, target_weight)
-- **AI Model**: Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`)
+- **Database**: Supabase (Materialized Views + RPCs for baselines)
+- **Clinical Data**: `symptoms.json` (Grounded in Merck Veterinary Manual standards)
+- **AI Model**: Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite`)
 
-## AI Strategy: The Delta Pattern
+## Intelligence Strategy: RAG-Lite & Clinical Reasoning
+- **Anomaly Detection**: Compare `HealthSnapshot` today values against historical baselines.
+- **Threshold Triggers**:
+  - **Respiratory Issues**: (avg_br / base_br) > 1.25 (25% spike)
+  - **Heart Issues**: (avg_hr / base_hr) > 1.20 (20% spike)
+  - **Mobility/Lethargy**: (activity_pct / base_activity_pct) < 0.60 (40% drop)
+- **Retrieval**: 
+  - If a threshold is met, query `symptoms.json` for the corresponding `condition`.
+  - Extract 2-3 relevant 'Clinical Notes' or 'Owner Observations'.
+- **Contextual Summary**: Inject these notes as "Clinical Reference" into the Gemini prompt.
 
-- **Objective**: Summarize health changes by comparing "Today" against "Historical Baseline."
-- **Data Retrieval**:
-  1. Fetch the most recent row for `pet_id` from all MVs where `observation_day` is CURRENT_DATE.
-  2. Calculate the historical mean (Baseline) for HR, BR, and Steps from the same views for all previous dates.
-- **Summary Constraint**: Strictly 2-3 sentences. Professional, data-driven, and empathetic.
-
-## Development Standards
-
-- Use `supabase-py` for database operations.
-- Maintain a clear separation between `repository/` (DB queries) and `services/` (AI logic).
-- Implement a `HealthSnapshot` Pydantic model to pass data between layers.
-- Ensure all database calls are handled with proper error catching for missing pet data.
-
-## Model Configuration
-
-- **Temperature**: 0.1 (Stay grounded in sensor data).
-- **System Instruction**: "You are a veterinary assistant. Compare today's metrics against the pet's baseline to provide a status update."
+## Implementation Standards
+- Maintain a `services/clinical_service.py` to handle JSON lookup logic.
+- **Temperature**: 0.1 (Strict grounding in sensor data and clinical text).
+- **Summary Constraint**: Strictly 2-3 sentences. Professional, empathetic, and expert.
+- **Safety**: Always include a suggestion for veterinary consultation when an anomaly is detected.
