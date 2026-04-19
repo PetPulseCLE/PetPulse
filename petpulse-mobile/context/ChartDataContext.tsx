@@ -1,4 +1,4 @@
-import { fetch } from '@/lib/petpulse/data-service';
+import { RPCFetch } from '@/lib/petpulse/data-service';
 import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
@@ -54,7 +54,7 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
         (['D', 'W', 'M'] as const).map(async (range) => {
           const { start, end } = DATE_RANGES[range];
           const avgParam = metric !== 'activity' ? true : null;
-          const response = await fetch(petId, metric, null, start, end, avgParam);
+          const response = await RPCFetch(petId, metric, null, start, end, avgParam);
           return { metric, range, result: response.dataPoints };
         }),
       );

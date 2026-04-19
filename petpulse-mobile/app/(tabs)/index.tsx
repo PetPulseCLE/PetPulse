@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
 import { loadDashboardLatest } from '@/lib/petpulse/data-service';
+import { fetchAISummary } from '@/lib/petpulse/ai-summary-service';
 import { activityClassMap } from '@/lib/petpulse/sensor-readings';
 import clsx from 'clsx';
 import { router } from 'expo-router';
@@ -26,11 +27,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { time } from 'node:console';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet, mockSubject } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals } = useBle();
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [activityClass, setActivityClass] = useState<string | null>(null);
   const [activityClassLastUpdated, setActivityClassLastUpdated] = useState<number | null>(null);
@@ -84,6 +88,18 @@ export default function Index() {
     };
     fetchData();
   }, [mockSubject]);
+
+  useEffect(() => {
+    if (!mockSubject) return;
+    const fetchHealthSummary = async () => {
+      const { response, timestamp } = await fetchAISummary(mockSubject.id);
+      if (response != null && response.length > 0) {
+        setSummary(response);
+        setSummaryLastUpdated(timestamp?.getTime() ?? null);
+      }
+    };
+    fetchHealthSummary();
+  }, []);
 
   // ----- From BLE -----
   useEffect(() => {
@@ -194,16 +210,15 @@ export default function Index() {
                 <View className="flex flex-row  items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
                     <Icon as={mockSubject?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
-                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary</Text>
+                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
+                    <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
                   </View>
                 </View>
               </CardHeader>
               <CardContent>
                 <View>
                   <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                    enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-                    reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                    {summary}
                   </Text>
                 </View>
               </CardContent>
