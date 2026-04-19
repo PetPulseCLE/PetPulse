@@ -50,12 +50,12 @@ export default function Index() {
     setDashboardLoading(true);
     bleLoading.current = false;
     const fetchData = async () => {
-      if (!mockSubject) {
+      if (!pet) {
         setDashboardLoading(false);
         return;
       }
       try {
-        const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(mockSubject.id);
+        const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(pet.id);
         if (bleLoading.current) return;
         if (stepData != null && stepData.length > 0) {
           Date.now() - stepData[0].recorded_at.getTime() > 1000 * 60 * 60 * 24 ? setStepCount(0) : setStepCount(stepData[0].data);
@@ -85,7 +85,7 @@ export default function Index() {
       }
     };
     fetchData();
-  }, [mockSubject]);
+  }, [pet]);
 
   // ----- From BLE -----
   useEffect(() => {

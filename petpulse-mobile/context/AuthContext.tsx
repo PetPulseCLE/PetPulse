@@ -60,9 +60,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [mockSubject, setMockSubject] = useState<MockSubject | null>(null);
 
   const fetchPetId = async (user: User) => {
-    const { data, error } = await supabase.from('AIML_mock_subjects').select('*').eq('user_id', user.id).maybeSingle();
+    const { data, error } = await supabase.from('pets').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
       if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
+      setPet(null);
+      return;
+    }
+    setPet(data ?? null);
+  };
+
+  const fetchMockSubjectId = async (user: User) => {
+    const { data, error } = await supabase.from('AIML_mock_subjects').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) {
+      if (__DEV__) console.error('[AuthContext] fetchMockSubjectId:', error);
       setMockSubject(null);
       return;
     }
@@ -87,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session.user);
       fetchPetId(session.user);
+      fetchMockSubjectId(session.user);
     };
 
     supabase.auth

@@ -17,6 +17,7 @@ export const insert = async (pet_id: string, metric_type: MetricType, data: Acti
     data: dataValues,
     recorded_at: utcTimestamp,
   });
+  console.log('INSERT:', { pet_id, metric_type, dataValues, utcTimestamp });
   if (error) {
     console.error('[insert] error', error);
     return { error, success: false };
@@ -55,7 +56,8 @@ export async function fetch(
   bucket_period: 'hour' | 'day' | null = null,
 ): Promise<FetchResponse> {
   // Default query
-  let query = supabase.rpc('fetch_mock_data', {
+  // NOTE: change to fetch_mock_data for mock data
+  let query = supabase.rpc('fetch_sensor_data', {
     pet_id_param: pet_id,
     data_type_param: data_type,
     period_param: period,
