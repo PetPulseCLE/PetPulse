@@ -27,7 +27,7 @@ _HTTP_OPTIONS = genai_types.HttpOptions(
 
 client = genai.Client(api_key=settings.gemini_api_key, http_options=_HTTP_OPTIONS)
 PRIMARY_MODEL = "gemini-3.1-flash-lite-preview"
-FALLBACK_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "gemini-2.5-flash-lite"
 
 SYSTEM_PROMPT = """\
 You are a warm, supportive, and friendly Veterinary Assistant for the PetPulse app. Your goal is to provide pet parents with a brief, comforting update on their pet's daily health.
