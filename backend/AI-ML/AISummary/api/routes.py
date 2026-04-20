@@ -32,6 +32,8 @@ async def summarize(request: SummarizeRequest):
             summary=summary,
             success=True,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(
             "Failed to summarize pet data for pet_id=%s", request.pet_id

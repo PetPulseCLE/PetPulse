@@ -63,17 +63,21 @@ async def generate_summary(snapshot: HealthSnapshot) -> str:
     baseline = snapshot.baseline.model_dump(exclude_none=True)
     conditions, reference = build_clinical_reference(snapshot)
 
-    # --- Healthy Baseline Validation Logging ---
-    print("\n" + "=" * 60)
-    print(f"[HealthSnapshot] Pet: {snapshot.pet_name!r} ({snapshot.pet_id})")
-    print(f"  Today   → {today}")
-    print(f"  Baseline→ {baseline}")
+    separator = "=" * 60
     if conditions:
-        print(f"[Anomaly] Thresholds triggered: {', '.join(conditions)}")
+        anomaly_line = f"[Anomaly] Thresholds triggered: {', '.join(conditions)}"
     else:
-        print("[Anomaly] No anomalies detected, skipping clinical lookup.")
-    print("=" * 60 + "\n")
-    # --- End Logging ---
+        anomaly_line = "[Anomaly] No anomalies detected, skipping clinical lookup."
+    logger.info(
+        "\n%s\n[HealthSnapshot] Pet: %r (%s)\n  Today   \u2192 %s\n  Baseline\u2192 %s\n%s\n%s\n",
+        separator,
+        snapshot.pet_name,
+        snapshot.pet_id,
+        today,
+        baseline,
+        anomaly_line,
+        separator,
+    )
 
     if reference:
         reference_block = (
@@ -93,7 +97,12 @@ async def generate_summary(snapshot: HealthSnapshot) -> str:
 
     try:
         return await _invoke_model(PRIMARY_MODEL, user_prompt, snapshot.pet_id)
-    except Exception as primary_exc:
+    except (
+        genai_errors.ClientError,
+        genai_errors.ServerError,
+        genai_errors.APIError,
+        _EmptyGeminiResponse,
+    ) as primary_exc:
         logger.warning(
             "[FALLBACK TRIGGERED] Primary model %s failed for pet_id=%s (%s: %s); retrying with %s",
             PRIMARY_MODEL,
@@ -173,7 +182,13 @@ async def _invoke_model(model: str, user_prompt: str, pet_id: str) -> str:
             f"non-STOP finish_reason={finish_reason} from model={model} for pet_id={pet_id}"
         )
 
-    text = getattr(response, "text", None)
+    try:
+        text = getattr(response, "text", None)
+    except ValueError as e:
+        raise _EmptyGeminiResponse(
+            f"invalid text from model={model} for pet_id={pet_id} "
+            f"(finish_reason={finish_reason}): {e}"
+        ) from e
     if not text:
         raise _EmptyGeminiResponse(
             f"empty text from model={model} for pet_id={pet_id} (finish_reason={finish_reason})"
