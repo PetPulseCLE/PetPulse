@@ -206,9 +206,9 @@ The `.env` at `backend/` does not use `SUPABASE_URL`/`SUPABASE_KEY` variable nam
 ```bash
 cd backend/AI-ML/AISummary
 
-SUPABASE_URL="https://khhmfpxgkwqqmithakqy.supabase.co" \
-SUPABASE_KEY="sb_publishable_v0uop7VOtcIkvUYXyYzUdw_wwtsXn5Q" \
-GEMINI_API_KEY="AIzaSyC0_P0TFzFSsKHDT7Z-g5YKL8Yun1srHBQ" \
+SUPABASE_URL="<YOUR_SUPABASE_URL>" \
+SUPABASE_KEY="<YOUR_SUPABASE_PUBLISHABLE_KEY>" \
+GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>" \
 venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -247,7 +247,9 @@ Real anchor = April 17 − 24 days = **March 24, 2026**.
 
 ```bash
 DEMO_START_REAL=2026-03-24 \
-SUPABASE_URL="..." SUPABASE_KEY="..." GEMINI_API_KEY="..." \
+SUPABASE_URL="<YOUR_SUPABASE_URL>" \
+SUPABASE_KEY="<YOUR_SUPABASE_PUBLISHABLE_KEY>" \
+GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>" \
 venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -257,7 +259,9 @@ Virtual offset = 28 days. Real anchor = April 17 − 28 = **March 20, 2026**.
 
 ```bash
 DEMO_START_REAL=2026-03-20 \
-SUPABASE_URL="..." SUPABASE_KEY="..." GEMINI_API_KEY="..." \
+SUPABASE_URL="<YOUR_SUPABASE_URL>" \
+SUPABASE_KEY="<YOUR_SUPABASE_PUBLISHABLE_KEY>" \
+GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>" \
 venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
