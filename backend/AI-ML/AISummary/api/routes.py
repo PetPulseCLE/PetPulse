@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from repository.pet_repository import fetch_health_snapshot
 from services.ai_service import generate_summary
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,5 +32,13 @@ async def summarize(request: SummarizeRequest):
             summary=summary,
             success=True,
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(
+            "Failed to summarize pet data for pet_id=%s", request.pet_id
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="internal server error while summarizing pet data",
+        ) from e

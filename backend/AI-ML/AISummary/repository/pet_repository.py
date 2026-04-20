@@ -1,14 +1,31 @@
-from supabase import create_client
+import asyncio
+
+from supabase import AsyncClient, acreate_client
 
 from config import settings
 from models import BaselineMetrics, HealthSnapshot, TodayMetrics
 from services.time_service import get_effective_today
 
-supabase = create_client(settings.supabase_url, settings.supabase_key)
+_supabase: AsyncClient | None = None
+_supabase_lock = asyncio.Lock()
+
+
+async def get_supabase_client() -> AsyncClient:
+    global _supabase
+    if _supabase is None:
+        async with _supabase_lock:
+            if _supabase is None:
+                _supabase = await acreate_client(
+                    settings.supabase_url, settings.supabase_key
+                )
+    return _supabase
 
 
 async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
-    subject = (
+    supabase = await get_supabase_client()
+    today_str = get_effective_today().isoformat()
+
+    subject_q = (
         supabase.table("AIML_mock_subjects")
         .select("name")
         .eq("id", pet_id)
@@ -16,9 +33,7 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
         .execute()
     )
 
-    today_str = get_effective_today().isoformat()
-
-    today_vitals = (
+    today_vitals_q = (
         supabase.table("daily_vitals_mv")
         .select("avg_hr, avg_br, stddev_hr, stddev_br")
         .eq("pet_id", pet_id)
@@ -28,7 +43,7 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
         .execute()
     )
 
-    today_activity = (
+    today_activity_q = (
         supabase.table("daily_activity_mv")
         .select("total_steps, activity_pct")
         .eq("pet_id", pet_id)
@@ -38,7 +53,7 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
         .execute()
     )
 
-    today_weight = (
+    today_weight_q = (
         supabase.table("daily_weight_mv")
         .select("avg_weight, target_weight")
         .eq("pet_id", pet_id)
@@ -48,18 +63,30 @@ async def fetch_health_snapshot(pet_id: str) -> HealthSnapshot:
         .execute()
     )
 
-    baseline_vitals = (
-        supabase.rpc(
-            "get_baseline_vitals",
-            {"p_pet_id": pet_id, "p_effective_today": today_str},
-        ).execute()
-    )
+    baseline_vitals_q = supabase.rpc(
+        "get_baseline_vitals",
+        {"p_pet_id": pet_id, "p_effective_today": today_str},
+    ).execute()
 
-    baseline_activity = (
-        supabase.rpc(
-            "get_baseline_activity",
-            {"p_pet_id": pet_id, "p_effective_today": today_str},
-        ).execute()
+    baseline_activity_q = supabase.rpc(
+        "get_baseline_activity",
+        {"p_pet_id": pet_id, "p_effective_today": today_str},
+    ).execute()
+
+    (
+        subject,
+        today_vitals,
+        today_activity,
+        today_weight,
+        baseline_vitals,
+        baseline_activity,
+    ) = await asyncio.gather(
+        subject_q,
+        today_vitals_q,
+        today_activity_q,
+        today_weight_q,
+        baseline_vitals_q,
+        baseline_activity_q,
     )
 
     tv = today_vitals.data[0] if today_vitals.data else {}
