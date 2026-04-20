@@ -26,7 +26,8 @@ _HTTP_OPTIONS = genai_types.HttpOptions(
 )
 
 client = genai.Client(api_key=settings.gemini_api_key, http_options=_HTTP_OPTIONS)
-MODEL = "gemini-3.1-flash-lite-preview"
+PRIMARY_MODEL = "gemini-3.1-flash-lite-preview"
+FALLBACK_MODEL = "gemini-2.5-flash"
 
 SYSTEM_PROMPT = """\
 You are a warm, supportive, and friendly Veterinary Assistant for the PetPulse app. Your goal is to provide pet parents with a brief, comforting update on their pet's daily health.
@@ -51,6 +52,10 @@ You are a warm, supportive, and friendly Veterinary Assistant for the PetPulse a
 ### TASK:
 Analyze the provided HealthSnapshot and Clinical Reference. Write a personal 2-3 sentence update for the pet parent that summarizes how the pet is doing today compared to their usual self.
 """
+
+
+class _EmptyGeminiResponse(RuntimeError):
+    """Raised when Gemini returns no usable text (empty body or non-STOP finish)."""
 
 
 async def generate_summary(snapshot: HealthSnapshot) -> str:
@@ -87,18 +92,22 @@ async def generate_summary(snapshot: HealthSnapshot) -> str:
     )
 
     try:
-        response = await client.aio.models.generate_content(
-            model=MODEL,
-            contents=user_prompt,
-            config=genai_types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                temperature=0.1,
-                max_output_tokens=200,
-            ),
+        return await _invoke_model(PRIMARY_MODEL, user_prompt, snapshot.pet_id)
+    except Exception as primary_exc:
+        logger.warning(
+            "[FALLBACK TRIGGERED] Primary model %s failed for pet_id=%s (%s: %s); retrying with %s",
+            PRIMARY_MODEL,
+            snapshot.pet_id,
+            type(primary_exc).__name__,
+            primary_exc,
+            FALLBACK_MODEL,
         )
+
+    try:
+        text = await _invoke_model(FALLBACK_MODEL, user_prompt, snapshot.pet_id)
     except genai_errors.ClientError as e:
         logger.exception(
-            "Gemini client error for pet_id=%s (status=%s)",
+            "Gemini client error on fallback model for pet_id=%s (status=%s)",
             snapshot.pet_id,
             getattr(e, "code", None),
         )
@@ -108,7 +117,7 @@ async def generate_summary(snapshot: HealthSnapshot) -> str:
         ) from e
     except genai_errors.ServerError as e:
         logger.exception(
-            "Gemini server error for pet_id=%s (status=%s)",
+            "Gemini server error on fallback model for pet_id=%s (status=%s)",
             snapshot.pet_id,
             getattr(e, "code", None),
         )
@@ -118,39 +127,56 @@ async def generate_summary(snapshot: HealthSnapshot) -> str:
         ) from e
     except genai_errors.APIError as e:
         logger.exception(
-            "Gemini API error for pet_id=%s",
+            "Gemini API error on fallback model for pet_id=%s",
             snapshot.pet_id,
         )
         raise HTTPException(
             status_code=502,
             detail="failed to generate pet health summary",
         ) from e
+    except _EmptyGeminiResponse as e:
+        logger.warning(
+            "Fallback model returned empty/invalid response for pet_id=%s: %s",
+            snapshot.pet_id,
+            e,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="failed to generate pet health summary",
+        ) from e
+
+    logger.info(
+        "Fallback model %s succeeded for pet_id=%s",
+        FALLBACK_MODEL,
+        snapshot.pet_id,
+    )
+    return text
+
+
+async def _invoke_model(model: str, user_prompt: str, pet_id: str) -> str:
+    response = await client.aio.models.generate_content(
+        model=model,
+        contents=user_prompt,
+        config=genai_types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.1,
+            max_output_tokens=200,
+        ),
+    )
 
     candidates = getattr(response, "candidates", None) or []
     finish_reason = (
         getattr(candidates[0], "finish_reason", None) if candidates else None
     )
     if finish_reason is not None and finish_reason != genai_types.FinishReason.STOP:
-        logger.warning(
-            "Gemini returned non-STOP finish_reason=%s for pet_id=%s",
-            finish_reason,
-            snapshot.pet_id,
-        )
-        raise HTTPException(
-            status_code=502,
-            detail="failed to generate pet health summary",
+        raise _EmptyGeminiResponse(
+            f"non-STOP finish_reason={finish_reason} from model={model} for pet_id={pet_id}"
         )
 
     text = getattr(response, "text", None)
     if not text:
-        logger.warning(
-            "Gemini returned empty summary text for pet_id=%s (finish_reason=%s)",
-            snapshot.pet_id,
-            finish_reason,
-        )
-        raise HTTPException(
-            status_code=502,
-            detail="failed to generate pet health summary",
+        raise _EmptyGeminiResponse(
+            f"empty text from model={model} for pet_id={pet_id} (finish_reason={finish_reason})"
         )
 
     return text
