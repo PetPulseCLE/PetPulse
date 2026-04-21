@@ -1,4 +1,3 @@
-import { QueryError } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
 import Toast from 'react-native-toast-message';
 
@@ -17,7 +16,7 @@ export async function fetchAISummary(pet_Id: string): Promise<AIResponse> {
     if (data == null || data.length === 0) {
       lastUpdated = 0;
     } else {
-      lastUpdated = new Date(data[0].created_at).getTime();
+      lastUpdated = new Date(data[0].created_at).getUTCDate();
       response = { timestamp: new Date(data[0].created_at), response: data[0].summary };
     }
   } catch (error) {
@@ -25,7 +24,7 @@ export async function fetchAISummary(pet_Id: string): Promise<AIResponse> {
     response = { timestamp: null, response: 'Error fetching AI summary supabase' };
   }
 
-  if (Date.now() - lastUpdated > 24 * 60 * 60 * 1000) {
+  if (new Date().getUTCDate() !== lastUpdated) {
     try {
       const responseBody = await fetch('http://192.168.68.52:8000/summarize', {
         method: 'POST',
