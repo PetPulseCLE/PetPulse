@@ -12,7 +12,6 @@
 *.env
 .env.*
 docs/plans/
-*.md
 *.pem
 *.key
 **/serviceAccount*.json
@@ -348,6 +347,11 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 **/__pycache__/
 *.pyc
+
+# Python virtual environments and tooling caches
+**/venv/
+**/.venv/
+**/.pytest_cache/
 
 # Cake - Uncomment if you are using it
 #tools/**
