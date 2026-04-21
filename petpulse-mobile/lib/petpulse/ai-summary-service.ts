@@ -7,16 +7,16 @@ export interface AIResponse {
 }
 
 export async function fetchAISummary(pet_Id: string): Promise<AIResponse> {
-  // See if we have a summary for the day saved in supabsse.
-  let lastUpdated = 0;
+  // See if we have a summary for the day saved in supabase.
+  let lastUpdated: Date | null = null;
   let response = {} as AIResponse;
   try {
     const { data, error } = await supabase.from('ai_summaries').select('summary, created_at').eq('id', pet_Id);
     console.log('AI/ML', data, error);
     if (data == null || data.length === 0) {
-      lastUpdated = 0;
+      lastUpdated = null;
     } else {
-      lastUpdated = new Date(data[0].created_at).getUTCDate();
+      lastUpdated = new Date(data[0].created_at);
       response = { timestamp: new Date(data[0].created_at), response: data[0].summary };
     }
   } catch (error) {
@@ -24,9 +24,15 @@ export async function fetchAISummary(pet_Id: string): Promise<AIResponse> {
     response = { timestamp: null, response: 'Error fetching AI summary supabase' };
   }
 
-  if (new Date().getUTCDate() !== lastUpdated) {
+  const isSameDay =
+    lastUpdated !== null &&
+    lastUpdated.getUTCFullYear() === new Date().getUTCFullYear() &&
+    lastUpdated.getUTCMonth() === new Date().getUTCMonth() &&
+    lastUpdated.getUTCDate() === new Date().getUTCDate();
+
+  if (!isSameDay) {
     try {
-      const responseBody = await fetch('http://192.168.68.52:8000/summarize', {
+      const responseBody = await fetch(`${process.env.EXPO_PUBLIC_AI_ML_SERVICE_URL}/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pet_id: pet_Id }),
@@ -43,7 +49,7 @@ export async function fetchAISummary(pet_Id: string): Promise<AIResponse> {
         });
         return response;
       }
-      const timestamp = new Date(responseBody.headers.get('date') ?? '');
+      const timestamp = new Date(responseBody.headers.get('date') ?? new Date());
       const responsePromise = await responseBody.json();
       const { error } = await supabase.from('ai_summaries').upsert({ id: pet_Id, summary: responsePromise.summary, created_at: timestamp });
       if (error) {

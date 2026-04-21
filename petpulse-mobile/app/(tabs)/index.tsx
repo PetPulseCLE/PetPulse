@@ -27,7 +27,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { time } from 'node:console';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
@@ -99,7 +98,7 @@ export default function Index() {
       }
     };
     fetchHealthSummary();
-  }, []);
+  }, [mockSubject]);
 
   // ----- From BLE -----
   useEffect(() => {
