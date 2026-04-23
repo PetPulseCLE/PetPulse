@@ -137,7 +137,7 @@ export interface Env {
 
 export const parseEnv = (data: Uint8Array): Env => {
   const envView = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const temperature = envView.getFloat32(0, true);
+  const temperature = envView.getFloat32(0, true) * 1.8 + 32;
   const humidity = envView.getFloat32(4, true);
   const utcTimestamp = UTCFromBytes(data.slice(8, 17));
   return { temperature, humidity, utcTimestamp } as Env;

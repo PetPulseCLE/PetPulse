@@ -31,6 +31,8 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
   const [activity, setActivity] = useState<Activity | null>(null);
   const [env, setEnv] = useState<Env | null>(null);
   const [vitals, setVitals] = useState<Vitals | null>(null);
+  const [battery, setBattery] = useState<number | null>(null);
+  const [charging, setCharging] = useState(false);
   /** true = last insert(s) succeeded; toast at most once per failure streak. */
   const cloudSyncHealthyRef = useRef(true);
 
@@ -172,5 +174,5 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
     };
   }, [connected, petId]);
 
-  return { raw, activity, env, vitals };
+  return { raw, activity, env, vitals, battery, charging };
 };

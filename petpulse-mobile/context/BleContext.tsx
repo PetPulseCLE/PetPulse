@@ -29,6 +29,8 @@ type BleContextType = {
   activity: Activity | null;
   env: Env | null;
   vitals: Vitals | null;
+  battery: number | null;
+  charging: boolean;
 };
 
 const BleContext = createContext<BleContextType>({} as BleContextType);
@@ -41,7 +43,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
   /* Live metrics: per-characteristic BLE notify. Aggregated payloads are SD-only on-device and
    * synced back separately — firmware does not push both paths over BLE, so no duplicate rows. */
-  const update = useUpdate(connection.connected, mockSubject?.id ?? null);
+  const { battery, charging, ...update } = useUpdate(connection.connected, mockSubject?.id ?? null);
 
   return (
     <BleContext.Provider
@@ -50,6 +52,8 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
         ...time,
         ...mode,
         ...update,
+        battery,
+        charging,
       }}
     >
       {children}
