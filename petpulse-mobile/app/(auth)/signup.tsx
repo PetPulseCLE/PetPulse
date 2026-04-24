@@ -1,10 +1,10 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { useAuth } from "@/context/AuthContext";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useAuth } from '@/context/AuthContext';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
+import { Link, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -16,8 +16,8 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function isValidEmail(email: string) {
   return /^\S+@\S+\.\S+$/.test(email.trim());
@@ -29,16 +29,16 @@ function isPasswordValid(pw: string) {
 }
 
 export default function SignupScreen() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  const [token, setToken] = useState("");
-  const [verifying, setVerifying] = useState(false);
+  const [token, setToken] = useState('');
+  const [verifying, setVerifying] = useState(true);
   const { signUp, verifyOtp } = useAuth();
   const router = useRouter();
 
@@ -61,25 +61,22 @@ export default function SignupScreen() {
 
   const passwordValid = useMemo(() => isPasswordValid(password), [password]);
   const confirmValid = useMemo(
-    () =>
-      passwordValid &&
-      password === confirmPassword &&
-      confirmPassword.length > 0,
+    () => passwordValid && password === confirmPassword && confirmPassword.length > 0,
     [password, confirmPassword, passwordValid],
   );
 
-  const inputText = useThemeColor({}, "text");
-  const placeholder = useThemeColor({}, "placeholder");
-  const cardBg = useThemeColor({}, "cardBgAlpha");
-  const cardBorder = useThemeColor({}, "cardBorderAlpha");
-  const inputBg = useThemeColor({}, "inputBgAlpha");
-  const inputBorder = useThemeColor({}, "inputBorderAlpha");
-  const passwordValidBorder = "#22c55e";
-  const brandBlack = useThemeColor({}, "brandBlack");
-  const errorText = useThemeColor({}, "errorText");
-  const onboardingBtnBg = useThemeColor({}, "onboardingBtnBg");
+  const inputText = useThemeColor({}, 'text');
+  const placeholder = useThemeColor({}, 'placeholder');
+  const cardBg = useThemeColor({}, 'cardBgAlpha');
+  const cardBorder = useThemeColor({}, 'cardBorderAlpha');
+  const inputBg = useThemeColor({}, 'inputBgAlpha');
+  const inputBorder = useThemeColor({}, 'inputBorderAlpha');
+  const passwordValidBorder = '#22c55e';
+  const brandBlack = useThemeColor({}, 'brandBlack');
+  const errorText = useThemeColor({}, 'errorText');
+  const onboardingBtnBg = useThemeColor({}, 'onboardingBtnBg');
 
-  const spinnerColor = "#FFFFFF";
+  const spinnerColor = '#FFFFFF';
 
   async function onSubmit() {
     setError(null);
@@ -88,54 +85,41 @@ export default function SignupScreen() {
     // Client-side validation
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
-    if (
-      !trimmedFirst ||
-      !trimmedLast ||
-      !trimmedEmail ||
-      !password ||
-      !confirmPassword
-    ) {
-      setError("Please fill in all fields.");
+    if (!trimmedFirst || !trimmedLast || !trimmedEmail || !password || !confirmPassword) {
+      setError('Please fill in all fields.');
       return;
     }
     if (!isValidEmail(trimmedEmail)) {
-      setError("Please enter a valid email address.");
+      setError('Please enter a valid email address.');
       return;
     }
     if (!isPasswordValid(password)) {
-      setError("Password must be at least 6 characters.");
+      setError('Password must be at least 6 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError('Passwords do not match.');
       return;
     }
     setSubmitting(true);
 
     try {
-      const { data: signUpData, error: signUpError } = await signUp(
-        trimmedEmail,
-        password,
-        { firstName: trimmedFirst, lastName: trimmedLast },
-      );
+      const { data: signUpData, error: signUpError } = await signUp(trimmedEmail, password, { firstName: trimmedFirst, lastName: trimmedLast });
       if (signUpError) {
-        if (
-          signUpError.message.includes("already registered") ||
-          signUpError.message.includes("already exists")
-        ) {
-          setError("Unable to create account. Please try again or sign in.");
+        if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
+          setError('Unable to create account. Please try again or sign in.');
         } else {
           setError(signUpError.message);
         }
       } else if (!signUpData.session) {
         // Email confirmation required — inform the user
         setVerifying(true);
-        setError("Please enter the code sent to your email.");
+        setError('Please enter the code sent to your email.');
       } else {
-        router.replace("/(onboarding)/features");
+        router.replace('/(onboarding)/features');
       }
     } catch (e: any) {
-      setError(e?.message ?? "Something went wrong. Please try again.");
+      setError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -148,10 +132,10 @@ export default function SignupScreen() {
       if (error) {
         setError(error.message);
       } else {
-        router.replace("/(onboarding)/features");
+        router.replace('/(onboarding)/features');
       }
     } catch (e: any) {
-      setError(e?.message ?? "Something went wrong. Please try again.");
+      setError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -161,8 +145,8 @@ export default function SignupScreen() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
           <ScrollView
@@ -178,21 +162,11 @@ export default function SignupScreen() {
               <ThemedText type="title" style={styles.appName}>
                 Create Account
               </ThemedText>
-              <ThemedText style={styles.subtitle}>
-                Sign up with email and password to get started.
-              </ThemedText>
+              <ThemedText style={styles.subtitle}>Sign up with email and password to get started.</ThemedText>
             </View>
             {verifying ? (
-              <View
-                style={[
-                  styles.card,
-                  { backgroundColor: cardBg, borderColor: cardBorder },
-                ]}
-              >
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.label, { alignSelf: "center", marginBottom: 14 }]}
-                >
+              <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+                <ThemedText type="defaultSemiBold" style={[styles.label, { alignSelf: 'center', marginBottom: 14 }]}>
                   Please enter the code sent to your email
                 </ThemedText>
                 <TextInput
@@ -212,12 +186,10 @@ export default function SignupScreen() {
                   ]}
                 />
                 <TouchableOpacity
+                  className=""
                   onPress={onVerify}
                   disabled={token.length !== 8}
-                  style={[
-                    styles.button,
-                    token.length !== 8 && styles.buttonDisabled,
-                  ]}
+                  style={[styles.button, { backgroundColor: brandBlack }, token.length !== 8 && styles.buttonDisabled]}
                 >
                   {submitting ? (
                     <ActivityIndicator color={spinnerColor} />
@@ -229,12 +201,7 @@ export default function SignupScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View
-                style={[
-                  styles.card,
-                  { backgroundColor: cardBg, borderColor: cardBorder },
-                ]}
-              >
+              <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
                 <ThemedText type="defaultSemiBold" style={styles.label}>
                   First Name
                 </ThemedText>
@@ -317,16 +284,12 @@ export default function SignupScreen() {
                     {
                       color: inputText,
                       backgroundColor: inputBg,
-                      borderColor: passwordValid
-                        ? passwordValidBorder
-                        : inputBorder,
+                      borderColor: passwordValid ? passwordValidBorder : inputBorder,
                     },
                   ]}
                 />
                 {(passwordTouched || password.length > 0) && !passwordValid ? (
-                  <ThemedText style={styles.passwordHint}>
-                    Password must be at least 6 characters.
-                  </ThemedText>
+                  <ThemedText style={styles.passwordHint}>Password must be at least 6 characters.</ThemedText>
                 ) : null}
 
                 <ThemedText type="defaultSemiBold" style={styles.label}>
@@ -353,20 +316,12 @@ export default function SignupScreen() {
                     },
                   ]}
                 />
-                {error ? (
-                  <ThemedText style={[styles.errorText, { color: errorText }]}>
-                    {error}
-                  </ThemedText>
-                ) : null}
+                {error ? <ThemedText style={[styles.errorText, { color: errorText }]}>{error}</ThemedText> : null}
 
                 <TouchableOpacity
                   onPress={onSubmit}
                   disabled={!canSubmit || submitting}
-                  style={[
-                    styles.button,
-                    { backgroundColor: onboardingBtnBg },
-                    (!canSubmit || submitting) && styles.buttonDisabled,
-                  ]}
+                  style={[styles.button, { backgroundColor: onboardingBtnBg }, (!canSubmit || submitting) && styles.buttonDisabled]}
                 >
                   {submitting ? (
                     <ActivityIndicator color={spinnerColor} />
@@ -381,7 +336,7 @@ export default function SignupScreen() {
 
             <View style={styles.footer}>
               <ThemedText style={styles.footerText}>
-                Already have an account?{" "}
+                Already have an account?{' '}
                 <Link href="/login" replace>
                   <ThemedText type="link">Log in</ThemedText>
                 </Link>
@@ -410,28 +365,28 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 24,
   },
   logoCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
   logoIcon: {
-    color: "white",
+    color: 'white',
     fontSize: 28,
     lineHeight: 28,
-    textAlign: "center",
+    textAlign: 'center',
   },
   appName: {
     marginBottom: 6,
   },
   subtitle: {
-    textAlign: "center",
+    textAlign: 'center',
     opacity: 0.85,
   },
   card: {
@@ -462,20 +417,20 @@ const styles = StyleSheet.create({
   button: {
     height: 52,
     borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 4,
   },
   buttonDisabled: {
-    opacity: 0.55,
+    opacity: 0.5,
   },
   buttonText: {
-    color: "white",
+    color: 'white',
   },
 
   footer: {
     marginTop: 24,
-    alignItems: "center",
+    alignItems: 'center',
   },
   footerText: {
     opacity: 0.9,
