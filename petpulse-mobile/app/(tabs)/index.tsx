@@ -36,8 +36,6 @@ export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet, mockSubject } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals, battery, charging } = useBle();
-  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
-  const [chargingState, setChargingState] = useState<boolean>(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
   const [stepCount, setStepCount] = useState<number | null>(null);
@@ -141,18 +139,6 @@ export default function Index() {
     setHumidityLastUpdated(env.utcTimestamp.getTime());
   }, [env]);
 
-  useEffect(() => {
-    if (!battery) return;
-    bleLoading.current = true;
-    setBatteryLevel(battery);
-  }, [battery]);
-
-  useEffect(() => {
-    if (!charging) return;
-    bleLoading.current = true;
-    setChargingState(charging);
-  }, [charging]);
-
   const formatTime = (lastUpdated: number | null) => {
     if (!lastUpdated) return '';
     const now = Date.now();
@@ -167,33 +153,33 @@ export default function Index() {
   };
 
   const renderBatteryIcon = () => {
-    if (!batteryLevel) return;
-    if (chargingState) {
+    if (!battery) return;
+    if (charging) {
       return (
         <>
-          <Text className="text-sm font-normal text-foreground/80">{batteryLevel ? `${batteryLevel}%` : ''}</Text>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
           <Icon as={BatteryCharging} size={24} className=" text-green-500" />
         </>
       );
-    } else if (batteryLevel <= 20) {
+    } else if (battery <= 20) {
       return (
         <>
-          <Text className="text-sm font-normal text-foreground/80">{batteryLevel ? `${batteryLevel}%` : ''}</Text>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
           <Icon as={BatteryLow} size={24} className=" text-red-500" />
         </>
       );
-    } else if (batteryLevel > 20 && batteryLevel < 80) {
+    } else if (battery > 20 && battery < 80) {
       return (
         <>
-          <Text className="text-sm font-normal text-foreground/80">{batteryLevel ? `${batteryLevel}%` : ''}</Text>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
           <Icon as={BatteryMedium} size={24} className=" text-yellow-500" />
         </>
       );
     } else {
       return (
         <>
-          <Text className="text-sm font-normal text-foreground/80">{batteryLevel ? `${batteryLevel}%` : ''}</Text>
-          <Icon as={BatteryCharging} size={24} className=" text-green-500" />
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
+          <Icon as={BatteryFull} size={24} className=" text-green-500" />
         </>
       );
     }
