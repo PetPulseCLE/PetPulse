@@ -56,6 +56,11 @@ export interface Activity {
   stepCount: StepCount;
   utcTimestamp: Date;
 }
+
+export interface Battery {
+  level: number;
+  charging: boolean;
+}
 export const parseMajorAxes = (data: Uint8Array): Accel | Gyro | Magf => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const x = view.getFloat32(0, true);
@@ -137,7 +142,7 @@ export interface Env {
 
 export const parseEnv = (data: Uint8Array): Env => {
   const envView = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  const temperature = envView.getFloat32(0, true);
+  const temperature = envView.getFloat32(0, true) * 1.8 + 32;
   const humidity = envView.getFloat32(4, true);
   const utcTimestamp = UTCFromBytes(data.slice(8, 17));
   return { temperature, humidity, utcTimestamp } as Env;
@@ -161,6 +166,21 @@ export const parseAggregated = (data: Uint8Array): Aggregated => {
       vitals:   (bitmask & 0x04) ? parseVitals(data.slice(98, 110)) : undefined,
       env:      (bitmask & 0x08) ? parseEnv(data.slice(110, 127)) : undefined,
     } as Aggregated;
+};
+
+export const parseBattLevel = (data: Uint8Array) => {
+  const battLevelView = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const powerState = battLevelView.getUint16(1, true);
+  const battLevel = battLevelView.getUint8(3);
+  let charging = false;
+  if (((powerState >> 5) & 0x03) === 1) {
+    charging = true;
+  } else if (((powerState >> 5) & 0x03) === 2) {
+    charging = false;
+  } else if (((powerState >> 5) & 0x03) === 3) {
+    charging = true;
+  }
+  return { level: battLevel, charging: charging } as Battery;
 };
 
 /* ============================= SENSOR READING HELPER ============================= */

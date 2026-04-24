@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
 import { loadDashboardLatest } from '@/lib/petpulse/data-service';
+import { fetchAISummary } from '@/lib/petpulse/ai-summary-service';
 import { activityClassMap } from '@/lib/petpulse/sensor-readings';
 import clsx from 'clsx';
 import { router } from 'expo-router';
@@ -21,6 +22,10 @@ import {
   Thermometer,
   Wind,
   Zap,
+  BatteryMedium,
+  BatteryFull,
+  BatteryLow,
+  BatteryCharging,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -30,7 +35,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function Index() {
   const insets = useSafeAreaInsets();
   const { user, pet, mockSubject } = useAuth();
-  const { connected, setShowScanModal, isReconnecting, activity, env, vitals } = useBle();
+  const { connected, setShowScanModal, isReconnecting, activity, env, vitals, battery, charging } = useBle();
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [activityClass, setActivityClass] = useState<string | null>(null);
   const [activityClassLastUpdated, setActivityClassLastUpdated] = useState<number | null>(null);
@@ -43,6 +50,7 @@ export default function Index() {
   const [breathRate, setBreathRate] = useState<number | null>(null);
   const [breathRateLastUpdated, setBreathRateLastUpdated] = useState<number | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState<boolean>(false);
+  const [summaryLoading, setSummaryLoading] = useState<boolean>(true);
   const bleLoading = useRef<boolean>(false);
 
   // ============================= STEP & ACTIVITY =============================
@@ -83,6 +91,23 @@ export default function Index() {
       }
     };
     fetchData();
+  }, [mockSubject]);
+
+  useEffect(() => {
+    if (!mockSubject) return;
+    setSummaryLoading(true);
+    const fetchHealthSummary = async () => {
+      try {
+        const { response, timestamp } = await fetchAISummary(mockSubject.id);
+        if (response != null && response.length > 0) {
+          setSummary(response);
+          setSummaryLastUpdated(timestamp?.getTime() ?? null);
+        }
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+    fetchHealthSummary();
   }, [mockSubject]);
 
   // ----- From BLE -----
@@ -127,6 +152,39 @@ export default function Index() {
     return 'Just now';
   };
 
+  const renderBatteryIcon = () => {
+    if (!battery) return;
+    if (charging) {
+      return (
+        <>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
+          <Icon as={BatteryCharging} size={24} className=" text-green-500" />
+        </>
+      );
+    } else if (battery <= 20) {
+      return (
+        <>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
+          <Icon as={BatteryLow} size={24} className=" text-red-500" />
+        </>
+      );
+    } else if (battery > 20 && battery < 80) {
+      return (
+        <>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
+          <Icon as={BatteryMedium} size={24} className=" text-yellow-500" />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Text className="text-sm font-normal text-foreground/80">{battery ? `${battery}%` : ''}</Text>
+          <Icon as={BatteryFull} size={24} className=" text-green-500" />
+        </>
+      );
+    }
+  };
+
   return (
     <ScrollView
       className="h-full"
@@ -169,7 +227,7 @@ export default function Index() {
                   size={22}
                   className={clsx(isReconnecting ? 'text-blue-500' : connected ? 'text-green-500' : 'text-orange-500')}
                 />
-                <Text className="text-md text-foreground/70">Status: {isReconnecting ? '' : connected ? 'Connected' : 'Disconnected'}</Text>
+                <Text className="text-md text-foreground/80">Status: {isReconnecting ? '' : connected ? 'Connected' : 'Disconnected'}</Text>
 
                 {isReconnecting && (
                   <View className="flex flex-row items-center gap-2 text-muted-foreground animate-spin">
@@ -177,10 +235,14 @@ export default function Index() {
                   </View>
                 )}
               </View>
-              <Icon
-                as={ChevronRight}
-                className={clsx('size-4', isReconnecting ? 'text-blue-500' : connected ? 'text-green-500' : 'text-orange-500')}
-              />
+              <View className="flex flex-row items-center gap-2">
+                {connected && <View className="flex flex-row items-center gap-2">{renderBatteryIcon()}</View>}
+
+                <Icon
+                  as={ChevronRight}
+                  className={clsx('size-4', isReconnecting ? 'text-blue-500' : connected ? 'text-green-500' : 'text-orange-500')}
+                />
+              </View>
             </Pressable>
           </Animated.View>
           {/* ============================= HEALTH SUMMARY CARD ============================= */}
@@ -194,18 +256,24 @@ export default function Index() {
                 <View className="flex flex-row  items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
                     <Icon as={mockSubject?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
-                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary</Text>
+                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
+                    <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
                   </View>
                 </View>
               </CardHeader>
               <CardContent>
-                <View>
+                {summaryLoading ? (
+                  <View className="gap-2">
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-5/6" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-4/6" />
+                  </View>
+                ) : (
                   <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                    enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-                    reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                    {summary}
                   </Text>
-                </View>
+                )}
               </CardContent>
             </Card>
           </Animated.View>

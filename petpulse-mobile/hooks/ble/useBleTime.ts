@@ -66,7 +66,7 @@ export const useBleTime = (connected: Peripheral | null, bonded: boolean) => {
       try {
         await BleManager?.retrieveServices(peripheral.id);
         const { data } = getCurrentTime();
-        await BleManager?.write(peripheral.id, SERVICE_UUIDS.currentTime_service, CHR_UUIDS.currentTime, data);
+        await BleManager?.writeWithoutResponse(peripheral.id, SERVICE_UUIDS.currentTime_service, CHR_UUIDS.currentTime, data);
         console.log('sendCurrentTime success: ', UTCFromBytes(new Uint8Array(data)));
         return;
       } catch (error) {
@@ -89,7 +89,7 @@ export const useBleTime = (connected: Peripheral | null, bonded: boolean) => {
     }
     cancelRef.current = false;
     sendCurrentTime(connected).catch((error) => console.log('sendCurrentTime uncaught:', error));
-  }, [connected]);
+  }, [connected, bonded]);
 
   return {};
 };

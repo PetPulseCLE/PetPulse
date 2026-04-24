@@ -2,6 +2,7 @@ import { QueryError } from '@supabase/supabase-js';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
 import type { Activity, DataPoint, DataType, Env, FetchPeriod, MetricType, Raw, RpcDataPoint, Vitals } from './sensor-readings';
+import { AIResponse, fetchAISummary } from './ai-summary-service';
 
 // Supabase type insert responses
 export interface InsertResponse {
@@ -17,6 +18,7 @@ export const insert = async (pet_id: string, metric_type: MetricType, data: Acti
     data: dataValues,
     recorded_at: utcTimestamp,
   });
+  console.log('[insert] error', error);
   if (error) {
     console.error('[insert] error', error);
     return { error, success: false };
@@ -45,7 +47,7 @@ export interface FetchResponse {
  * @optional @param bucket_period - The period to bucket data by given a start and end date
  *
  */
-export async function fetch(
+export async function RPCFetch(
   pet_id: string,
   data_type: DataType,
   period: FetchPeriod | null = null,
@@ -55,7 +57,7 @@ export async function fetch(
   bucket_period: 'hour' | 'day' | null = null,
 ): Promise<FetchResponse> {
   // Default query
-  let query = supabase.rpc('fetch_mock_data', {
+  let query = supabase.rpc('fetch_sensor_data', {
     pet_id_param: pet_id,
     data_type_param: data_type,
     period_param: period,
@@ -128,12 +130,12 @@ export const loadDashboardLatest = async (
   let error = 0;
   try {
     const [step, heartRate, breathRate, temperature, humidity, activity] = await Promise.all([
-      fetch(pet_id, 'step_count', 'latest'),
-      fetch(pet_id, 'heart_rate', 'latest'),
-      fetch(pet_id, 'breath_rate', 'latest'),
-      fetch(pet_id, 'temperature', 'latest'),
-      fetch(pet_id, 'humidity', 'latest'),
-      fetch(pet_id, 'activity', 'latest'),
+      RPCFetch(pet_id, 'step_count', 'latest'),
+      RPCFetch(pet_id, 'heart_rate', 'latest'),
+      RPCFetch(pet_id, 'breath_rate', 'latest'),
+      RPCFetch(pet_id, 'temperature', 'latest'),
+      RPCFetch(pet_id, 'humidity', 'latest'),
+      RPCFetch(pet_id, 'activity', 'latest'),
     ]);
     step.error === null ? success++ : error++;
     heartRate.error === null ? success++ : error++;
