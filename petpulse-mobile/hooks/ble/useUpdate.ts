@@ -5,6 +5,7 @@ import { insert, toastError, type InsertResponse } from '../../lib/petpulse/data
 import {
   parseActivity,
   parseAggregated,
+  parseBattLevel,
   parseEnv,
   parseRaw,
   parseVitals,
@@ -133,6 +134,17 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
         }
         break;
       }
+      case CHR_UUIDS.levelStat: {
+        try {
+          const battLevelArray = new Uint8Array(data.value);
+          const battLevel = parseBattLevel(battLevelArray);
+          setBattery(battLevel.level);
+          setCharging(battLevel.charging);
+        } catch (err) {
+          console.error('[useUpdate] battLevel parse', { petId, chr, err });
+        }
+        break;
+      }
     }
   };
 
@@ -144,6 +156,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
       BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env),
       BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals),
       BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated),
+      BleManager?.startNotification(peripheral.id, SERVICE_UUIDS.battery_service, CHR_UUIDS.levelStat),
     ];
 
     // Subscribe in parallel, log if any promise rejects
@@ -171,6 +184,7 @@ export const useUpdate = (connected: Peripheral | null, petId: string | null) =>
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.env_service, CHR_UUIDS.env).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.vitals_service, CHR_UUIDS.vitals).catch(() => {});
       BleManager?.stopNotification(connected.id, SERVICE_UUIDS.aggregated_service, CHR_UUIDS.aggregated).catch(() => {});
+      BleManager?.stopNotification(connected.id, SERVICE_UUIDS.battery_service, CHR_UUIDS.levelStat).catch(() => {});
     };
   }, [connected, petId]);
 

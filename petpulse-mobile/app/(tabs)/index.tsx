@@ -168,7 +168,7 @@ export default function Index() {
 
   const renderBatteryIcon = () => {
     if (!batteryLevel) return;
-    if (charging) {
+    if (chargingState) {
       return (
         <>
           <Text className="text-sm font-normal text-foreground/80">{batteryLevel ? `${batteryLevel}%` : ''}</Text>
