@@ -186,7 +186,7 @@ export default function Settings() {
           </View>
         </Pressable>
       </View>
-      {/* ============================= DEV TOOLS ============================= */}
+      {/* ============================= DEV TOOLS =============================
       <View className="mx-3.5 mb-6 shadow-sm">
         <Pressable
           className="flex flex-row w-full align-center bg-tab-bar rounded-full active:scale-95 transition-transform duration-300"
@@ -202,7 +202,7 @@ export default function Settings() {
             <Icon as={ChevronRight} className="text-muted-foreground size-4" />
           </View>
         </Pressable>
-      </View>
+      </View> */}
 
       {/* Edit Account Modal */}
       <Modal visible={showEditAccountModal} animationType="slide" presentationStyle="pageSheet">

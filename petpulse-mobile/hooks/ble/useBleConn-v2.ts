@@ -81,7 +81,6 @@ export const useBleConn = () => {
   /* Returns true if device auth characteristic confirms bonded */
   const triggerBonding = async (peripheral: Peripheral): Promise<boolean> => {
     try {
-      await BleManager?.retrieveServices(peripheral.id);
       const auth = await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.auth);
       console.log('auth: ', auth);
       if (!auth) {
@@ -138,7 +137,7 @@ export const useBleConn = () => {
     if (initialized) {
       setDiscovered([]);
       await BleManager?.scan({
-        serviceUUIDs: [SERVICE_UUIDS.battery_service, SERVICE_UUIDS.currentTime_service],
+        serviceUUIDs: [SERVICE_UUIDS.vitals_service, SERVICE_UUIDS.currentTime_service],
         seconds: SCAN_TIMEOUT,
       });
     }
