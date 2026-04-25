@@ -38,7 +38,7 @@ export default function SignupScreen() {
   const [error, setError] = useState<string | null>(null);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [token, setToken] = useState('');
-  const [verifying, setVerifying] = useState(true);
+  const [verifying, setVerifying] = useState(false);
   const { signUp, verifyOtp } = useAuth();
   const router = useRouter();
 

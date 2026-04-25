@@ -8,7 +8,7 @@
     "ios:tunnel": "expo start --dev-client --tunnel",
     "ios:build": "expo run:ios --device",
     "ios:clean": "rm -rf ios && expo prebuild && expo run:ios --device",
-    "update:prod": "eas update --channel production --message",
+    "update:prod": "eas update --channel production --auto",
     "web": "expo start --web",
     "reset-project": "node ./scripts/reset-project.js",
     "lint": "expo lint",

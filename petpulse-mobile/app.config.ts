@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     ...config.ios,
     supportsTablet: true,
-    bundleIdentifier: process.env.BUNDLE_IDENTIFIER ?? 'com.willhynds.petpulsemobile',
+    bundleIdentifier: process.env.BUNDLE_IDENTIFIER,
     appleTeamId: process.env.APPLE_TEAM_ID,
     infoPlist: {
       UIBackgroundModes: ['location'],
@@ -33,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
-    package: process.env.BUNDLE_IDENTIFIER ?? 'com.willhynds.petpulsemobile',
+    package: process.env.BUNDLE_IDENTIFIER,
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'ACCESS_BACKGROUND_LOCATION', 'POST_NOTIFICATIONS'],
   },
   web: {
