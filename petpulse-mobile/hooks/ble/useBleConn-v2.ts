@@ -37,13 +37,7 @@ export const useBleConn = () => {
   const [mtu, setMtu] = useState(0);
   const [bonded, setBonded] = useState(false);
 
-  const { session, loading } = useAuth();
-
-  const pathname = usePathname();
-  const pathnameRef = useRef(pathname);
-  useEffect(() => {
-    pathnameRef.current = pathname;
-  }, [pathname]);
+  const { session } = useAuth();
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -355,28 +349,29 @@ export const useBleConn = () => {
 
   /* Initialize Ble Manager and reconnect to previously connected device */
   useEffect(() => {
-    if (!session || pathnameRef.current === '/splash') return;
+    if (!session) return;
     const init = async () => {
       const bleReady = await initBleManager();
       if (!bleReady) return;
       const savedId = await getSavedPrphId();
       if (savedId) {
         await reconnect();
-      } else if (!noDeviceAlertShown.current) {
-        noDeviceAlertShown.current = true;
-        Alert.alert('No Harness Connected', 'Please connect a harness', [
-          {
-            text: 'Scan for Devices',
-            onPress: () => {
-              setShowScanModal(true);
-            },
-          },
-          {
-            text: 'Dismiss',
-            style: 'destructive',
-          },
-        ]);
       }
+      // } else if (!noDeviceAlertShown.current) {
+      //   noDeviceAlertShown.current = true;
+      //   Alert.alert('No Harness Connected', 'Please connect a harness', [
+      //     {
+      //       text: 'Scan for Devices',
+      //       onPress: () => {
+      //         setShowScanModal(true);
+      //       },
+      //     },
+      //     {
+      //       text: 'Dismiss',
+      //       style: 'destructive',
+      //     },
+      //   ]);
+      // }
     };
     init();
 
