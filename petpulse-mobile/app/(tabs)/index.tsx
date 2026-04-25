@@ -58,12 +58,12 @@ export default function Index() {
     setDashboardLoading(true);
     bleLoading.current = false;
     const fetchData = async () => {
-      if (!mockSubject) {
+      if (!pet) {
         setDashboardLoading(false);
         return;
       }
       try {
-        const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(mockSubject.id);
+        const { stepData, heartRateData, breathRateData, temperatureData, humidityData, activityData } = await loadDashboardLatest(pet.id);
         if (bleLoading.current) return;
         if (stepData != null && stepData.length > 0) setStepCount(stepData[0].data); // Since 0 is valid & use != vs !== for type coercion of undefined
         if (heartRateData != null && heartRateData.length > 0) {
@@ -91,14 +91,14 @@ export default function Index() {
       }
     };
     fetchData();
-  }, [mockSubject]);
+  }, [pet]);
 
   useEffect(() => {
-    if (!mockSubject) return;
+    if (!pet) return;
     setSummaryLoading(true);
     const fetchHealthSummary = async () => {
       try {
-        const { response, timestamp } = await fetchAISummary(mockSubject.id);
+        const { response, timestamp } = await fetchAISummary(pet.id);
         if (response != null && response.length > 0) {
           setSummary(response);
           setSummaryLastUpdated(timestamp?.getTime() ?? null);
@@ -108,7 +108,7 @@ export default function Index() {
       }
     };
     fetchHealthSummary();
-  }, [mockSubject]);
+  }, [pet]);
 
   // ----- From BLE -----
   useEffect(() => {
@@ -201,7 +201,7 @@ export default function Index() {
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
           {/* {pet?.name} */}
-          {mockSubject?.name}
+          {pet?.name}
           {"\'s"} Health Summary
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
@@ -255,7 +255,7 @@ export default function Index() {
               <CardHeader>
                 <View className="flex flex-row  items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
-                    <Icon as={mockSubject?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
+                    <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
                     <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
                     <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
                   </View>

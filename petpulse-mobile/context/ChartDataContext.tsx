@@ -31,7 +31,7 @@ const DATE_RANGES: Record<TimeRange, { start: Date; end: Date }> = {
 };
 
 export function ChartDataProvider({ children }: { children: ReactNode }) {
-  const { mockSubject, loading: authLoading } = useAuth();
+  const { mockSubject, loading: authLoading, pet } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [chartData, setChartData] = useState<ChartCache | null>(null);
 
@@ -41,9 +41,9 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
 
     // If auth is done but there's no pet subject, nothing to fetch yet.
     // Keep isLoading true so chart screens show a spinner instead of "Failed to load data".
-    if (!mockSubject?.id) return;
+    if (!pet?.id) return;
 
-    const petId = mockSubject.id;
+    const petId = pet.id;
 
     const prefetchAll = async () => {
       setIsLoading(true);
@@ -81,7 +81,7 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
     };
 
     prefetchAll();
-  }, [mockSubject?.id, authLoading]);
+  }, [pet?.id, authLoading]);
 
   return <ChartDataContext.Provider value={{ isLoading, chartData }}>{children}</ChartDataContext.Provider>;
 }

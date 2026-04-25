@@ -25,7 +25,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
 export default function ActivityScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('D');
   const axisAndLabel = useThemeColor({}, 'mutedForeground');
   const tabBar = useThemeColor({}, 'tabBar');
@@ -131,14 +131,7 @@ export default function ActivityScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="activity"
-          metricLabel="activity"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor="#f97316"
-        />
+        <ChartSummary metric="activity" metricLabel="activity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#f97316" />
       </View>
     </ScrollView>
   );

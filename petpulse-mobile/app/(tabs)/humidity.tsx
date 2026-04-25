@@ -68,7 +68,7 @@ function fillSlots(
 export default function HumidityScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
 
@@ -204,14 +204,7 @@ export default function HumidityScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="humidity"
-          metricLabel="humidity"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor={SKY}
-        />
+        <ChartSummary metric="humidity" metricLabel="humidity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={SKY} />
       </View>
     </ScrollView>
   );

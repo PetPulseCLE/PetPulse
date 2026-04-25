@@ -72,7 +72,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
 export default function HeartRateScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
@@ -258,14 +258,7 @@ export default function HeartRateScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="heart_rate"
-          metricLabel="heart rate"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor="#DC2626"
-        />
+        <ChartSummary metric="heart_rate" metricLabel="heart rate" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#DC2626" />
       </View>
     </ScrollView>
   );

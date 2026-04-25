@@ -43,7 +43,7 @@ export const BleProvider = ({ children }: { children: React.ReactNode }) => {
 
   /* Live metrics: per-characteristic BLE notify. Aggregated payloads are SD-only on-device and
    * synced back separately — firmware does not push both paths over BLE, so no duplicate rows. */
-  const { battery, charging, ...update } = useUpdate(connection.connected, mockSubject?.id ?? null);
+  const { battery, charging, ...update } = useUpdate(connection.connected, pet?.id ?? null);
 
   return (
     <BleContext.Provider
