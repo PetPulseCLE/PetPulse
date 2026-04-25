@@ -15,6 +15,7 @@ import { Alert, AppState, Platform } from 'react-native';
 import type { Peripheral } from 'react-native-ble-manager';
 import { useAuth } from '../../context/AuthContext';
 import { CHR_UUIDS, SERVICE_UUIDS } from './UUIDS';
+import { usePathname } from 'expo-router';
 
 const SCAN_TIMEOUT = 10;
 
@@ -36,7 +37,13 @@ export const useBleConn = () => {
   const [mtu, setMtu] = useState(0);
   const [bonded, setBonded] = useState(false);
 
-  const { session } = useAuth();
+  const { session, loading } = useAuth();
+
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -81,7 +88,6 @@ export const useBleConn = () => {
   /* Returns true if device auth characteristic confirms bonded */
   const triggerBonding = async (peripheral: Peripheral): Promise<boolean> => {
     try {
-      await BleManager?.retrieveServices(peripheral.id);
       const auth = await BleManager?.read(peripheral.id, SERVICE_UUIDS.activity_service, CHR_UUIDS.auth);
       console.log('auth: ', auth);
       if (!auth) {
@@ -138,7 +144,7 @@ export const useBleConn = () => {
     if (initialized) {
       setDiscovered([]);
       await BleManager?.scan({
-        serviceUUIDs: [SERVICE_UUIDS.battery_service, SERVICE_UUIDS.currentTime_service],
+        serviceUUIDs: [SERVICE_UUIDS.vitals_service, SERVICE_UUIDS.currentTime_service],
         seconds: SCAN_TIMEOUT,
       });
     }
@@ -349,7 +355,7 @@ export const useBleConn = () => {
 
   /* Initialize Ble Manager and reconnect to previously connected device */
   useEffect(() => {
-    if (!session) return;
+    if (!session || pathnameRef.current === '/splash') return;
     const init = async () => {
       const bleReady = await initBleManager();
       if (!bleReady) return;

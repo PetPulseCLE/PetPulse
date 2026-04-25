@@ -1,0 +1,47 @@
+{
+  "cli": {
+    "version": ">= 18.8.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "BUNDLE_IDENTIFIER": "com.willhynds.petpulsemobile.dev",
+        "APPLE_TEAM_ID": "GLTTDHLGY6",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://khhmfpxgkwqqmithakqy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_QSR7e_WW5TbIW4-qcnRKJw_giPX9KOR"
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "BUNDLE_IDENTIFIER": "com.willhynds.petpulsemobile.preview",
+        "APPLE_TEAM_ID": "GLTTDHLGY6",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://khhmfpxgkwqqmithakqy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_QSR7e_WW5TbIW4-qcnRKJw_giPX9KOR"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "channel": "production",
+      "env": {
+        "BUNDLE_IDENTIFIER": "com.willhynds.petpulsemobile",
+        "APPLE_TEAM_ID": "GLTTDHLGY6",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://khhmfpxgkwqqmithakqy.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_QSR7e_WW5TbIW4-qcnRKJw_giPX9KOR"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "GLTTDHLGY6"
+      }
+    }
+  }
+}
