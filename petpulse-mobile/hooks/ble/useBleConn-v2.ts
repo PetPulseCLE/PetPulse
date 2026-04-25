@@ -40,6 +40,10 @@ export const useBleConn = () => {
   const { session, loading } = useAuth();
 
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   type ConnectResult = { success: boolean; error?: string };
 
@@ -351,7 +355,7 @@ export const useBleConn = () => {
 
   /* Initialize Ble Manager and reconnect to previously connected device */
   useEffect(() => {
-    if (!session || pathname == '/splash') return;
+    if (!session || pathnameRef.current === '/splash') return;
     const init = async () => {
       const bleReady = await initBleManager();
       if (!bleReady) return;
@@ -421,7 +425,7 @@ export const useBleConn = () => {
       onDiscover?.remove();
       AppStateListener.remove();
     };
-  }, [session, pathname]);
+  }, [session]);
 
   return {
     initialized,
