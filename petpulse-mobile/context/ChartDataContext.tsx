@@ -53,7 +53,6 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
         (['D', 'W', 'M'] as const).map(async (range) => {
           const period = DATE_RANGES[range];
           const response = await RPCFetch(petId, metric, period);
-          console.log('[prefetchAll] response', metric, period, response);
           return { metric, range, result: response.dataPoints };
         }),
       );
