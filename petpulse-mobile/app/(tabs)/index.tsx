@@ -1,5 +1,7 @@
 import MetricCard from '@/components/petpulse-ui/metric-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
@@ -26,6 +28,9 @@ import {
   BatteryFull,
   BatteryLow,
   BatteryCharging,
+  ClipboardCopy,
+  RotateCcw,
+  X,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -37,6 +42,8 @@ export default function Index() {
   const { user, pet, mockSubject } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals, battery, charging } = useBle();
   const [summary, setSummary] = useState<string | null>(null);
+  const [genNewSummary, setGenNewSummary] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [activityClass, setActivityClass] = useState<string | null>(null);
@@ -94,6 +101,7 @@ export default function Index() {
   }, [pet]);
 
   useEffect(() => {
+    console.log('genNewSummary', genNewSummary);
     if (!pet) {
       setSummaryLoading(false);
       return;
@@ -101,17 +109,18 @@ export default function Index() {
     setSummaryLoading(true);
     const fetchHealthSummary = async () => {
       try {
-        const { response, timestamp } = await fetchAISummary(pet.id);
+        const { response, timestamp } = await fetchAISummary(pet.id, genNewSummary);
         if (response != null && response.length > 0) {
           setSummary(response);
           setSummaryLastUpdated(timestamp?.getTime() ?? null);
         }
       } finally {
         setSummaryLoading(false);
+        setGenNewSummary(false);
       }
     };
     fetchHealthSummary();
-  }, [pet]);
+  }, [pet, genNewSummary]);
 
   // ----- From BLE -----
   useEffect(() => {
@@ -254,31 +263,73 @@ export default function Index() {
             entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}
             layout={LinearTransition.duration(300)}
           >
-            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
-              <CardHeader>
-                <View className="flex flex-row  items-center justify-between">
-                  <View className="flex flex-row items-center gap-2">
-                    <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
-                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
-                    <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
-                  </View>
+            <Dialog
+              className="basis-full grow"
+              open={isOpen}
+              onOpenChange={(open) => {
+                if (open && summaryLoading) {
+                  return;
+                }
+                setIsOpen(open);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Pressable className="basis-full grow active:scale-95 transition-all duration-300">
+                  <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
+                    <CardHeader>
+                      <View className="flex flex-row  items-center justify-between">
+                        <View className="flex flex-row items-center gap-2">
+                          <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
+                          <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
+                          <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
+                        </View>
+                        <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
+                      </View>
+                    </CardHeader>
+                    <CardContent>
+                      {summaryLoading ? (
+                        <View className="gap-2">
+                          <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                          <View className="h-3 rounded bg-muted-foreground/20 w-5/6 animate-pulse" />
+                          <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                          <View className="h-3 rounded bg-muted-foreground/20 w-4/6 animate-pulse" />
+                        </View>
+                      ) : (
+                        <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
+                          {summary}
+                        </Text>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Pressable>
+              </DialogTrigger>
+              <DialogContent className="flex flex-col gap-2">
+                <DialogHeader className="mb-2">
+                  <Text className="text-lg font-normal text-foreground">AI Summary Options</Text>
+                </DialogHeader>
+                <View className="flex flex-row items-center gap-2">
+                  <Button
+                    className="bg-tint rounded-md"
+                    onPress={() => {
+                      setGenNewSummary(true);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Text className="text-white">Regenerate</Text>
+                    <Icon as={RotateCcw} size={16} className="text-white" />
+                  </Button>
+                  <Button
+                    className="bg-destructive rounded-md"
+                    onPress={() => {
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Text className="text-white">Close</Text>
+                    <Icon as={X} size={16} className="text-white" />
+                  </Button>
                 </View>
-              </CardHeader>
-              <CardContent>
-                {summaryLoading ? (
-                  <View className="gap-2">
-                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-5/6" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-4/6" />
-                  </View>
-                ) : (
-                  <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
-                    {summary}
-                  </Text>
-                )}
-              </CardContent>
-            </Card>
+              </DialogContent>
+            </Dialog>
           </Animated.View>
           {/* ============================= DATA CARDS ============================= */}
           {/* ============================= STEP & ACTIVITY ============================= */}
