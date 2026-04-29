@@ -9,11 +9,11 @@ import {
   getActivityBreakdown,
   getSizeBucket,
   getStatus,
-  type PetInfo,
 } from '@/lib/petpulse/chart-summary';
 import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
 import { Info } from 'lucide-react-native';
 import { View } from 'react-native';
+import type { Pet } from '@/context/AuthContext';
 
 type TimeRange = 'D' | 'W' | 'M';
 
@@ -46,25 +46,18 @@ const STATUS_STYLES: Record<'normal' | 'elevated' | 'low', { label: string; bg: 
 
 type ChartSummaryProps = {
   metric: DataType;
-  metricLabel: string;            // e.g. "heart rate", "body temperature"
+  metricLabel: string; // e.g. "heart rate", "body temperature"
   timeRange: TimeRange;
   dataPoints: DataPoint[] | null;
-  pet: PetInfo | null;
-  accentColor: string;            // matches the chart's accent color
+  pet: Pet | null;
+  accentColor: string; // matches the chart's accent color
 };
 
 /**
  * Collapsible "About your pet's {metric}" summary that sits under each chart.
  * Uses the shared Accordion primitive so animation + chevron rotation match the rest of the app.
  */
-export default function ChartSummary({
-  metric,
-  metricLabel,
-  timeRange,
-  dataPoints,
-  pet,
-  accentColor,
-}: ChartSummaryProps) {
+export default function ChartSummary({ metric, metricLabel, timeRange, dataPoints, pet, accentColor }: ChartSummaryProps) {
   // No connected pet → render nothing.
   if (!pet) return null;
 
@@ -85,13 +78,7 @@ export default function ChartSummary({
   const status = stats && CLINICAL_METRICS.has(metric) ? getStatus(metric, stats.avg, pet) : 'unknown';
   const statusStyle = status !== 'unknown' ? STATUS_STYLES[status] : null;
 
-  const summaryText = isActivity
-    ? breakdown
-      ? buildActivitySummary(breakdown, pet)
-      : null
-    : stats
-      ? buildSummary(metric, stats, pet)
-      : null;
+  const summaryText = isActivity ? (breakdown ? buildActivitySummary(breakdown, pet) : null) : stats ? buildSummary(metric, stats, pet) : null;
 
   // The readings section renders one of three things:
   // - "No readings" message if neither stats nor breakdown are available

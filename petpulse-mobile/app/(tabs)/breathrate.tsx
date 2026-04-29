@@ -75,7 +75,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
 export default function BreathRateScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
@@ -270,14 +270,16 @@ export default function BreathRateScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="breath_rate"
-          metricLabel="breath rate"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor={BREATH_COLOR}
-        />
+        {pet && (
+          <ChartSummary
+            metric="breath_rate"
+            metricLabel="breath rate"
+            timeRange={timeRange}
+            dataPoints={rawRows}
+            pet={pet}
+            accentColor={BREATH_COLOR}
+          />
+        )}
       </View>
     </ScrollView>
   );

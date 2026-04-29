@@ -13,7 +13,7 @@ function getEmailRedirectTo(): string {
   return 'petpulse://auth/callback';
 }
 
-interface Pet {
+export interface Pet {
   id: string;
   name: string;
   pet_type: string;
@@ -59,14 +59,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [pet, setPet] = useState<Pet | null>(null);
   const [mockSubject, setMockSubject] = useState<MockSubject | null>(null);
 
-  const fetchPetId = async (user: User) => {
+  const fetchMockSubjectId = async (user: User) => {
     const { data, error } = await supabase.from('AIML_mock_subjects').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
-      if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
+      if (__DEV__) console.error('[AuthContext] fetchMockId:', error);
       setMockSubject(null);
       return;
     }
     setMockSubject(data ?? null);
+  };
+
+  const fetchPetId = async (user: User) => {
+    const { data, error } = await supabase.from('pets').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) {
+      if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
+      setPet(null);
+      return;
+    }
+    setPet(data ?? null);
   };
 
   useEffect(() => {
@@ -86,6 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setSession(session);
       setUser(session.user);
+      fetchMockSubjectId(session.user);
       fetchPetId(session.user);
     };
 

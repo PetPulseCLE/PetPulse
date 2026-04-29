@@ -68,7 +68,7 @@ function fillSlots(
 export default function TemperatureScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
 
@@ -205,14 +205,16 @@ export default function TemperatureScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="temperature"
-          metricLabel="body temperature"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor={AMBER}
-        />
+        {pet && (
+          <ChartSummary
+            metric="temperature"
+            metricLabel="body temperature"
+            timeRange={timeRange}
+            dataPoints={rawRows}
+            pet={pet}
+            accentColor={AMBER}
+          />
+        )}
       </View>
     </ScrollView>
   );

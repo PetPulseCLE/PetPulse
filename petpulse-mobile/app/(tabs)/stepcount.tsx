@@ -69,7 +69,7 @@ function fillSlots(result: { data: number; recorded_at: Date }[], timeRange: Tim
 export default function StepCountScreen() {
   const insets = useSafeAreaInsets();
   const { isLoading, chartData } = useChartData();
-  const { mockSubject } = useAuth();
+  const { pet } = useAuth();
   const [chartType, setChartType] = useState<ChartType>('bar');
   const [timeRange, setTimeRange] = useState<TimeRange>('W');
   const [enabled, setEnabled] = useState(true);
@@ -255,14 +255,9 @@ export default function StepCountScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="step_count"
-          metricLabel="step count"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={mockSubject}
-          accentColor={EMERALD}
-        />
+        {pet && (
+          <ChartSummary metric="step_count" metricLabel="step count" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={EMERALD} />
+        )}
       </View>
     </ScrollView>
   );
