@@ -205,7 +205,16 @@ export default function TemperatureScreen() {
             )}
           </View>
         </View>
-        <ChartSummary metric="temperature" metricLabel="body temperature" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={AMBER} />
+        {pet && (
+          <ChartSummary
+            metric="temperature"
+            metricLabel="body temperature"
+            timeRange={timeRange}
+            dataPoints={rawRows}
+            pet={pet}
+            accentColor={AMBER}
+          />
+        )}
       </View>
     </ScrollView>
   );

@@ -131,7 +131,7 @@ export default function ActivityScreen() {
             )}
           </View>
         </View>
-        <ChartSummary metric="activity" metricLabel="activity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#f97316" />
+        {pet && <ChartSummary metric="activity" metricLabel="activity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#f97316" />}
       </View>
     </ScrollView>
   );

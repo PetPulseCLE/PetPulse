@@ -258,7 +258,9 @@ export default function HeartRateScreen() {
             )}
           </View>
         </View>
-        <ChartSummary metric="heart_rate" metricLabel="heart rate" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#DC2626" />
+        {pet && (
+          <ChartSummary metric="heart_rate" metricLabel="heart rate" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor="#DC2626" />
+        )}
       </View>
     </ScrollView>
   );

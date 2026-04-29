@@ -270,14 +270,16 @@ export default function BreathRateScreen() {
             )}
           </View>
         </View>
-        <ChartSummary
-          metric="breath_rate"
-          metricLabel="breath rate"
-          timeRange={timeRange}
-          dataPoints={rawRows}
-          pet={pet}
-          accentColor={BREATH_COLOR}
-        />
+        {pet && (
+          <ChartSummary
+            metric="breath_rate"
+            metricLabel="breath rate"
+            timeRange={timeRange}
+            dataPoints={rawRows}
+            pet={pet}
+            accentColor={BREATH_COLOR}
+          />
+        )}
       </View>
     </ScrollView>
   );

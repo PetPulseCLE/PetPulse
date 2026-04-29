@@ -1,17 +1,10 @@
 import { HEALTH_RANGES, type Size, type Species } from '@/constants/health-ranges';
 import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
+import type { Pet } from '@/context/AuthContext';
 
 // Pure logic helpers for the ChartSummary component.
 // ust functions that take inputs and return values.
 // Keeping this separate from the component makes it easy to test and reason about
-
-export type PetInfo = {
-  name: string;
-  pet_type: string;     // 'Dog' | 'Cat' (capitalization varies in the data)
-  breed_primary: string;
-  weight_lbs: number;
-  birth_date: string;
-};
 
 export type Stats = { min: number; max: number; avg: number };
 export type Status = 'normal' | 'elevated' | 'low' | 'unknown';
@@ -21,9 +14,9 @@ export type Status = 'normal' | 'elevated' | 'low' | 'unknown';
 // Still / Walking / Running and return percentages.
 // The thresholds mirror `activityMockMap` in sensor-readings.ts.
 export type ActivityBreakdown = {
-  still: number;     // percentage 0-100
-  walking: number;   // percentage 0-100
-  running: number;   // percentage 0-100
+  still: number; // percentage 0-100
+  walking: number; // percentage 0-100
+  running: number; // percentage 0-100
   top: 'still' | 'walking' | 'running';
 };
 
@@ -79,8 +72,7 @@ export function getActivityBreakdown(points: DataPoint[]): ActivityBreakdown | n
   const walkingPct = Math.round((walking / total) * 100);
   const runningPct = Math.round((running / total) * 100);
 
-  const top: 'still' | 'walking' | 'running' =
-    still >= walking && still >= running ? 'still' : walking >= running ? 'walking' : 'running';
+  const top: 'still' | 'walking' | 'running' = still >= walking && still >= running ? 'still' : walking >= running ? 'walking' : 'running';
 
   return { still: stillPct, walking: walkingPct, running: runningPct, top };
 }
@@ -91,7 +83,7 @@ export function getActivityBreakdown(points: DataPoint[]): ActivityBreakdown | n
  *   Cats: <9 lb small,  9–12 lb medium,  >12 lb large
  * Defaults to 'medium' if species is unrecognized.
  */
-export function getSizeBucket(pet: PetInfo): Size {
+export function getSizeBucket(pet: Pet): Size {
   const species = pet.pet_type.toLowerCase();
   const w = pet.weight_lbs;
 
@@ -132,7 +124,7 @@ export function computeAge(birthDate: string): number {
  * species + size + metric. Returns 'unknown' when no range is defined
  * (humidity, step_count, activity all hit this path).
  */
-export function getStatus(metric: DataType, avg: number, pet: PetInfo): Status {
+export function getStatus(metric: DataType, avg: number, pet: Pet): Status {
   const species = pet.pet_type.toLowerCase() as Species;
   if (species !== 'dog' && species !== 'cat') return 'unknown';
 
@@ -150,7 +142,7 @@ export function getStatus(metric: DataType, avg: number, pet: PetInfo): Status {
  * For metrics with a defined vet range → states avg + how it compares to the range.
  * For metrics without a range (humidity, steps, activity) → neutral descriptive sentence.
  */
-export function buildSummary(metric: DataType, stats: Stats, pet: PetInfo): string {
+export function buildSummary(metric: DataType, stats: Stats, pet: Pet): string {
   const name = pet.name;
   const species = pet.pet_type.toLowerCase() as Species;
   const size = getSizeBucket(pet);
@@ -221,7 +213,7 @@ export function buildSummary(metric: DataType, stats: Stats, pet: PetInfo): stri
  * Activity gets its own summary sentence because the raw data is categorical.
  * Builds a sentence describing the dominant activity and the full breakdown.
  */
-export function buildActivitySummary(breakdown: ActivityBreakdown, pet: PetInfo): string {
+export function buildActivitySummary(breakdown: ActivityBreakdown, pet: Pet): string {
   const { top, still, walking, running } = breakdown;
   const topWord = top === 'still' ? 'still' : top === 'walking' ? 'walking' : 'running';
   return `${pet.name} was mostly ${topWord} during this period — ${still}% still, ${walking}% walking, and ${running}% running.`;

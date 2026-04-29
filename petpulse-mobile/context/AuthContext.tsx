@@ -13,7 +13,7 @@ function getEmailRedirectTo(): string {
   return 'petpulse://auth/callback';
 }
 
-interface Pet {
+export interface Pet {
   id: string;
   name: string;
   pet_type: string;
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchMockSubjectId = async (user: User) => {
     const { data, error } = await supabase.from('AIML_mock_subjects').select('*').eq('user_id', user.id).maybeSingle();
     if (error) {
-      if (__DEV__) console.error('[AuthContext] fetchPetId:', error);
+      if (__DEV__) console.error('[AuthContext] fetchMockId:', error);
       setMockSubject(null);
       return;
     }

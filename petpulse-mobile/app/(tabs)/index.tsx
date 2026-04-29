@@ -94,7 +94,10 @@ export default function Index() {
   }, [pet]);
 
   useEffect(() => {
-    if (!pet) return;
+    if (!pet) {
+      setSummaryLoading(false);
+      return;
+    }
     setSummaryLoading(true);
     const fetchHealthSummary = async () => {
       try {
@@ -201,7 +204,7 @@ export default function Index() {
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>
           {/* {pet?.name} */}
-          {pet?.name}
+          {pet ? pet.name : 'Your pet'}
           {"\'s"} Health Summary
         </Animated.Text>
         <Animated.Text className="text-md text-foreground/50" entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}>

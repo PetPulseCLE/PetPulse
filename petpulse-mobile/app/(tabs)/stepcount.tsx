@@ -255,7 +255,9 @@ export default function StepCountScreen() {
             )}
           </View>
         </View>
-        <ChartSummary metric="step_count" metricLabel="step count" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={EMERALD} />
+        {pet && (
+          <ChartSummary metric="step_count" metricLabel="step count" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={EMERALD} />
+        )}
       </View>
     </ScrollView>
   );

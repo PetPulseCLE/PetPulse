@@ -204,7 +204,7 @@ export default function HumidityScreen() {
             )}
           </View>
         </View>
-        <ChartSummary metric="humidity" metricLabel="humidity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={SKY} />
+        {pet && <ChartSummary metric="humidity" metricLabel="humidity" timeRange={timeRange} dataPoints={rawRows} pet={pet} accentColor={SKY} />}
       </View>
     </ScrollView>
   );
