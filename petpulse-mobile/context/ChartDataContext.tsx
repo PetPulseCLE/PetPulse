@@ -1,5 +1,5 @@
 import { RPCFetch } from '@/lib/petpulse/data-service';
-import type { DataPoint, DataType } from '@/lib/petpulse/sensor-readings';
+import type { DataPoint, DataType, FetchPeriod } from '@/lib/petpulse/sensor-readings';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 
@@ -24,10 +24,10 @@ const METRICS: DataType[] = ['heart_rate', 'breath_rate', 'temperature', 'humidi
 
 // These are the same hardcoded date ranges used in every chart screen.
 // Defined once here so we don't repeat them in 6 places.
-const DATE_RANGES: Record<TimeRange, { start: Date; end: Date }> = {
-  D: { start: new Date('2026-03-18'), end: new Date('2026-03-19') },
-  W: { start: new Date('2026-03-16'), end: new Date('2026-03-23') },
-  M: { start: new Date('2026-03-01'), end: new Date('2026-04-01') },
+const DATE_RANGES: Record<TimeRange, FetchPeriod> = {
+  D: 'day',
+  W: 'week',
+  M: 'month',
 };
 
 export function ChartDataProvider({ children }: { children: ReactNode }) {
@@ -49,12 +49,10 @@ export function ChartDataProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
 
       // Build all 18 fetch calls (6 metrics × 3 time ranges) at once.
-      // activity doesn't use avg_param — it returns raw event rows, not averages.
       const calls = METRICS.flatMap((metric) =>
         (['D', 'W', 'M'] as const).map(async (range) => {
-          const { start, end } = DATE_RANGES[range];
-          const avgParam = metric !== 'activity' ? true : null;
-          const response = await RPCFetch(petId, metric, null, start, end, avgParam);
+          const period = DATE_RANGES[range];
+          const response = await RPCFetch(petId, metric, period);
           return { metric, range, result: response.dataPoints };
         }),
       );

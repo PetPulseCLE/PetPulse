@@ -72,7 +72,7 @@ export async function RPCFetch(
     console.error('[fetch] error', error);
     return { dataPoints: null, error };
   }
-  console.log('[fetch] rows', rows);
+  // Format from RPCDataPoint to DataPoint
   const dataPoints = (rows as RpcDataPoint[]).map((row) => ({
     data: Number(row.return_data),
     recorded_at: new Date(row.return_ts),
