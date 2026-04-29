@@ -40,7 +40,12 @@ export const ThemePreferenceProvider = ({ children }: { children: React.ReactNod
 
   useEffect(() => {
     getTheme();
-    Appearance.setColorScheme(theme as ColorSchemeName);
+  }, []);
+
+  useEffect(() => {
+    if (theme) {
+      Appearance.setColorScheme(theme);
+    }
   }, [theme]);
 
   return <ThemePreferenceContext.Provider value={{ theme, toggleTheme }}>{children}</ThemePreferenceContext.Provider>;
