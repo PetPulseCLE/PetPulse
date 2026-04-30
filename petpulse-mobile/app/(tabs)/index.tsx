@@ -29,13 +29,15 @@ import {
   BatteryLow,
   BatteryCharging,
   ClipboardCopy,
-  RotateCcw,
+  RefreshCw,
+  RefreshCwOff,
   X,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
@@ -263,73 +265,44 @@ export default function Index() {
             entering={FadeIn.duration(700).easing(Easing.inOut(Easing.ease))}
             layout={LinearTransition.duration(300)}
           >
-            <Dialog
-              className="basis-full grow"
-              open={isOpen}
-              onOpenChange={(open) => {
-                if (open && summaryLoading) {
-                  return;
-                }
-                setIsOpen(open);
-              }}
-            >
-              <DialogTrigger asChild>
-                <Pressable className="basis-full grow active:scale-95 transition-all duration-300">
-                  <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
-                    <CardHeader>
-                      <View className="flex flex-row  items-center justify-between">
-                        <View className="flex flex-row items-center gap-2">
-                          <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
-                          <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
-                          <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
-                        </View>
-                        <Icon as={ChevronRight} className="size-4 text-muted-foreground" />
-                      </View>
-                    </CardHeader>
-                    <CardContent>
-                      {summaryLoading ? (
-                        <View className="gap-2">
-                          <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
-                          <View className="h-3 rounded bg-muted-foreground/20 w-5/6 animate-pulse" />
-                          <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
-                          <View className="h-3 rounded bg-muted-foreground/20 w-4/6 animate-pulse" />
-                        </View>
+            <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
+              <CardHeader>
+                <View className="flex flex-row items-center justify-between">
+                  <View className="flex flex-row items-center gap-2">
+                    <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
+                    <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
+                    <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
+                  </View>
+                  <View className="flex flex-row items-center gap-2">
+                    <Pressable
+                      className="active:scale-50 transition-all duration-500"
+                      onPress={() => setGenNewSummary(true)}
+                      disabled={genNewSummary}
+                    >
+                      {genNewSummary ? (
+                        <Icon as={RefreshCwOff} size={22} className="text-tint/50" />
                       ) : (
-                        <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
-                          {summary}
-                        </Text>
+                        <Icon as={RefreshCw} size={22} className="text-tint" />
                       )}
-                    </CardContent>
-                  </Card>
-                </Pressable>
-              </DialogTrigger>
-              <DialogContent className="flex flex-col gap-2">
-                <DialogHeader className="mb-2">
-                  <Text className="text-lg font-normal text-foreground">AI Summary Options</Text>
-                </DialogHeader>
-                <View className="flex flex-row items-center gap-2">
-                  <Button
-                    className="bg-tint rounded-md"
-                    onPress={() => {
-                      setGenNewSummary(true);
-                      setIsOpen(false);
-                    }}
-                  >
-                    <Text className="text-white">Regenerate</Text>
-                    <Icon as={RotateCcw} size={16} className="text-white" />
-                  </Button>
-                  <Button
-                    className="bg-destructive rounded-md"
-                    onPress={() => {
-                      setIsOpen(false);
-                    }}
-                  >
-                    <Text className="text-white">Close</Text>
-                    <Icon as={X} size={16} className="text-white" />
-                  </Button>
+                    </Pressable>
+                  </View>
                 </View>
-              </DialogContent>
-            </Dialog>
+              </CardHeader>
+              <CardContent>
+                {summaryLoading ? (
+                  <View className="gap-2">
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-5/6 animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-4/6 animate-pulse" />
+                  </View>
+                ) : (
+                  <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
+                    {summary}
+                  </Text>
+                )}
+              </CardContent>
+            </Card>
           </Animated.View>
           {/* ============================= DATA CARDS ============================= */}
           {/* ============================= STEP & ACTIVITY ============================= */}
