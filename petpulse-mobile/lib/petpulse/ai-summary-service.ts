@@ -1,6 +1,7 @@
 import { TruckElectric } from 'lucide-react-native';
 import { supabase } from '../supabase';
 import Toast from 'react-native-toast-message';
+import { toastError } from './data-service';
 
 export interface AIResponse {
   response: string;
@@ -70,7 +71,8 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
         const { error } = await supabase.from('ai_summaries').upsert({ id: pet_Id, summary: responsePromise.summary, created_at: timestamp });
         if (error) {
           console.error(error);
-          response = { timestamp: null, response: 'Error saving AI summary' };
+          toastError('Error saving AI Health Summary');
+          response = { timestamp: new Date(timestamp), response: responsePromise.summary };
         } else {
           response = { timestamp: new Date(timestamp), response: responsePromise.summary };
         }
@@ -103,8 +105,8 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
       const responsePromise = await responseBody.json();
       const { error } = await supabase.from('ai_summaries').upsert({ id: pet_Id, summary: responsePromise.summary, created_at: timestamp });
       if (error) {
-        console.error(error);
-        response = { timestamp: null, response: 'Error saving AI summary' };
+        toastError('Error saving AI Health Summary');
+        response = { timestamp: new Date(timestamp), response: responsePromise.summary };
       } else {
         response = { timestamp: new Date(timestamp), response: responsePromise.summary };
       }
