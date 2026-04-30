@@ -34,7 +34,7 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
     ]);
 
     const { data, error } = cacheResult;
-    console.log('AI/ML', data, error);
+
     if (data != null && data.length > 0) {
       lastUpdated = new Date(data[0].created_at);
       response = { timestamp: new Date(data[0].created_at), response: data[0].summary };
@@ -48,7 +48,7 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
 
     if (!isSameDay) {
       try {
-        const responseBody = await fetch('http://ai-service.petpulse.dev/summarize', {
+        const responseBody = await fetch('https://ai-service.petpulse.dev/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.data.session?.access_token}` },
           body: JSON.stringify({ pet_id: pet_Id }),
@@ -82,7 +82,7 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
   } else {
     const session = await supabase.auth.getSession();
     try {
-      const responseBody = await fetch('http://ai-service.petpulse.dev/summarize', {
+      const responseBody = await fetch('https://ai-service.petpulse.dev/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.data.session?.access_token}` },
         body: JSON.stringify({ pet_id: pet_Id }),

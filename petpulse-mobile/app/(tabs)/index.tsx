@@ -44,8 +44,6 @@ export default function Index() {
   const { user, pet, mockSubject } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals, battery, charging } = useBle();
   const [summary, setSummary] = useState<string | null>(null);
-  const [genNewSummary, setGenNewSummary] = useState<boolean>(false);
-  const [isOpen, setIsOpen] = useState<boolean>(false);
   const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
   const [stepCount, setStepCount] = useState<number | null>(null);
   const [activityClass, setActivityClass] = useState<string | null>(null);
@@ -102,27 +100,27 @@ export default function Index() {
     fetchData();
   }, [pet]);
 
-  useEffect(() => {
-    console.log('genNewSummary', genNewSummary);
+  const fetchHealthSummary = async ({ newSummary }: { newSummary: boolean }) => {
     if (!pet) {
       setSummaryLoading(false);
       return;
     }
     setSummaryLoading(true);
-    const fetchHealthSummary = async () => {
-      try {
-        const { response, timestamp } = await fetchAISummary(pet.id, genNewSummary);
-        if (response != null && response.length > 0) {
-          setSummary(response);
-          setSummaryLastUpdated(timestamp?.getTime() ?? null);
-        }
-      } finally {
-        setSummaryLoading(false);
-        setGenNewSummary(false);
+    try {
+      // false to use cached values or gen new after 24 hours
+      const { response, timestamp } = await fetchAISummary(pet.id, newSummary);
+      if (response != null && response.length > 0) {
+        setSummary(response);
+        setSummaryLastUpdated(timestamp?.getTime() ?? null);
       }
-    };
-    fetchHealthSummary();
-  }, [pet, genNewSummary]);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHealthSummary({ newSummary: false });
+  }, [pet]);
 
   // ----- From BLE -----
   useEffect(() => {
@@ -276,10 +274,10 @@ export default function Index() {
                   <View className="flex flex-row items-center gap-2">
                     <Pressable
                       className="active:scale-50 transition-all duration-500"
-                      onPress={() => setGenNewSummary(true)}
-                      disabled={genNewSummary}
+                      onPress={() => fetchHealthSummary({ newSummary: true })}
+                      disabled={summaryLoading}
                     >
-                      {genNewSummary ? (
+                      {summaryLoading ? (
                         <Icon as={RefreshCwOff} size={22} className="text-tint/50" />
                       ) : (
                         <Icon as={RefreshCw} size={22} className="text-tint" />
