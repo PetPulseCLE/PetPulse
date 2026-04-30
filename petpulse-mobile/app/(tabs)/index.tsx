@@ -1,5 +1,7 @@
 import MetricCard from '@/components/petpulse-ui/metric-card';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/context/AuthContext';
 import { useBle } from '@/context/BleContext';
@@ -26,11 +28,16 @@ import {
   BatteryFull,
   BatteryLow,
   BatteryCharging,
+  ClipboardCopy,
+  RefreshCw,
+  RefreshCwOff,
+  X,
 } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
@@ -93,24 +100,26 @@ export default function Index() {
     fetchData();
   }, [pet]);
 
-  useEffect(() => {
+  const fetchHealthSummary = async ({ newSummary }: { newSummary: boolean }) => {
     if (!pet) {
       setSummaryLoading(false);
       return;
     }
     setSummaryLoading(true);
-    const fetchHealthSummary = async () => {
-      try {
-        const { response, timestamp } = await fetchAISummary(pet.id);
-        if (response != null && response.length > 0) {
-          setSummary(response);
-          setSummaryLastUpdated(timestamp?.getTime() ?? null);
-        }
-      } finally {
-        setSummaryLoading(false);
+    try {
+      // false to use cached values or gen new after 24 hours
+      const { response, timestamp } = await fetchAISummary(pet.id, newSummary);
+      if (response != null && response.length > 0) {
+        setSummary(response);
+        setSummaryLastUpdated(timestamp?.getTime() ?? null);
       }
-    };
-    fetchHealthSummary();
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHealthSummary({ newSummary: false });
   }, [pet]);
 
   // ----- From BLE -----
@@ -256,21 +265,34 @@ export default function Index() {
           >
             <Card className="bg-tab-bar border-tab-bar shadow-sm basis-full grow transition-all duration-300">
               <CardHeader>
-                <View className="flex flex-row  items-center justify-between">
+                <View className="flex flex-row items-center justify-between">
                   <View className="flex flex-row items-center gap-2">
                     <Icon as={pet?.pet_type === 'Dog' ? Bone : Cat} size={22} className="text-tint" />
                     <Text className="text-md font-semibold text-secondary-foreground">AI Health Summary </Text>
                     <Text className="text-muted-foreground text-xs">{summaryLastUpdated ? `${formatTime(summaryLastUpdated)}` : ''}</Text>
+                  </View>
+                  <View className="flex flex-row items-center gap-2">
+                    <Pressable
+                      className="active:scale-50 transition-all duration-500"
+                      onPress={() => fetchHealthSummary({ newSummary: true })}
+                      disabled={summaryLoading}
+                    >
+                      {summaryLoading ? (
+                        <Icon as={RefreshCwOff} size={22} className="text-tint/50" />
+                      ) : (
+                        <Icon as={RefreshCw} size={22} className="text-tint" />
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </CardHeader>
               <CardContent>
                 {summaryLoading ? (
                   <View className="gap-2">
-                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-5/6" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-full" />
-                    <View className="h-3 rounded bg-muted-foreground/20 w-4/6" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-5/6 animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-full animate-pulse" />
+                    <View className="h-3 rounded bg-muted-foreground/20 w-4/6 animate-pulse" />
                   </View>
                 ) : (
                   <Text className="text-muted-foreground text-sm" ellipsizeMode="tail" numberOfLines={7}>
