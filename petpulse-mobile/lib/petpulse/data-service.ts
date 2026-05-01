@@ -57,9 +57,12 @@ export async function RPCFetch(
   bucket_period: 'hour' | 'day' | null = null,
 ): Promise<FetchResponse> {
   // Default query
-  let query = supabase.rpc('fetch_sensor_data', {
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let query = supabase.rpc('fetch_sensor_data_v2', {
     pet_id_param: pet_id,
     data_type_param: data_type,
+    tz_param: tz,
     period_param: period,
     start_date_param: start_date,
     end_date_param: end_date,
