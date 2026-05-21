@@ -1,0 +1,50 @@
+﻿GPIO Pin,Function,Connection / Device,Configuration Note
+Power & Data,,,
+3V3,Power,System 3.3V Rail,Main Logic Power
+GND,Ground,Common Ground Plane,Main Logic Ground
+EN,Reset,RC Circuit (10kΩ Pull-up + 1µF Cap),Global Chip Reset
+IO 0,Boot,Breakout Header J5,Used for Factory Flashing
+IO 19,USB D-,USB-C Connector (Pin A7/B7),Native USB Data-
+IO 20,USB D+,USB-C Connector (Pin A6/B6),Native USB Data+
+IO 43 / TXD0,UART TX,Breakout Header J5,Native UART Transmit Interface
+IO 44 / RXD0,UART RX,Breakout Header J5,Native UART Receive Interface
+I2C Bus [Power & Env],,,
+IO 4,I2C_SDA,"SHT40, MAX17260, BQ25896",I2C Data
+IO 5,I2C_SCL,"SHT40, MAX17260, BQ25896",I2C Clock
+SDMMC Bus [High Speed],,,
+IO 8,SD_D0,SD CARD,SDMMC Data 0
+IO 17,SD_CMD,SD CARD,SDMMC Command
+IO 18,SD_SCK,SD CARD,SDMMC Clock
+SPI Bus 1 [High Speed],,,
+IO 41,SPI_MOSI,"NFC, IMU",Main B1 Data Out
+IO 40,SPI_MISO,"NFC, IMU",Main B1 Data In
+IO 39,SPI_CLK,"NFC, IMU",Main B1 Clock
+SPI Bus 2 [High Speed],,,
+IO 11,SPI_MOSI,A121 Radar,Main B2 Data Out
+IO 13,SPI_MISO,A121 Radar,Main B2 Data In
+IO 12,SPI_CLK,A121 Radar,Main B2 Clock
+Chip Selects [Active Low],,,
+IO 1,CS_NFC,ST25R3916 (CS Pin),NFC Selection
+IO 2,CS_IMU,BNO085 (CS Pin),IMU Selection
+IO 10,CS_RADAR,A121 Radar (CS Pin),Radar Selection
+Interrupts [Inputs],,,
+IO 6,BMS_INT,BQ25896 (INT),Charging Updates
+IO 9,RADAR_INT,A121 Radar (INT),Detects Radar Ready
+IO 21,SD_INT,SD CARD,Detects Inserted SD Card
+IO 38,IMU_INT,BNO085 (INT),Motion Wake-up
+IO 42,NFC_IRQ,ST25R3916B (IRQ),Detects Tag/Field
+Control [Outputs],,,
+IO 7,IMU_RST,BNO085 (RST),Low = Reset IMU
+IO 14,RADAR_EN,A121 Radar (ENABLE),"High = On, Low = Sleep"
+Clock,,,
+IO 15,XIN,Crystal Pin 1,32.768 KHz Real Time Clock
+IO 16,XOUT,Crystal Pin 2,
+User Interface,,,
+IO 47,RGB LED,Status and Control Indicator,R52 Resistor Inline With Data Pin
+IO 48,BUTTON,Main Button (via Diode),Internal Pullups
+Strapping and Dedicated [Do Not Use],,,
+IO 3,JTAG,Do Not Connect,Legacy JTAG (Test Point)
+IO 22 - 34,INTERNAL,,Not Externally Exposed
+IO 35 - 37,Octal Flash/PSRAM,Do Not Connect,Internally Tied Pins
+IO 45,VDD_SPI,Do Not Connect,Memory Voltage Select (Internal)
+IO 46,Log Boot,Do Not Connect,Boot Message Log

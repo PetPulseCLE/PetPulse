@@ -1,0 +1,7 @@
+dependencies:
+  esp32_BNO08x:
+    git: https://github.com/notwillhynds/esp32_BNO08x.git
+    version: "v0.2.0"
+  NimBLE:
+    git: https://github.com/h2zero/esp-nimble-cpp.git
+    version: "2.3.4"

@@ -1,0 +1,321 @@
+import { Link, router } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+function isValidEmail(email: string) {
+  // Basic email format check (simple on purpose)
+  return /^\S+@\S+\.\S+$/.test(email.trim());
+}
+
+export default function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const lockoutTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { signIn } = useAuth();
+
+  const { top } = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (failedAttempts < 5) return;
+    setError("Too many failed attempts. Please try again after 5 minutes.");
+    if (lockoutTimeoutRef.current) clearTimeout(lockoutTimeoutRef.current);
+    lockoutTimeoutRef.current = setTimeout(
+      () => {
+        lockoutTimeoutRef.current = null;
+        setFailedAttempts(0);
+        setError(null);
+      },
+      5 * 60 * 1000,
+    );
+    return () => {
+      if (lockoutTimeoutRef.current) {
+        clearTimeout(lockoutTimeoutRef.current);
+        lockoutTimeoutRef.current = null;
+      }
+    };
+  }, [failedAttempts]);
+
+  const canSubmit = useMemo(() => {
+    return (
+      email.trim().length > 0 && password.length > 0 && isValidEmail(email)
+    );
+  }, [email, password]);
+
+  const inputText = useThemeColor({}, "text");
+  const placeholder = useThemeColor({}, "placeholder");
+  const cardBg = useThemeColor({}, "cardBgAlpha");
+  const cardBorder = useThemeColor({}, "cardBorderAlpha");
+  const inputBg = useThemeColor({}, "inputBgAlpha");
+  const inputBorder = useThemeColor({}, "inputBorderAlpha");
+  const brandBlack = useThemeColor({}, "brandBlack");
+  const errorText = useThemeColor({}, "errorText");
+  const onboardingBtnBg = useThemeColor({}, "onboardingBtnBg");
+
+  async function onSubmit() {
+    setError(null);
+
+    const trimmedEmail = email.trim();
+
+    // Client-side validation (required fields + basic email)
+    if (!trimmedEmail || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (failedAttempts >= 5) {
+      setError("Too many failed attempts. Please try again later.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await signIn(trimmedEmail, password);
+      if (error) {
+        const msg = error.message.toLowerCase();
+        const isAuthFailure =
+          msg.includes("invalid login credentials") ||
+          msg.includes("invalid_credentials");
+        if (isAuthFailure) {
+          setError("Invalid email or password. Please try again.");
+        } else if (msg.includes("email not confirmed")) {
+          setError(
+            "Please confirm your email before signing in. Check your inbox.",
+          );
+        } else if (msg.includes("too many requests")) {
+          setError("Too many attempts. Please wait a moment and try again.");
+        } else {
+          setError(error.message);
+        }
+        if (isAuthFailure) {
+          setFailedAttempts((prev) => prev + 1);
+        }
+      } else {
+        setFailedAttempts(0);
+        router.replace("/(tabs)");
+      }
+    } catch (e: any) {
+      setError(e?.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <ThemedView style={[styles.screen, { paddingTop: top + 24 }]}>
+        <View style={styles.header}>
+          <View style={[styles.logoCircle, { backgroundColor: brandBlack }]}>
+            <Ionicons name="heart" size={30} color="white" />
+          </View>
+          <ThemedText type="title" style={styles.appName}>
+            PetPulse
+          </ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Care Beyond the Collar
+          </ThemedText>
+        </View>
+
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: cardBg, borderColor: cardBorder },
+          ]}
+        >
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Email
+          </ThemedText>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={placeholder}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="username"
+            editable={!submitting}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          <ThemedText type="defaultSemiBold" style={styles.label}>
+            Password
+          </ThemedText>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Enter your password"
+            placeholderTextColor={placeholder}
+            secureTextEntry
+            textContentType="password"
+            editable={!submitting}
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (canSubmit && !submitting && failedAttempts < 5) onSubmit();
+            }}
+            style={[
+              styles.input,
+              {
+                color: inputText,
+                backgroundColor: inputBg,
+                borderColor: inputBorder,
+              },
+            ]}
+          />
+
+          {error ? (
+            <ThemedText style={[styles.errorText, { color: errorText }]}>
+              {error}
+            </ThemedText>
+          ) : null}
+
+          <TouchableOpacity
+            onPress={onSubmit}
+            disabled={!canSubmit || submitting || failedAttempts >= 5}
+            style={[
+              styles.button,
+              { backgroundColor: onboardingBtnBg },
+              (!canSubmit || submitting || failedAttempts >= 5) &&
+                styles.buttonDisabled,
+            ]}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+                Log In
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+
+          {/* Placeholder: route to signup for now (until you implement forgot-password) */}
+          <View style={styles.forgotContainer}>
+            <ThemedText
+              type="link"
+              onPress={() =>
+                Alert.alert("Coming soon", "Forgot password flow coming soon")
+              }
+            >
+              Forgot password?
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <ThemedText style={styles.footerText}>
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" replace>
+              <ThemedText type="link">Sign up</ThemedText>
+            </Link>
+          </ThemedText>
+        </View>
+      </ThemedView>
+    </TouchableWithoutFeedback>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  logoIcon: {
+    color: "white",
+    lineHeight: 28,
+    fontSize: 28,
+    textAlign: "center",
+  },
+  appName: {
+    marginBottom: 6,
+  },
+  subtitle: {
+    textAlign: "center",
+    opacity: 0.8,
+  },
+  card: {
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+  },
+  label: {
+    marginBottom: 6,
+  },
+  input: {
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+
+    marginBottom: 14,
+  },
+  errorText: {
+    marginBottom: 10,
+  },
+  button: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  buttonDisabled: {
+    opacity: 0.55,
+  },
+  buttonText: {
+    color: "white",
+  },
+  forgotContainer: {
+    alignSelf: "center",
+    marginTop: 14,
+  },
+  footer: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  footerText: {
+    opacity: 0.9,
+  },
+});

@@ -11,6 +11,7 @@
 *.sln.docstates
 *.env
 .env.*
+docs/plans/
 *.pem
 *.key
 **/serviceAccount*.json
@@ -347,6 +348,11 @@ paket-files/
 **/__pycache__/
 *.pyc
 
+# Python virtual environments and tooling caches
+**/venv/
+**/.venv/
+**/.pytest_cache/
+
 # Cake - Uncomment if you are using it
 #tools/**
 #!tools/packages.config
@@ -420,3 +426,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+Issues.md

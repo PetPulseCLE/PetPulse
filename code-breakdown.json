@@ -1,0 +1,140 @@
+[
+  {
+    "language": "TypeScript",
+    "files": 77,
+    "lines": 9641,
+    "blanks": 744,
+    "comments": 359,
+    "linesOfCode": 8538
+  },
+  {
+    "language": "Markdown",
+    "files": 49,
+    "lines": 3898,
+    "blanks": 965,
+    "comments": 0,
+    "linesOfCode": 2933
+  },
+  {
+    "language": "Python",
+    "files": 25,
+    "lines": 1808,
+    "blanks": 303,
+    "comments": 220,
+    "linesOfCode": 1285
+  },
+  {
+    "language": "JSON",
+    "files": 13,
+    "lines": 10625,
+    "blanks": 0,
+    "comments": 0,
+    "linesOfCode": 10625
+  },
+  {
+    "language": "JavaScript",
+    "files": 5,
+    "lines": 424,
+    "blanks": 19,
+    "comments": 15,
+    "linesOfCode": 390
+  },
+  {
+    "language": "CMake",
+    "files": 4,
+    "lines": 18,
+    "blanks": 1,
+    "comments": 4,
+    "linesOfCode": 13
+  },
+  {
+    "language": "SQL",
+    "files": 4,
+    "lines": 144,
+    "blanks": 12,
+    "comments": 43,
+    "linesOfCode": 89
+  },
+  {
+    "language": "YAML",
+    "files": 4,
+    "lines": 56,
+    "blanks": 7,
+    "comments": 2,
+    "linesOfCode": 47
+  },
+  {
+    "language": "C++",
+    "files": 3,
+    "lines": 1412,
+    "blanks": 311,
+    "comments": 56,
+    "linesOfCode": 1045
+  },
+  {
+    "language": "C++ Header",
+    "files": 2,
+    "lines": 702,
+    "blanks": 133,
+    "comments": 228,
+    "linesOfCode": 341
+  },
+  {
+    "language": "Plain Text",
+    "files": 2,
+    "lines": 23,
+    "blanks": 3,
+    "comments": 0,
+    "linesOfCode": 20
+  },
+  {
+    "language": "Shell",
+    "files": 2,
+    "lines": 45,
+    "blanks": 14,
+    "comments": 2,
+    "linesOfCode": 29
+  },
+  {
+    "language": "CSS",
+    "files": 1,
+    "lines": 144,
+    "blanks": 16,
+    "comments": 16,
+    "linesOfCode": 112
+  },
+  {
+    "language": "License",
+    "files": 1,
+    "lines": 5,
+    "blanks": 2,
+    "comments": 0,
+    "linesOfCode": 3
+  },
+  {
+    "language": "TypeScript Typings",
+    "files": 1,
+    "lines": 1,
+    "blanks": 0,
+    "comments": 1,
+    "linesOfCode": 0
+  },
+  {
+    "language": "Total",
+    "files": 193,
+    "lines": 28946,
+    "blanks": 2530,
+    "comments": 946,
+    "linesOfCode": 25470
+  },
+  {
+    "AISummaryService": {
+      "timeTaken": "66057ms"
+    }
+  },
+  {
+    "TrendsService": {
+      "timeTaken": "1086ms"
+    }
+  }
+]
