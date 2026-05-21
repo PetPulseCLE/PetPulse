@@ -1,0 +1,8 @@
+.claude/
+.clangd
+.vscode
+.cache
+build/
+sdkconfig
+sdkconfig.old
+BSP/
