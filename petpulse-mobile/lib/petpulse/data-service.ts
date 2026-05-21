@@ -2,7 +2,6 @@ import { QueryError } from '@supabase/supabase-js';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
 import type { Activity, DataPoint, DataType, Env, FetchPeriod, MetricType, Raw, RpcDataPoint, Vitals } from './sensor-readings';
-import { AIResponse, fetchAISummary } from './ai-summary-service';
 
 // Supabase type insert responses
 export interface InsertResponse {
@@ -12,13 +11,18 @@ export interface InsertResponse {
 
 export const insert = async (pet_id: string, metric_type: MetricType, data: Activity | Env | Vitals | Raw): Promise<InsertResponse> => {
   const { utcTimestamp, ...dataValues } = data;
-  const { error } = await supabase.from('sensor_readings').insert({
-    pet_id: pet_id,
-    metric_type: metric_type,
-    data: dataValues,
-    recorded_at: utcTimestamp,
-  });
-  console.log('[insert] error', error);
+  const { error } = await supabase.from('sensor_readings').upsert(
+    {
+      pet_id: pet_id,
+      metric_type: metric_type,
+      data: dataValues,
+      recorded_at: utcTimestamp,
+    },
+    {
+      onConflict: 'pet_id,metric_type,recorded_at',
+      ignoreDuplicates: true,
+    },
+  );
   if (error) {
     console.error('[insert] error', error);
     return { error, success: false };

@@ -41,7 +41,7 @@ import { cn } from '@/lib/utils';
 
 export default function Index() {
   const insets = useSafeAreaInsets();
-  const { user, pet, mockSubject } = useAuth();
+  const { user, pet, session } = useAuth();
   const { connected, setShowScanModal, isReconnecting, activity, env, vitals, battery, charging } = useBle();
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLastUpdated, setSummaryLastUpdated] = useState<number | null>(null);
@@ -101,14 +101,14 @@ export default function Index() {
   }, [pet]);
 
   const fetchHealthSummary = async ({ newSummary }: { newSummary: boolean }) => {
-    if (!pet) {
+    if (!pet || !session?.access_token) {
       setSummaryLoading(false);
       return;
     }
     setSummaryLoading(true);
     try {
       // false to use cached values or gen new after 24 hours
-      const { response, timestamp } = await fetchAISummary(pet.id, newSummary);
+      const { response, timestamp } = await fetchAISummary({ pet_Id: pet.id, newSummary: newSummary, access_token: session?.access_token });
       if (response != null && response.length > 0) {
         setSummary(response);
         setSummaryLastUpdated(timestamp?.getTime() ?? null);

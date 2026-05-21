@@ -1,4 +1,3 @@
-import { TruckElectric } from 'lucide-react-native';
 import { supabase } from '../supabase';
 import Toast from 'react-native-toast-message';
 import { toastError } from './data-service';
@@ -8,10 +7,16 @@ export interface AIResponse {
   timestamp: Date | null;
 }
 
-export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promise<AIResponse> {
+export interface FetchAISummaryParams {
+  pet_Id: string;
+  newSummary: boolean;
+  access_token: string;
+}
+export async function fetchAISummary(fetchAISummaryParams: FetchAISummaryParams): Promise<AIResponse> {
   let lastUpdated: Date | null = null;
   let response = {} as AIResponse;
   let useCache = true;
+  const { pet_Id, newSummary, access_token } = fetchAISummaryParams;
 
   if (newSummary) {
     useCache = false;
@@ -19,7 +24,7 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
 
   if (useCache) {
     // Fetch cached summary and auth session in parallel
-    const [cacheResult, session] = await Promise.all([
+    const [cacheResult] = await Promise.all([
       supabase
         .from('ai_summaries')
         .select('summary, created_at')
@@ -31,7 +36,6 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
             return { data: null, error: err };
           },
         ),
-      supabase.auth.getSession(),
     ]);
 
     const { data, error } = cacheResult;
@@ -51,7 +55,7 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
       try {
         const responseBody = await fetch('https://ai-service.petpulse.dev/summarize', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.data.session?.access_token}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access_token}` },
           body: JSON.stringify({ pet_id: pet_Id }),
         });
         if (!responseBody.ok) {
@@ -82,11 +86,10 @@ export async function fetchAISummary(pet_Id: string, newSummary: boolean): Promi
       }
     }
   } else {
-    const session = await supabase.auth.getSession();
     try {
       const responseBody = await fetch('https://ai-service.petpulse.dev/summarize', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.data.session?.access_token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${access_token}` },
         body: JSON.stringify({ pet_id: pet_Id }),
       });
       if (!responseBody.ok) {

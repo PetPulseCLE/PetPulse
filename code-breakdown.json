@@ -126,5 +126,15 @@
     "blanks": 2530,
     "comments": 946,
     "linesOfCode": 25470
+  },
+  {
+    "AISummaryService": {
+      "timeTaken": "66057ms"
+    }
+  },
+  {
+    "TrendsService": {
+      "timeTaken": "1086ms"
+    }
   }
 ]
